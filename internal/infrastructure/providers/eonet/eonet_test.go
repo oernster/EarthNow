@@ -186,3 +186,29 @@ func TestFetch(t *testing.T) {
 		t.Error("an unparseable body was reported as success")
 	}
 }
+
+// GDACS polygons arrive [lat, lng] (measured 2026-09-23); read as GeoJSON they
+// put Honduras in Antarctica. Another source's polygon keeps GeoJSON order.
+func TestGDACSPolygonsAreReadLatitudeFirst(t *testing.T) {
+	t.Parallel()
+	body := `{"events":[
+	{"id":"EONET_1","title":"Flood in Honduras","sources":[{"id":"GDACS","url":"https://www.gdacs.org/r"}],
+	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[14.6,-88.1],[14.8,-88.1],[14.8,-87.9],[14.6,-87.9],[14.6,-88.1]]]}]},
+	{"id":"EONET_2","title":"Ice","sources":[{"id":"USICECENTER","url":"https://usicecenter.gov/p"}],
+	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[-60,-70],[-59,-70],[-59,-69],[-60,-69],[-60,-70]]]}]},
+	{"id":"EONET_3","title":"Short vertex","sources":[{"id":"GDACS","url":"https://www.gdacs.org/r"}],
+	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[14.6],[14.8,-88.1],[14.8,-87.9]]]}]}
+]}`
+	events, dropped, err := Parse([]byte(body))
+	if err != nil || len(events) != 2 || dropped != 1 {
+		t.Fatalf("events %d, dropped %d, err %v", len(events), dropped, err)
+	}
+	honduras := events[0].Observations[0].Where
+	if honduras.Lat < 14 || honduras.Lat > 15 || honduras.Lng > -87 || honduras.Lng < -89 {
+		t.Errorf("Honduras drawn at %+v", honduras)
+	}
+	ice := events[1].Observations[0].Where
+	if ice.Lat > -68 || ice.Lng > -58 {
+		t.Errorf("the GeoJSON-ordered polygon moved to %+v", ice)
+	}
+}

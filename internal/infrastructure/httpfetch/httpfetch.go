@@ -42,8 +42,22 @@ func New(httpClient *http.Client, maxBytes int64, hosts ...string) *Client {
 	return &Client{http: httpClient, allowed: allowed, maxBytes: maxBytes}
 }
 
-// Get fetches rawURL, sending validator as If-Modified-Since when not empty.
+// Accept values an adapter may ask for. JSON is what EONET and USGS serve;
+// AcceptXML is what the Smithsonian's feed demands, since it answers 403 to a
+// request asking only for JSON (measured 2026-09-23).
+const (
+	AcceptJSON = "application/json"
+	AcceptXML  = "application/rss+xml, application/xml, text/xml"
+)
+
+// Get fetches rawURL asking for JSON, sending validator as If-Modified-Since when
+// not empty.
 func (c *Client) Get(ctx context.Context, rawURL, validator string) (Response, error) {
+	return c.GetAccepting(ctx, rawURL, validator, AcceptJSON)
+}
+
+// GetAccepting is Get asking for the media types in accept.
+func (c *Client) GetAccepting(ctx context.Context, rawURL, validator, accept string) (Response, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return Response{}, fmt.Errorf("parsing %q: %w", rawURL, err)
@@ -57,7 +71,7 @@ func (c *Client) Get(ctx context.Context, rawURL, validator string) (Response, e
 	}
 	// EONET labels JSON as RSS whatever is asked (measured 2026-09-23); asking
 	// still costs nothing and the parser never trusts the answer's label.
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", accept)
 	if validator != "" {
 		req.Header.Set("If-Modified-Since", validator)
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/oernster/EarthNow/internal/infrastructure/cache"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
+	"github.com/oernster/EarthNow/internal/infrastructure/providers/gvp"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
 	"github.com/oernster/EarthNow/internal/infrastructure/settings"
 	"github.com/oernster/EarthNow/internal/product"
@@ -102,9 +103,9 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Printf("%s %s", product.Name, appVersion)
 
-	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host)
+	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host)
 	quakes := usgs.New(client, usgs.AllMagnitudes)
-	providers := []ports.Provider{eonet.New(client), quakes}
+	providers := []ports.Provider{eonet.New(client), quakes, gvp.New(client)}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
 	dir, err := dataDir()

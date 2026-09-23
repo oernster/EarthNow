@@ -9,9 +9,10 @@ import (
 // whose last segment has no ending at all is a page too. Anything else is a
 // file a browser downloads rather than shows: measured in the EONET feed on
 // 2026-09-23, JTWC storm sources are .tcw warning files and one US Ice Center
-// source is a .csv table (FR-SEL-009).
+// source is a .csv table (FR-SEL-009). The Smithsonian's pages are ColdFusion .cfm.
 var pageExtensions = map[string]bool{
 	".html": true, ".htm": true, ".shtml": true, ".php": true, ".asp": true, ".aspx": true, ".jsp": true,
+	".cfm": true,
 }
 
 // IsPage reports whether an address names a page a browser shows, judged by the

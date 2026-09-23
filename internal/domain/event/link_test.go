@@ -14,6 +14,7 @@ func TestIsPage(t *testing.T) {
 		"https://irwin.doi.gov/observer/incidents/2026-LALAS-000390":                 true,
 		"https://earthquake.usgs.gov/earthquakes/eventpage/us7000abcd":               true,
 		"https://example.org/report.PDF":                                             false,
+		"https://volcano.si.edu/reports_weekly.cfm#vn_262000":                        true,
 		"https://example.org/page.html?download=file.csv#part.tcw":                   true,
 		"https://example.org":                                                        true,
 		"https://example.org/":                                                       true,

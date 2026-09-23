@@ -109,3 +109,22 @@ func TestReportsABodyThatFailsMidRead(t *testing.T) {
 		t.Error("a failed read was reported as success")
 	}
 }
+
+// The Smithsonian feed answers 403 to a JSON-only request, so an adapter may ask
+// for what its source serves (FR-PRV-015).
+func TestGetAcceptingSendsTheAskedMediaTypes(t *testing.T) {
+	t.Parallel()
+	c, base := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Accept") != AcceptXML {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		_, _ = w.Write([]byte("<rss/>"))
+	})
+	if _, err := c.GetAccepting(context.Background(), base, "", AcceptXML); err != nil {
+		t.Fatalf("asking for XML: %v", err)
+	}
+	if _, err := c.Get(context.Background(), base, ""); err == nil {
+		t.Error("a JSON-only request was not refused by the stand-in server")
+	}
+}

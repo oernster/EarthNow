@@ -32,7 +32,7 @@ export interface GuideSection {
 // COVERS says what each category holds, keyed by the category table's keys.
 export const COVERS: Readonly<Record<string, string>> = {
     EARTHQUAKE: 'earthquakes from the USGS, at or above the minimum magnitude chosen in Settings, plus any earthquake EONET reports.',
-    VOLCANO: 'volcanic activity tracked by EONET.',
+    VOLCANO: 'volcanoes in the Smithsonian and USGS weekly volcanic activity report (GVP), dated by the day the report was issued, plus any EONET tracks.',
     WILDFIRE: 'wildfires tracked by EONET.',
     SEVERE_STORM: 'tropical cyclones and other severe storms tracked by EONET.',
     FLOOD: 'floods tracked by EONET.',
@@ -75,6 +75,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
         heading: 'How times are worded',
         paragraphs: [
             'Each event carries the time its source gives it. An exact time reads as "Observed 14 min ago"; a source that gives only a date reads as "Reported for 18 Sep 2026, 5 days ago".',
+            'A volcano\'s report covers the week before it is issued, so it reads as reported for that day.',
             'Separately, each source shows when it was last retrieved, for example "retrieved 3 min ago". The detail panel gives every time three ways: in words, in UTC and in your own time zone.',
             'Nothing is labelled live. Each source publishes with its own delay and is fetched on a schedule, so what you see is what the sources had said by the time shown.',
         ],

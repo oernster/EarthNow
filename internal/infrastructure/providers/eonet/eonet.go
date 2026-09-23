@@ -98,6 +98,7 @@ type wireEvent struct {
 		ID string `json:"id"`
 	} `json:"categories"`
 	Sources []struct {
+		ID  string `json:"id"`
 		URL string `json:"url"`
 	} `json:"sources"`
 	Geometry []wireGeometry `json:"geometry"`
@@ -135,8 +136,9 @@ func mapEvent(w wireEvent) (event.Event, bool) {
 	}
 	var obs []event.Observation
 	allMidnight := true
+	latFirst := sourcedBy(w, latFirstPolygonSource)
 	for _, g := range w.Geometry {
-		o, ok := mapGeometry(g)
+		o, ok := mapGeometry(g, latFirst)
 		if !ok {
 			continue
 		}
@@ -182,6 +184,24 @@ func mapEvent(w wireEvent) (event.Event, bool) {
 	}
 	e.SourceURL = event.FirstPage(addresses)
 	return e, true
+}
+
+// latFirstPolygonSource is the source whose polygons EONET passes on latitude
+// first, against GeoJSON's longitude-first order. Measured 2026-09-23: all 14
+// GDACS flood polygons of the week were [lat, lng] (Thailand's first vertex
+// [17.79, 97.74]) while GDACS points were [lng, lat]. Read as GeoJSON, five
+// were dropped as out of range and nine were drawn in the wrong place (Honduras
+// in Antarctica).
+const latFirstPolygonSource = "GDACS"
+
+// sourcedBy reports whether any of an event's sources has the id.
+func sourcedBy(w wireEvent, id string) bool {
+	for _, s := range w.Sources {
+		if s.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func isMidnight(t time.Time) bool {

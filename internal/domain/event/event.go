@@ -37,10 +37,13 @@ func Categories() []Category {
 // Provider names the public source an event came from.
 type Provider string
 
-// The providers of V1.
+// The providers of V1. GVP is the Smithsonian / USGS Weekly Volcanic Activity
+// Report, added because EONET tracked no volcano in the month to 2026-09-23 while
+// the report listed twenty (FR-PRV-015).
 const (
 	EONET Provider = "EONET"
 	USGS  Provider = "USGS"
+	GVP   Provider = "GVP"
 )
 
 // Precision says how much of an observation's time the source actually knows.

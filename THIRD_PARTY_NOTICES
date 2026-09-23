@@ -26,7 +26,10 @@ Natural events: NASA Earth Observatory Natural Event Tracker (EONET)
   https://eonet.gsfc.nasa.gov/
 Earthquakes: USGS Earthquake Hazards Program
   https://earthquake.usgs.gov/
-  Neither NASA nor the USGS endorses EarthNow.
+Volcanoes: Smithsonian / USGS Weekly Volcanic Activity Report
+  (Smithsonian Global Volcanism Program and USGS Volcano Hazards Program)
+  https://volcano.si.edu/reports_weekly.cfm
+  Neither NASA, the USGS nor the Smithsonian endorses EarthNow.
 
 
 GO MODULES (the application and the setup program)

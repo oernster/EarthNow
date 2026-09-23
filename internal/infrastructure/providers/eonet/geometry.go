@@ -10,7 +10,9 @@ import (
 // mapGeometry turns one EONET geometry into an observation; false when its
 // date, type or coordinates are unusable. A polygon is placed at the mean of
 // its outer ring's vertices (DATA-003); its shape is out of V1's scope.
-func mapGeometry(g wireGeometry) (event.Observation, bool) {
+// latFirst reads a polygon's vertices as [lat, lng], as its source sends them
+// (latFirstPolygonSource); points are never affected.
+func mapGeometry(g wireGeometry, latFirst bool) (event.Observation, bool) {
 	at, err := time.Parse(time.RFC3339, g.Date)
 	if err != nil {
 		return event.Observation{}, false
@@ -30,7 +32,11 @@ func mapGeometry(g wireGeometry) (event.Observation, bool) {
 		if json.Unmarshal(g.Coords, &rings) != nil || len(rings) == 0 {
 			return event.Observation{}, false
 		}
-		p, ok := centroid(rings[0])
+		ring := rings[0]
+		if latFirst {
+			ring = swapped(ring)
+		}
+		p, ok := centroid(ring)
 		if !ok {
 			return event.Observation{}, false
 		}
@@ -43,6 +49,20 @@ func mapGeometry(g wireGeometry) (event.Observation, bool) {
 		o.Measurement = &event.Measurement{Value: *g.Magnitude, Unit: *g.Unit}
 	}
 	return o, true
+}
+
+// swapped answers a ring with each vertex's first two numbers exchanged; a
+// vertex too short to swap is kept for centroid to refuse.
+func swapped(ring [][]float64) [][]float64 {
+	out := make([][]float64, len(ring))
+	for i, v := range ring {
+		if len(v) < 2 {
+			out[i] = v
+			continue
+		}
+		out[i] = append([]float64{v[1], v[0]}, v[2:]...)
+	}
+	return out
 }
 
 // centroid is the vertex mean of a ring, which is where the marker goes. The
