@@ -65,6 +65,30 @@ func TestReportedInstant(t *testing.T) {
 	}
 }
 
+func TestFRCNT001_CountLine(t *testing.T) {
+	t.Parallel()
+	if got := CountLine(3, "24 h"); got != "3 events in the last 24 h" {
+		t.Errorf("CountLine(3) = %q", got)
+	}
+	if got := CountLine(1, "7 days"); got != "1 event in the last 7 days" {
+		t.Errorf("CountLine(1) = %q", got)
+	}
+	if got := Retrieved(now.Add(-4*time.Minute), now); got != "Retrieved 4 min ago" {
+		t.Errorf("Retrieved = %q", got)
+	}
+}
+
+func TestFRSTS003_Until(t *testing.T) {
+	t.Parallel()
+	for wait, want := range map[time.Duration]string{
+		-time.Minute: "now", 30 * time.Second: "now", 4*time.Minute + 59*time.Second: "in 4 min", 90 * time.Minute: "in 1 h",
+	} {
+		if got := Until(now.Add(wait), now); got != want {
+			t.Errorf("Until(+%v) = %q, want %q", wait, got, want)
+		}
+	}
+}
+
 func TestNFRFRESH001_StaleAfterThreeIntervals(t *testing.T) {
 	t.Parallel()
 	interval := time.Minute

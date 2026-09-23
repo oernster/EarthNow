@@ -15,6 +15,11 @@ type Clock interface {
 	Now() time.Time
 }
 
+// Geocoder words where a point is (FR-GEO-001 to 003).
+type Geocoder interface {
+	Describe(lat, lng float64) string
+}
+
 // Fetched is one successful answer from a provider.
 type Fetched struct {
 	// Events is the provider's whole current set; empty on NotModified.

@@ -65,6 +65,33 @@ func Reported(o event.Observation, now time.Time) string {
 	return "Observed " + Age(o.At, now)
 }
 
+// CountLine is FR-CNT-001: "3 events in the last 24 h".
+func CountLine(n int, windowLabel string) string {
+	noun := "events"
+	if n == 1 {
+		noun = "event"
+	}
+	return fmt.Sprintf("%d %s in the last %s", n, noun, windowLabel)
+}
+
+// Until words a coming time as "in 4 min"; a time already arrived reads "now".
+func Until(then, now time.Time) string {
+	wait := then.Sub(now)
+	switch {
+	case wait < time.Minute:
+		return "now"
+	case wait < hoursBoundary:
+		return fmt.Sprintf("in %d min", int(wait/time.Minute))
+	default:
+		return fmt.Sprintf("in %d h", int(wait/time.Hour))
+	}
+}
+
+// Retrieved words when a provider's data last arrived.
+func Retrieved(at, now time.Time) string {
+	return "Retrieved " + Age(at, now)
+}
+
 // Stale reports whether data last retrieved at lastSuccess has gone stale for
 // a provider refreshed every interval. Data never retrieved is not stale; it
 // is loading, which the status model says separately.

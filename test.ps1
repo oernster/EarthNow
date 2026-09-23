@@ -67,6 +67,7 @@ try {
 # Infrastructure, each package held at the number it actually reaches. httpfetch stops
 # short only at a request-building failure no valid method and context can produce.
 $measured = [ordered]@{
+    './internal/infrastructure/geo'               = 100
     './internal/infrastructure/httpfetch'         = 96.6
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100

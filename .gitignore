@@ -38,3 +38,9 @@ spike/frontend/node_modules/
 spike/frontend/dist/
 node_modules/
 
+
+# Build outputs
+build/bin/
+frontend/dist/
+frontend/wailsjs/
+

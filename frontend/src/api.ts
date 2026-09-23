@@ -1,0 +1,53 @@
+// The one door to the Go side. Every call takes a refusal handler as its last
+// argument and answers null rather than rejecting, so a call without one does
+// not compile and nothing is left for a console nobody opens (NFR-REL-004).
+import type {ViewDTO, WindowDTO} from './types'
+
+type Refused = (reason: string) => void
+
+interface Bound {
+    View(windowKey: string, hiddenCategories: string[], hiddenProviders: string[]): Promise<ViewDTO>
+    Windows(): Promise<WindowDTO[]>
+    Place(lat: number, lng: number): Promise<string>
+    OpenSource(link: string): Promise<void>
+    RefreshNow(): Promise<string>
+}
+
+interface Runtime {
+    EventsOn(name: string, callback: (...data: unknown[]) => void): () => void
+}
+
+function bound(): Bound | null {
+    return (window as unknown as {go?: {main?: {App?: Bound}}}).go?.main?.App ?? null
+}
+
+async function call<T>(work: (b: Bound) => Promise<T>, onRefused: Refused): Promise<T | null> {
+    const b = bound()
+    if (!b) {
+        onRefused('The EarthNow backend is not connected.')
+        return null
+    }
+    try {
+        return await work(b)
+    } catch (e) {
+        onRefused(e instanceof Error ? e.message : String(e))
+        return null
+    }
+}
+
+export const api = {
+    view: (windowKey: string, hiddenCategories: string[], hiddenProviders: string[], onRefused: Refused) =>
+        call(b => b.View(windowKey, hiddenCategories, hiddenProviders), onRefused),
+    windows: (onRefused: Refused) => call(b => b.Windows(), onRefused),
+    place: (lat: number, lng: number, onRefused: Refused) => call(b => b.Place(lat, lng), onRefused),
+    openSource: (link: string, onRefused: Refused) => call(b => b.OpenSource(link), onRefused),
+    // refreshNow answers "" when a refresh started, else when one becomes available.
+    refreshNow: (onRefused: Refused) => call(b => b.RefreshNow(), onRefused),
+}
+
+// on subscribes to a backend event; the answer unsubscribes. Outside the app
+// window there is no runtime, so nothing is subscribed.
+export function on(name: string, callback: (...data: unknown[]) => void): () => void {
+    const runtime = (window as unknown as {runtime?: Runtime}).runtime
+    return runtime ? runtime.EventsOn(name, callback) : () => undefined
+}
