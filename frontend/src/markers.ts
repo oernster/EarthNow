@@ -11,9 +11,13 @@ const RING_RADIUS_PX = 58
 const RING_COLOUR = '#f5f7fa'
 const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif'
 
+// MARKER_SCALE enlarges every marker alike, keeping the bands in proportion: the
+// first sizes read too small on the globe (owner, 2026-09-23).
+const MARKER_SCALE = 2
+
 // Sprite sizes in globe units (the globe's radius is 100). Band 0 is every
 // event without a magnitude to size by (FR-MRK-004); 1 to 4 are FR-MRK-003's.
-const BAND_SIZES = [2.4, 1.6, 2.4, 3.2, 4.2]
+const BAND_SIZES = [2.4, 1.6, 2.4, 3.2, 4.2].map(size => size * MARKER_SCALE)
 
 const materials = new Map<string, THREE.SpriteMaterial>()
 
