@@ -60,6 +60,6 @@ installer/frontend/wailsjs/
 installer/frontend/dist/LICENSE.txt
 
 
-# Session resume snapshot (oxygen protocol), never committed
-.claude/resume.md
+# Local Claude session files (resume snapshot, preview config), never committed
+.claude/
 
