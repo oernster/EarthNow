@@ -1,0 +1,559 @@
+# EarthNow: Software Requirements Specification
+
+Status: **Baselined, version 1.0 (2026-09-23).** Changes from here arrive as
+numbered amendments with a reason, never as silent edits.
+
+Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
+2026-09-23), renamed to EarthNow by the owner. Section references of the form
+"Plan 9" point into that document.
+
+---
+
+## 1. Introduction
+
+### 1.1 Purpose
+
+EarthNow is a desktop application that shows what is happening on Earth right
+now: an interactive, slowly rotating 3D globe carrying recent natural events at
+their geographic positions, each traceable to the public source that reported
+it and honest about how fresh that report is.
+
+The product sentence, which settles any unclear choice:
+
+> **EarthNow lets you open a globe and see what is happening on Earth right now.**
+
+### 1.2 Intended audience
+
+| Reader | Uses this document to |
+|---|---|
+| Oliver (owner) | decide scope, answer the open questions, accept each phase |
+| Implementer (Claude Code) | build each phase against numbered requirements and name the test for each |
+| Artwork producer (Oliver) | produce the assets listed in Appendix D |
+
+### 1.3 Scope
+
+**In scope for V1 (Windows release):** the globe, the two providers (NASA EONET,
+USGS earthquakes), the provider-neutral event model, refresh with local caching,
+filters, the time window, event selection with a detail panel, source and
+freshness display, keyboard navigation to the house model, the self-reading
+help surfaces, the Windows build script and the bespoke setup program.
+
+**Out of scope for V1 (decided; each is a Won't in 3.6):**
+
+- user accounts, cloud sync, social features, telemetry of any kind;
+- AI summaries, interpretation, predictions or forecasts;
+- push or desktop notifications;
+- a historical archive beyond the 7-day window, timeline playback;
+- NASA FIRMS hotspots, storm tracks drawn as lines, event polygons drawn as areas;
+- weather, satellite imagery layers, the day and night terminator, aurora;
+- a server or backend controlled by EarthNow;
+- GIS tooling (measurement, projections, layer management);
+- the Linux Flatpak, its cleanup script and the macOS DMG (release 2; see 3.5);
+- an update check, a system tray icon, start with Windows.
+
+### 1.4 Definitions
+
+One term, one meaning, throughout.
+
+| Term | Meaning |
+|---|---|
+| **Event** | One `EarthEvent`: a single phenomenon reported by one provider, with one marker position. |
+| **Provider** | An adapter that retrieves one public source and maps it to events. V1 has two: `EONET`, `USGS`. |
+| **Category** | A value from the internal vocabulary in 3.4 (DATA-002), never a provider's own term. |
+| **Time window** | The user-selected span ending at the current instant: 1 h, 6 h, 24 h, 3 d or 7 d. |
+| **Event time** | The instant used for window membership and freshness wording: see DATA-004. |
+| **Retrieved at** | The instant EarthNow last received a successful response from a provider. |
+| **Refresh interval** | The delay between scheduled fetches of one provider while it is healthy. |
+| **Stale** | A provider whose last successful retrieval is older than its stale threshold (NFR-FRESH-001). |
+| **Marker** | The drawn representation of one event on the globe. |
+| **Ring** | The keyboard focus cycle of the house keeb model. |
+| **Stop** | One position on the ring. |
+| **Reference machine** | Oliver's Windows 11 desktop, on which every performance figure is measured. |
+| **Day precision** | An EONET geometry date whose time component is exactly 00:00:00Z (see DATA-005). |
+
+### 1.5 References
+
+| Ref | Document |
+|---|---|
+| R1 | EarthWatch Implementation Plan (the source brief) |
+| R2 | NASA EONET v3 API, https://eonet.gsfc.nasa.gov/docs/v3 |
+| R3 | USGS GeoJSON summary feeds, https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php |
+| R4 | USGS ComCat field definitions, https://earthquake.usgs.gov/data/comcat/index.php |
+| R5 | NASA media usage guidelines, https://www.nasa.gov/nasa-brand-center/images-and-media/ |
+| R6 | Natural Earth terms of use, https://www.naturalearthdata.com/about/terms-of-use/ |
+| R7 | House skills: `installer`, `scroll`, `keeb`, `noborderfocus` |
+| R8 | ED Voyage Companion (Go + Wails Windows delivery reference) |
+| R9 | PigeonPost, SymDiary (Go + Wails flatpak and DMG script references) |
+
+---
+
+## 2. Overall description
+
+### 2.1 Product perspective
+
+A new, standalone desktop build. No existing system is replaced. EarthNow talks
+to exactly two external systems in V1, both public and keyless; it talks to
+nothing else.
+
+```
+   NASA EONET v3 ──┐                         ┌── Globe (WebGL, React)
+                   ├── Go backend ── bound ──┤
+   USGS feeds ─────┘   (providers,  methods  └── Controls, detail panel
+                        store, cache)
+                          │
+                    SQLite in %LOCALAPPDATA%
+```
+
+All network traffic originates in the Go backend. The web frontend makes no
+network request of its own (NFR-SEC-002).
+
+### 2.2 User classes
+
+| Class | Needs | May not |
+|---|---|---|
+| Viewer | open the app and see recent events with no configuration | nothing is restricted; there are no roles |
+| Keyboard user | reach every control and every visible event without a pointer | |
+
+### 2.3 Operating environment
+
+| Item | V1 | Release 2 |
+|---|---|---|
+| OS | Windows 10 and 11, x64 | plus Linux (Flatpak, GNOME runtime) and macOS arm64 |
+| Web runtime | WebView2 (Evergreen) | WebKitGTK 4.1; WKWebView |
+| GPU | WebGL2 required | WebGL2 required (see risk RSK-002) |
+| Network | intermittent is normal; offline must be survivable | same |
+| Install | per user, no administrator rights | Flatpak user install; DMG drag-install |
+
+### 2.4 Constraints
+
+| ID | Constraint | Rationale |
+|---|---|---|
+| CON-001 | Backend in Go; desktop shell Wails v2; frontend React with TypeScript built by Vite. | Owner decision. |
+| CON-002 | Architecture `UI → Application → Domain ← Infrastructure` under `internal/`, enforced by `tests/structural`. | House invariant. |
+| CON-003 | No CGO. SQLite through `modernc.org/sqlite`. | House rule; single static binary. |
+| CON-004 | Licence GPL-3.0 for EarthNow's own code (the `LICENSE` already committed). Every bundled dependency and data asset must carry a licence compatible with shipping inside a GPL-3.0 application, recorded in a third-party notices file. | Owner's committed licence. |
+| CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
+| CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
+| CON-007 | Keyboard navigation follows the `keeb` skill with its `noborderfocus` sub-skill; self-reading surfaces follow the `scroll` skill, ported from PigeonPost's `autoScroll.ts` and `useAutoScroll.ts`, never written from the skill's tables. | Owner request. |
+| CON-008 | No module over 400 lines; a file in 381 to 399 is reduced to 350 or fewer. Build and packaging scripts exempt. | House rule. |
+| CON-009 | Earth imagery is real observational data from NASA or Natural Earth, never generated artwork. | Source honesty (Plan 2.4); a generated Earth would be a fabricated record of the planet. |
+
+### 2.5 Technology decision: the globe (Plan 20 items 2 and 3)
+
+**Decision (owner, 2026-09-23): globe.gl (on three.js), with a bundled NASA
+Blue Marble texture.** The decision rests on published facts; its runtime
+claims are HYPOTHESES until the Phase 0 spike measures them (FR-SPK-001 to 007).
+
+| Criterion (Plan 9) | globe.gl 2.46.2 | CesiumJS 1.145.0 |
+|---|---|---|
+| Licence | MIT (read) | Apache-2.0 (read) |
+| Shipped size, measured on jsDelivr | 1.89 MB min, 526 KB gzip, three.js included | 6.0 MB min, 1.77 MB gzip; 79 MB npm unpacked |
+| Lat/long markers | built-in point, HTML and object layers | built-in entities |
+| Camera focus animation | `pointOfView(coords, ms)` | `camera.flyTo` |
+| Offline texture | any equirectangular image | needs a tile-map imagery provider; default imagery calls `api.cesium.com` with an evaluation-only token |
+| Scope fit | a globe | a GIS engine; Plan 13 warns against becoming one |
+| WebGL | WebGL2 (three.js dropped WebGL1 at r163) | WebGL2 by default since 1.102 |
+| Clustering | none built in (unconfirmed; the spike checks) | built-in entity clustering |
+
+The weight, the default network dependency and the GIS orientation all count
+against Cesium for a product whose centre is one calm globe. The one point in
+Cesium's favour, clustering, is small enough to write against the marker count
+EarthNow actually meets (see NFR-PERF-002). React integration uses
+`react-globe.gl` (MIT, a wrapper over globe.gl) or globe.gl directly behind one
+component; the spike picks whichever keeps the globe instance under the app's control.
+
+**Linux risk carried forward (RSK-002):** Wails v2 on Linux defaults
+`WebviewGpuPolicy` to Never when `options.Linux` is nil (read in Wails v2.14.0
+source); WebGL2 availability in distribution WebKitGTK builds is
+unconfirmed. Release 2 must measure it on a real Linux machine before the
+Flatpak is promised.
+
+### 2.6 Assumptions and dependencies
+
+Every assumption has an owner and a confirm-by point.
+
+| ID | Assumption | Owner | Confirm by |
+|---|---|---|---|
+| ASM-001 | EONET v3 stays keyless and reachable at its current URLs. | Oliver | Phase 1 exit |
+| ASM-002 | EONET's `X-RateLimit-Limit: 60` (measured 2026-09-23) permits one request per provider interval with room for manual refreshes. The window length is unconfirmed. | Implementer | Phase 1 exit, by reading `X-RateLimit-*` over an hour of scheduled use |
+| ASM-003 | USGS summary feeds keep their URLs; USGS states 30 days' notice before removal (read in a search summary, page not opened). | Implementer | Phase 1 exit |
+| ASM-004 | NASA Blue Marble imagery may ship inside the installer with a credit line, under the NASA media terms (R5). GPL compatibility of bundling public-domain-like imagery is an inference, unconfirmed. | Oliver | Before first public release |
+| ASM-005 | WebView2 on the reference machine provides WebGL2. | Implementer | Phase 0 exit (measured, FR-SPK-002) |
+| ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Phase 4 |
+
+---
+
+## 3. System features and requirements
+
+Priority is MoSCoW. Verify: **T** automated test (the named suite), **D**
+demonstration on the reference machine, **I** inspection. A number marked
+"a target" is replaced by the measured value once Phase 0 or release testing
+has taken it.
+
+### 3.1 Phase 0: technical spike (Plan 18)
+
+Nothing past Phase 0 is built until every Must here is demonstrated.
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-SPK-001 | Must | When the spike build is launched, the application shall open a window showing the textured globe against a black background. | Given a fresh build, when launched, then the globe is visible with the Blue Marble texture. | D |
+| FR-SPK-002 | Must | The spike shall report the WebGL context version and the renderer string in its log. | Log line reads `webgl2` on the reference machine. | D |
+| FR-SPK-003 | Must | When given the coordinate (51.4779, 0.0015), the spike shall draw a marker at the Greenwich Observatory. | Visual check against the texture's coastline at maximum zoom; error under one marker diameter. | D |
+| FR-SPK-004 | Must | When a marker is clicked, the spike shall log that marker's identifier. | Clicking the Greenwich marker logs its id. | D |
+| FR-SPK-005 | Must | When a marker is selected, the spike shall animate the camera to centre that marker. | Camera centres the marker within the focus duration of NFR-UX-003. | D |
+| FR-SPK-006 | Must | The spike shall build through `build.ps1` into an installable setup program that runs on a second Windows user account. | Installed as a second user with no administrator prompt, then launched successfully. | D |
+| FR-SPK-007 | Must | The spike shall render the measured worst-case marker count (2,500 markers) at the frame rate of NFR-PERF-002. | Frame-time log over 60 s of idle rotation. | D |
+
+### 3.2 Functional requirements
+
+#### 3.2.1 Globe and camera
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-GLB-001 | Must | The globe view shall render Earth with the bundled daytime texture on a black space background. | Screenshot inspection. | D |
+| FR-GLB-002 | Must | While no user input has arrived for the idle delay (10 s), the globe view shall rotate eastward at the idle speed (one revolution per 240 s). | Given no input for 10 s, rotation starts; measured period 240 s plus or minus 5%. | T (application idle timer) + D |
+| FR-GLB-003 | Must | When pointer drag, wheel or keyboard input targets the globe, the globe view shall stop idle rotation. | Rotation halts on the first input event. | T |
+| FR-GLB-004 | Must | While auto-rotate is switched off in settings, the globe view shall not rotate on idle. | Toggle off, wait 30 s, no rotation. | T |
+| FR-GLB-005 | Must | When the user drags on the globe, the globe view shall rotate the globe with the drag. | D | D |
+| FR-GLB-006 | Must | When the user scrolls the wheel over the globe, the globe view shall zoom between the minimum and maximum altitudes (0.15 and 4.0 globe radii). | Zoom clamps at both limits. | T + D |
+| FR-GLB-007 | Must | When an event is selected, the globe view shall animate the camera to centre that event over the focus duration (NFR-UX-003). | Given a selected event on the far side, the camera arrives centred on it. | D |
+| FR-GLB-008 | Should | When "Reset view" is activated, the globe view shall return the camera to its launch altitude. | D | D |
+| FR-GLB-010 | Must | While auto-rotate is on, the rotation button shall show `rotate` with the `negative` overlay and the tooltip "Stop rotating"; while auto-rotate is off, it shall show plain `rotate` with the tooltip "Start rotating" (NFR-UX-004). | Given rotation on, the button shows the crossed icon; one press stops rotation and the button shows the plain icon. | T |
+| FR-GLB-011 | Must | When the rotation button is activated, the application shall switch auto-rotate and persist the new value as the FR-SET-001 setting. | The button and the settings dialog never disagree. | T |
+| FR-GLB-012 | Must | The globe view shall rotate on idle whatever the operating system's reduced-motion or animation-effects setting; the auto-rotate setting is the only switch. | With Windows Animation effects off, rotation still starts after the idle delay. Rationale: on Windows that switch is commonly turned off for performance, the same ground on which the house scroll ruling declined to gate on it. | T |
+| FR-GLB-009 | Must | If WebGL2 is unavailable, then the application shall show a message naming WebGL2 as the missing requirement, in place of the globe. | Force-disable WebGL in a test harness; the message appears; the app does not exit. | T (frontend) |
+
+#### 3.2.2 Markers
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-MRK-001 | Must | The globe view shall draw one marker per displayed event at the event's marker position (DATA-003). | A USGS fixture event at (61.899, -150.919) draws at that position. | T (projection) + D |
+| FR-MRK-002 | Must | The globe view shall draw each marker with its category's emoji from the category table (Appendix D.3). | Each of the ten categories renders its own glyph. | D |
+| FR-MRK-003 | Must | The globe view shall size an earthquake marker by magnitude band (bands: below 3.0, 3.0 to 4.5, 4.5 to 6, 6 and above). | Fixture quakes of 1.8, 3.1, 5.0 and 6.7 draw at four distinct sizes. | T |
+| FR-MRK-004 | Must | The globe view shall draw every non-earthquake marker at one fixed size. | EONET markers carry equal size whatever their magnitude value. | T |
+| FR-MRK-005 | Must | When the pointer hovers a marker, the globe view shall show a tooltip holding the event title and category name. | D | D |
+| FR-MRK-006 | Must | While an event is selected, the globe view shall draw that event's marker with the selection treatment (a ring around the emoji in the selection colour). | D | D |
+| FR-MRK-007 | Must | Where markers overlap on screen at the current zoom, the globe view shall draw them as one cluster marker showing their count. | Two fixture events 1 km apart at launch altitude draw as one cluster reading 2. | T (clustering) + D |
+| FR-MRK-008 | Must | When a cluster marker is activated, the globe view shall zoom toward the cluster until its members separate or maximum zoom is reached. | D | D |
+| FR-MRK-009 | Must | The globe view shall draw no marker animation other than the selection treatment and hover state. | Inspection: no pulsing, flashing or looping animation on any marker. | I |
+
+#### 3.2.3 Providers and refresh
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-PRV-001 | Must | The EONET provider shall retrieve open events for the widest time window (7 days) from `/api/v3/events?status=open&days=7`. | Request URL asserted in a test with a fake HTTP client. | T |
+| FR-PRV-002 | Must | The EONET provider shall parse the response body as JSON whatever `Content-Type` the server declares. | Measured 2026-09-23: EONET labels a JSON body `application/rss+xml` even when `Accept: application/json` is sent. Fixture served with that header parses. | T |
+| FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 3.0: `2.5_week.geojson` filtered to 3.0 and above; 238 events in the week measured 2026-09-23). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
+| FR-PRV-004 | Must | The USGS provider shall send `If-Modified-Since` carrying the `Last-Modified` value of its previous successful response. | Measured: USGS sends `Last-Modified`. Second request carries the header; a 304 keeps the stored events. | T |
+| FR-PRV-005 | Must | The refresh scheduler shall fetch each provider on its own refresh interval (USGS 60 s, matching its measured `max-age=60`; EONET 10 min). | Fake clock advances 60 s; exactly one USGS fetch occurs. | T |
+| FR-PRV-006 | Must | If a provider fetch fails, then the refresh scheduler shall retry that provider with the delay doubling from its refresh interval up to the backoff ceiling (30 min). | Fake clock: failures at 60, 120, 240 s, then capped at 1800 s. | T |
+| FR-PRV-007 | Must | When a provider fetch succeeds after failures, the refresh scheduler shall restore that provider's normal refresh interval. | T | T |
+| FR-PRV-008 | Must | If one provider fails, then the event store shall keep serving the other provider's events unchanged. | USGS fake returns 500; EONET events remain displayed. | T |
+| FR-PRV-009 | Must | When the user activates "Refresh now", the refresh scheduler shall fetch every provider not already fetching. | T | T |
+| FR-PRV-010 | Must | If "Refresh now" is activated within the manual refresh cooldown (30 s) of the previous manual refresh, then the refresh scheduler shall skip the fetch and leave the refresh control's status stating when a refresh becomes available. | Protects the EONET rate limit (ASM-002). | T |
+| FR-PRV-011 | Must | If a provider response exceeds the response size cap (16 MB; the largest measured feed, USGS `all_week`, was 1.51 MB), then the provider shall discard it and report a size refusal naming the provider and the cap. | Oversized fixture refused; nothing allocated beyond the cap. | T |
+| FR-PRV-012 | Must | If a provider response fails to parse, then the provider shall report a parse failure naming the provider and keep the previously stored events. | Malformed fixture; stored events survive. | T |
+| FR-PRV-013 | Must | If a single feature or event inside an otherwise valid response is malformed, then the provider shall drop that item, count it and keep the rest. | Fixture with one bad feature among ten yields nine events and a dropped count of 1. | T |
+| FR-PRV-014 | Must | The application shall register providers through one provider interface, so adding a provider changes only infrastructure and the composition root. | Structural test: no file outside `internal/infrastructure/providers/<name>` and `main.go` names a concrete provider. | T (structural) |
+
+#### 3.2.4 Time window, filters and count
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-TW-001 | Must | The time window control shall offer 1 h, 6 h, 24 h, 3 d and 7 d. | T | T |
+| FR-TW-002 | Must | While a time window is selected, the event query shall include an event only if its event time falls within that window, ending at the current instant. | Fake clock at 12:00; events at 11:30 and 10:30 with 1 h selected yield only the first. | T |
+| FR-TW-003 | Must | When the application starts with no saved choice, the time window control shall select 24 h. | T | T |
+| FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002 that has at least one event in the store. | Store with only quakes and storms offers exactly those two toggles plus "All events". | T |
+| FR-FLT-002 | Must | When a category toggle is switched off, the globe view shall hide that category's markers. | T | T |
+| FR-FLT-003 | Must | When "All events" is activated, the filter control shall switch every category toggle on. | T | T |
+| FR-FLT-004 | Must | The filter control shall offer one toggle per provider. | Switching off USGS hides every USGS event. | T |
+| FR-FLT-005 | Should | When the application closes, the settings store shall persist the time window and filter state; when the application starts, the controls shall restore them. | T | T |
+| FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
+
+#### 3.2.5 Selection and detail
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-SEL-001 | Must | When a marker is activated, the application shall select its event and open the detail panel for it. | D | D |
+| FR-SEL-002 | Must | The detail panel shall show title, category, provider, latitude and longitude, event time, retrieved-at time, measurement (when present) and the source link (when present). | Fixture event with every field renders every row; one missing magnitude omits that row. | T |
+| FR-SEL-003 | Must | The detail panel shall show each time as freshness wording (NFR-FRESH-002), as an exact UTC timestamp and as the same instant in the machine's local time zone. | T | T |
+| FR-SEL-004 | Must | Where the event time has day precision (DATA-005), the detail panel shall show the date alone and word freshness in days. | Sea-ice fixture dated 2026-09-18T00:00:00Z on 2026-09-23 reads "Reported for 18 Sep 2026, 5 days ago", never "Observed 5 days 11 h ago". | T |
+| FR-SEL-005 | Must | When the source link is activated, the application shall open it in the system browser. | T (fake opener receives the URL) | T |
+| FR-SEL-006 | Must | If an event's source URL is not an absolute `https` URL, then the detail panel shall show it as text rather than a link. | `javascript:` and `http:` fixtures render as plain text. | T |
+| FR-SEL-007 | Must | When the detail panel is dismissed, the application shall clear the selection and return focus to the opener (NFR-KBD-006). | T | T |
+| FR-SEL-008 | Must | If the selected event leaves the displayed set on refresh or filtering, then the detail panel shall stay open with a line stating the event is no longer in the current view. | T | T |
+
+#### 3.2.6 Status, staleness and errors
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-STS-001 | Must | While a provider's first fetch of the session is in progress with no cached events, the status area shall show that provider as loading. | T | T |
+| FR-STS-002 | Must | While a provider is stale, the status area shall show that provider's retrieved-at freshness wording marked as stale. | Fake clock past the threshold; status reads "USGS: retrieved 4 min ago (stale)". | T |
+| FR-STS-003 | Must | If a provider's latest fetch failed, then the provider status popover shall show the failure reason in words and the time of the next attempt. | T | T |
+| FR-STS-004 | Must | When the application starts with cached events, the globe view shall draw them before the first fetch completes, marked with their retrieved-at freshness. | Start offline with a populated cache; markers appear; status says "retrieved 3 h ago (stale)". | T + D |
+| FR-STS-005 | Must | If the cache cannot be opened, then the application shall run with an in-memory store and state in the status popover that events will not survive a restart. | Unreadable DB file fixture. | T |
+| FR-STS-006 | Must | The application shall label no data as "live". | Structural test: the word `live` appears in no user-facing wording table. | T (structural) |
+
+#### 3.2.7 Settings
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-SET-001 | Must | The settings dialog shall offer auto-rotate on or off. | T | T |
+| FR-SET-002 | Should | The settings dialog shall offer the USGS minimum magnitude: all, 1.0, 2.5, 3.0 (default), 4.5. | Changing to 4.5 switches the next fetch to `4.5_week.geojson`. | T |
+| FR-SET-003 | Could | The settings dialog shall offer the idle rotation speed from three presets. | T | T |
+| FR-SET-004 | Must | If the settings file is missing or unreadable, then the application shall start with defaults and state which file was not read in the status popover. | T | T |
+
+#### 3.2.8 Help surfaces
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-HLP-001 | Must | The About dialog shall show the product name, version from `VERSION`, the licence and the data attributions of NFR-LEG-002. | T | T |
+| FR-HLP-002 | Must | The licence dialog shall show the full GPL-3.0 text. | T | T |
+| FR-HLP-003 | Must | The third-party notices dialog shall show each bundled dependency and data asset with its licence or terms. | Every entry in `THIRD_PARTY_NOTICES` renders. | T |
+| FR-HLP-004 | Should | The guide dialog shall explain the time window, freshness wording, staleness and each category. | I | I |
+| FR-HLP-005 | Must | While the About, licence, notices or guide dialog overflows, its reading body shall read itself using the house auto-scroll cycle (CON-007). | Tick-driven Vitest over the ported state machine; hook test under jsdom. | T |
+| FR-HLP-006 | Must | While the detail panel's body overflows, the detail panel shall read itself using the same cycle. | T | T |
+
+#### 3.2.9 Donations (the house `donate` skill; PigeonPost is the reference)
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-DON-001 | Must | The main window shall carry a bottom tray ported from PigeonPost's `BottomBar.tsx`: a `footer` wearing the header bar's own class plus `bottombar`, which adds only a top border in place of the bottom one, so the tray matches the header's height exactly. | Inspection: no second set of bar dimensions in the stylesheet. | I |
+| FR-DON-002 | Must | The bottom tray shall hold the donate button alone, at its far left, drawn at the header's own glyph height (`--titlebar-icon-size`). | T (render) | T |
+| FR-DON-003 | Must | When the donate button is activated, the application shall hand `https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE` to the system browser through the same external-open facade and scheme allowlist as FR-SEL-005. | Vitest with the api mocked asserts the address literally; proved to bite by altering one character. | T |
+| FR-DON-004 | Must | The donate address shall have exactly one home: a named constant beside the product identity. | Structural test: the address string appears exactly once across `frontend/src` and `internal` combined. | T |
+| FR-DON-005 | Must | The donate button shall carry the tooltip and accessible name "Donate to support EarthNow", as PigeonPost's does. | T | T |
+| FR-DON-006 | Must | If the system declines to open a browser, then the status area shall say the donation page could not be opened. | T with a refusing fake opener. | T |
+| FR-DON-007 | Must | The donate tooltip shall open upwards and left-aligned to the button, so it is not clipped at the window's bottom-left corner. | D at the minimum window size. | D |
+| FR-DON-008 | Must | The donate button shall be the last stop of the main window's ring, reached in document order after the panes. | Vitest ring walk reads it last. | T |
+| FR-DON-009 | Must | The application shall fetch nothing from the donate address itself; no feature shall depend on a donation. | I | I |
+| FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | Computed height measured at 1.8 times the line box. | D |
+
+### 3.3 Non-functional requirements
+
+Every performance figure is measured on the reference machine.
+
+| ID | Pri | Requirement | Method |
+|---|---|---|---|
+| NFR-PERF-001 | Must | When launched, the application shall show the globe within 3 s (a target; Phase 0 measures it) at the 95th percentile of 20 cold starts. | Timestamp from process start to first globe frame, logged. |
+| NFR-PERF-002 | Must | While idle-rotating with 2,500 markers, the globe view shall hold a median frame time of 16.7 ms or less and a 99th percentile of 33 ms or less (a target; Phase 0 measures it). 2,500 is the measured USGS all-magnitude week (2,126 on 2026-09-23) plus EONET plus headroom. | Frame-time log over 60 s. |
+| NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target; measured before release). | Process working set sampled hourly. |
+| NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
+| NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
+| NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
+| NFR-UX-001 | Must | The globe shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
+| NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 600 pixels. | I |
+| NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
+| NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
+| NFR-UX-005 | Must | The main window shall use one dark palette; it shall offer no light theme in V1. The setup program keeps the house light and dark toggle. | I |
+| NFR-UX-006 | Must | The main window's heading shall read "EarthNow"; the event count line (FR-CNT-001) carries the sense of now. | T |
+| NFR-KBD-001 | Must | The main window shall implement the keeb ring: Tab and Right forward, Shift+Tab and Left back, wrapping at both ends. | Vitest ring walk. |
+| NFR-KBD-002 | Must | When the main window opens, the application shall focus a neutral sink so no control shows a ring until the first Tab. | T + D |
+| NFR-KBD-003 | Must | When the page's DOM is ready, the host shall hand the webview keyboard focus through a `windowFocuser` seam calling `runtime.Show`. | Counting fake in a Go test; first Tab steps the ring in the real window with no click. |
+| NFR-KBD-004 | Must | The globe shall be one canvas stop on the ring: while it holds focus, Up and Down shall walk the displayed events newest first (wrapping) and move the camera to each; Enter or Space shall open the detail panel; plus and minus shall zoom. | T (cursor walk) + D |
+| NFR-KBD-005 | Must | The time window control shall be one stop per option, bounded for Tab and wrapping for Up and Down. | T |
+| NFR-KBD-006 | Must | Every dialog and the detail panel shall open focused on its first actionable stop, close on Escape and return focus to its opener. | T per dialog. |
+| NFR-KBD-007 | Must | No container, reading body or scroll region shall take focus from a click or paint a ring; a reading body is reachable by Tab only while it overflows and never rings (noborderfocus). | Static CSS scan plus a runtime check, each proved by a planted violation. |
+| NFR-KBD-008 | Must | Rings shall follow the three-state model: none at rest, the ring green while an enabled control is hovered or focused, a permanent danger ring while disabled; the accent never rings. | Static CSS scan. |
+| NFR-A11Y-001 | Must | Every category shall differ from every other by its emoji, never by colour alone. | I against Appendix D. |
+| NFR-A11Y-002 | Must | Text and icon contrast against its surface shall be at least 4.5:1 for body text and 3:1 for glyphs and large text. | Contrast check over the palette tokens. |
+| NFR-A11Y-003 | Must | Every icon-only control shall carry a text tooltip and an accessible name. | T |
+| NFR-SEC-001 | Must | The frontend shall render provider text as text only. | Structural test: `dangerouslySetInnerHTML` and `innerHTML` appear nowhere in `frontend/src`. |
+| NFR-SEC-002 | Must | The page's Content-Security-Policy shall restrict every fetch directive to `'self'`, so the frontend can reach no network origin. | I on `index.html`; T asserting the meta tag. |
+| NFR-SEC-003 | Must | The backend shall validate every coordinate (latitude in [-90, 90], longitude in [-180, 180], finite) before an event is stored. | T with out-of-range fixtures. |
+| NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the two provider hosts. (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
+| NFR-PRIV-002 | Must | The application shall store settings, cache and log under `%LOCALAPPDATA%\EarthNow` only. | T on the path helper. |
+| NFR-REL-001 | Must | The application shall not end the run before its window opens for any runtime failure; a failure found at startup is carried into the window as a stated problem. | T on startup paths with injected failures. |
+| NFR-REL-002 | Must | The application shall point the standard error handle at the log file as the first act of `main`, so a panic leaves a record. | I + D (planted panic in a debug build). |
+| NFR-REL-003 | Must | Every goroutine the application starts shall recover a panic at its top, log it and surface it in the status popover. | T per goroutine entry, planted panic. |
+| NFR-REL-004 | Must | Every bound backend call shall take a refusal handler on the frontend, so an unhandled rejection cannot compile. | `tsc --noEmit` in the build. |
+| NFR-REL-005 | Must | Cache writes shall be atomic per provider, so an interrupted write leaves the previous event set intact. | T: kill mid-transaction in a test; previous set survives. |
+| NFR-OBS-001 | Must | The log shall record, per provider fetch: start, completion or failure, HTTP status, cache status (200, 304), event count and dropped-item count. | T on the log lines with a fake sink. |
+| NFR-OBS-002 | Must | The log shall rotate at 5 MB, keeping one previous file. | T |
+| NFR-MNT-001 | Must | Coverage over `internal/domain` and `internal/application` shall be 100%; infrastructure floors are set at their measured value when first written and never lowered. | `test.ps1` |
+| NFR-MNT-002 | Must | `test.ps1` shall run gofmt, go vet, staticcheck, go test with coverage, then the frontend's eslint, `tsc --noEmit` and Vitest, failing on any non-zero exit. | Run the script against a planted gofmt violation. |
+| NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
+| NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
+| NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence. | Structural test comparing `package.json` production dependencies and `go.mod` requires against the notices. |
+| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, without implying endorsement and without the NASA insignia. | I against R5. |
+
+### 3.4 Data requirements
+
+| ID | Pri | Requirement |
+|---|---|---|
+| DATA-001 | Must | The domain shall define `EarthEvent` with: id (provider plus provider event id), provider, provider event id, category, title, description (source text only), latitude, longitude, geometry (all source points retained), occurred at, observed at, updated at, retrieved at, time precision, status, measurement value, measurement unit, source URL, metadata (a closed set of named provider extras). Absent source fields stay absent; none is defaulted to a plausible value. |
+| DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
+| DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the polygon's centroid. |
+| DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window. |
+| DATA-005 | Must | An EONET geometry date of exactly 00:00:00Z shall be marked day precision. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z while wildfire times carried minutes. This may misclassify a genuine midnight report; the error falls on the side of less claimed precision. |
+| DATA-006 | Must | EONET categories shall map: earthquakes to EARTHQUAKE, volcanoes to VOLCANO, wildfires to WILDFIRE, severeStorms to SEVERE_STORM, floods to FLOOD, landslides to LANDSLIDE, drought to DROUGHT, dustHaze to DUST, seaLakeIce to ICE; snow, tempExtremes, waterColor, manmade and any unknown id to OTHER, the original id kept in metadata. The 13 source ids were read from `/api/v3/categories` on 2026-09-23. |
+| DATA-007 | Must | The mapping shall be data in the EONET adapter, never conditionals in the UI or the domain. |
+| DATA-008 | Must | A re-fetched event with an existing id shall replace the stored one; no two stored events shall share an id. |
+| DATA-009 | Must | The cache shall hold, per provider: the last successful event set, its retrieved-at instant and its `Last-Modified` value. It shall discard events older than the widest window (7 days). |
+| DATA-010 | Must | USGS earthquake depth shall be kept in metadata in kilometres; USGS `tsunami` shall be kept but shall never be worded as "tsunami occurred" (R4: it flags large oceanic events only). |
+| DATA-011 | Must | Measurements shall be shown with their source unit as given; no cross-category severity scale shall exist. |
+
+### 3.5 Delivery requirements
+
+| ID | Pri | Release | Requirement |
+|---|---|---|---|
+| DEL-001 | Must | 1 | `build.ps1` at repo root shall read `VERSION`, run `test.ps1` and throw on failure, build the app, zip it into the setup program's payload, build the setup program with the version in `-ldflags` and write `dist-installer\EarthNowSetup.exe`; `-SkipInstaller` shall stop after the app. Ported from ED Voyage Companion. |
+| DEL-002 | Must | 1 | The setup program shall follow the `installer` skill: screen stack (route, uninstall, running, progress, verdict), footer rebuilt per screen, route read once (install, update, downgrade, manage), 126 px mark with no version in the header, three-state ring, per-user install under `%LOCALAPPDATA%\Programs\EarthNow` and `HKCU`, running-app check before any file is touched, fenced extraction, a step log, a verdict at the end of every path. |
+| DEL-003 | Must | 1 | The install policy shall live in `internal/infrastructure/setup`; `installer/app.go` shall be a facade owning no install logic. |
+| DEL-004 | Must | 1 | One committed `.ico`, generated from the master by `tools/genicons.py`, shall be placed on both executables. |
+| DEL-005 | Should | 2 | `build_flatpak.sh` shall build a user Flatpak with application id `uk.codecrafter.EarthNow` on the GNOME runtime (webkit2gtk-4.1), passing `options.Linux` with a GPU policy that enables WebGL (RSK-002), ported from PigeonPost or SymDiary. |
+| DEL-006 | Should | 2 | `cleanup_flatpak.sh` shall uninstall the user Flatpak and remove only flatpak artefacts, in the house shape (bash, `set -euo pipefail`, `APP_ID`, `section()` helper, header stating it touches no other build outputs), ported from PigeonPost. |
+| DEL-007 | Should | 2 | `builddmg.sh` shall build a signed, notarised arm64 DMG stamped from `VERSION`, ported from SymDiary's port of PigeonPost's `builddmg.sh`; `ALLOW_UNNOTARIZED=1` for local builds only. |
+
+### 3.6 Won't this time (recorded so they are not re-proposed)
+
+Timeline playback; NASA FIRMS; storm tracks and polygons drawn as shapes; the
+day and night terminator; night-lights texture; notifications; favourites and
+home location; screenshots and export; an event list or search view (Plan 16
+allows deferring it; NFR-KBD-004 makes every event reachable from the keyboard
+meanwhile); cross-provider duplicate merging (measured 2026-09-23: EONET holds 15 earthquakes in its whole history, the newest dated 2018-09-28, none in the last 365 days, so an EONET and a USGS marker for the same quake does not arise in practice; revisit if it is ever observed); light theme for the
+main window (NFR-UX-005); update check; system tray icon and start with
+Windows.
+
+---
+
+## 4. Other requirements
+
+### 4.1 Legal
+
+Covered by CON-004, NFR-LEG-001 and NFR-LEG-002. EarthNow names NASA and USGS
+only as data sources; the product name, icon and site never suggest either
+body endorses it.
+
+### 4.2 Internationalisation
+
+V1 is English only. All user-facing text lives in one wording module per
+surface so a locale system can be added without touching components; times
+are shown in UTC and local time in the detail panel (exact) and as relative
+wording elsewhere.
+
+### 4.3 Risk register
+
+A personal desktop utility with no safety consequence; a full FMEA would be
+disproportionate. The risks that could stop delivery:
+
+| ID | Risk | Consequence | Response |
+|---|---|---|---|
+| RSK-001 | Marker count at "all magnitudes" costs frame rate. | Janky globe, the core experience. | FR-SPK-007 measures it in Phase 0; default minimum magnitude 3.0 (238 quakes measured for a week) keeps the default far below the worst case. |
+| RSK-002 | WebGL2 missing or disabled under Wails on Linux. | Release 2 Flatpak shows no globe. | Measure on real hardware before promising DEL-005; FR-GLB-009 guarantees a stated failure rather than a blank window. |
+| RSK-003 | EONET rate limit window unknown. | Throttled refreshes. | ASM-002; 10 min interval plus the manual cooldown keep use under 10 requests per hour. |
+| RSK-004 | EONET `Content-Type` mislabels JSON. | A strict parser rejects valid data. | FR-PRV-002. |
+| RSK-005 | Imagery terms change or GPL bundling is challenged. | Re-cut release. | ASM-004; imagery ships as a separate asset with its own notice so it can be swapped. |
+
+---
+
+## Appendix A. Build order (Plan 18, inside-out)
+
+1. **Phase 0 spike**: FR-SPK-001 to 007. Throwaway code allowed; the measured
+   numbers are kept and replace the targets they test.
+2. **Domain**: `EarthEvent`, category vocabulary, time window, freshness
+   wording, staleness, clustering maths, ring walk logic. 100% coverage, no I/O.
+3. **Application**: use cases, one per user action (select event, set window,
+   toggle filter, refresh now, read status), the refresh scheduler on an
+   injected clock, the provider port.
+4. **Infrastructure**: EONET and USGS adapters against captured fixtures,
+   SQLite cache, settings file, log, the HTTP client with host allowlist and size cap.
+5. **UI**: globe component, controls, detail panel, dialogs, ring.
+6. **Delivery**: `build.ps1`, `test.ps1`, setup program, genicons, the four documents.
+
+The headless check before any UI exists: every use case in step 3 runs from a
+Go test with named inputs and asserted outputs.
+
+## Appendix B. Open questions register
+
+There are no open questions. Every question raised in drafting was answered by
+the owner on 2026-09-23; each answer now lives in the requirement it settled:
+
+| ID | Settled | Where it lives |
+|---|---|---|
+| OQ-001 | globe.gl, not CesiumJS | 2.5 |
+| OQ-002 | every drafted number accepted; the performance ones are targets Phase 0 measures | FR-GLB-002, 006; FR-PRV-005, 006, 010, 011; NFR-PERF, NFR-FRESH-001, NFR-UX-002, 003; NFR-OBS-002 |
+| OQ-003 | default USGS minimum magnitude 3.0 | FR-PRV-003, FR-SET-002 |
+| OQ-004 | idle rotation is not gated on the OS reduced-motion setting | FR-GLB-012 |
+| OQ-005 | magnitude bands below 3.0, 3.0 to 4.5, 4.5 to 6, 6 and above | FR-MRK-003 |
+| OQ-006 | Blue Marble at 5400 x 2700, reviewed after the spike | D.4 |
+| OQ-007 | no duplicate suppression; measured unnecessary | 3.6 |
+| OQ-008 | main window dark only; setup program keeps light and dark | NFR-UX-005 |
+| OQ-009 | detail panel shows local time beside UTC | FR-SEL-003 |
+| OQ-010 | heading reads "EarthNow" | NFR-UX-006 |
+| OQ-011 | bottom tray as PigeonPost's | FR-DON-001 |
+| OQ-012 | earthquake emoji 〰️ | D.3 |
+
+The assumptions in 2.6 remain open until confirmed at their stated points; they
+are dated checks, not unanswered decisions.
+
+## Appendix C. Traceability
+
+Each requirement ID appears in the name or a comment of the test that verifies
+it (`TestFRPRV006_BackoffDoublesToCeiling`, `it("FR-TW-002 ...")`). A structural
+test lists every `Must` ID in this document and fails when one has no test
+naming it. Requirements verified by D or I are listed in TESTING.md's
+"checks a person has to settle" table instead.
+
+## Appendix D. Artwork register
+
+Masters are square PNGs on a transparent background at 1254 x 1254 pixels (the
+size the SymDiary masters use); `tools/genicons.py` derives every smaller size.
+No artwork may depict the Earth's surface in place of the NASA texture (CON-009).
+
+### D.1 Application identity
+
+| File | Used for | Notes |
+|---|---|---|
+| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
+| `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
+| `assets/dark-mode.png` | same, shown while light | Moon. |
+| `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing `frontend/src/assets/donate.png` and `docs/donate.png` in one loop so they cannot drift. |
+
+### D.2 Action icons (generated to 208 px, house nav-band style)
+
+| File | Action |
+|---|---|
+| `refresh.png` | Refresh now |
+| `rotate.png` | Shown while rotation is off: pressing it starts rotation |
+| `negative.png` | Overlay only. `tools/genicons.py` composites it over `rotate.png` to make `rotate-stop.png`, shown while rotation is on: pressing it stops rotation (NFR-UX-004). The overlay is never shown alone. |
+| `reset-view.png` | Reset view |
+| `filter.png` | Category and provider filters |
+| `time-window.png` | Time window (only if the segmented control carries an icon) |
+| `status.png` | Provider status popover |
+| `settings.png` | Settings |
+| `help-info.png` | About, guide, licences |
+| `zoom-in.png`, `zoom-out.png` | Zoom buttons (Could) |
+
+### D.3 Category markers: emoji, not artwork (decided by the owner 2026-09-23)
+
+Each category is drawn with one emoji, held in a single category table in the
+frontend (its one home; the filter control and the marker both read it). Every
+code point below was confirmed present in `C:\Windows\Fonts\seguiemj.ttf` on
+the reference machine (Windows 11) on 2026-09-23. Windows 10 coverage and the
+look under Linux and macOS fonts are unmeasured.
+
+| Category | Emoji | Code point |
+|---|---|---|
+| EARTHQUAKE | 〰️ (a seismograph trace; Unicode has no earthquake emoji) | U+3030 |
+| VOLCANO | 🌋 | U+1F30B |
+| WILDFIRE | 🔥 | U+1F525 |
+| SEVERE_STORM | 🌀 | U+1F300 |
+| FLOOD | 🌊 | U+1F30A |
+| LANDSLIDE | 🪨 | U+1FAA8 |
+| DROUGHT | 🏜️ | U+1F3DC |
+| DUST | 💨 | U+1F4A8 |
+| ICE | 🧊 | U+1F9CA |
+| OTHER | 📍 | U+1F4CD |
+
+An emoji carries its own colour, so there is no per-category tint; categories
+are told apart by the emoji itself (NFR-A11Y-001). Emoji are drawn to textures
+once per category at start rather than as live page elements, since 2,500 page
+elements moved every frame is a frame-rate risk (a hypothesis; FR-SPK-007
+measures the chosen form).
+
+### D.4 Not artwork
+
+Earth texture: NASA Blue Marble Next Generation at 5400 x 2700 (about 7.4 km
+per pixel at the equator), downloaded and credited (R5); the spike reviews
+the sharpness at maximum zoom before the size is fixed. The starfield behind the globe is drawn procedurally; no image is needed.
