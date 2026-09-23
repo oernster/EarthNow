@@ -21,7 +21,7 @@ export function Key(p: Props) {
             {CATEGORIES.map(c => {
                 const hidden = p.hiddenCategories.has(c.key)
                 return <li key={c.key}>
-                    <button className={hidden ? 'key-row hidden' : 'key-row'} aria-pressed={!hidden}
+                    <button data-stop className={hidden ? 'key-row hidden' : 'key-row'} aria-pressed={!hidden}
                         title={hidden ? `Show ${c.name.toLowerCase()} events` : `Hide ${c.name.toLowerCase()} events`}
                         onClick={() => p.onToggleCategory(c.key)}>
                         <span className="key-emoji" aria-hidden="true">{c.emoji}</span>
@@ -34,11 +34,11 @@ export function Key(p: Props) {
         <div className="key-sources">
             {p.providers.map(s => {
                 const hidden = p.hiddenProviders.has(s.name)
-                return <button key={s.name} className={hidden ? 'source hidden' : 'source'} aria-pressed={!hidden}
+                return <button key={s.name} data-stop className={hidden ? 'source hidden' : 'source'} aria-pressed={!hidden}
                     title={hidden ? `Show ${s.name} events` : `Hide ${s.name} events`}
                     onClick={() => p.onToggleProvider(s.name)}>{s.name}</button>
             })}
         </div>
-        <button className="show-all" disabled={!filtered} onClick={p.onShowAll}>All events</button>
+        <button data-stop className="show-all" disabled={!filtered} onClick={p.onShowAll}>All events</button>
     </nav>
 }

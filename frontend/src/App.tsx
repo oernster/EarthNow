@@ -10,6 +10,7 @@ import {Rail} from './components/Rail'
 import {SettingsDialog} from './components/SettingsDialog'
 import {StatusLine} from './components/StatusLine'
 import {TimeWindow} from './components/TimeWindow'
+import {useRing} from './ring'
 import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
@@ -27,6 +28,9 @@ export default function App() {
     const [selected, setSelected] = useState<EventDTO | null>(null)
     const [problem, setProblem] = useState('')
     const globe = useRef<GlobeHandle>(null)
+    // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
+    const shell = useRef<HTMLDivElement>(null)
+    useRing(shell, !settingsOpen)
     const onProblem = useCallback((reason: string) => setProblem(reason), [])
 
     const windowKey = settings?.windowKey ?? ''
@@ -72,19 +76,21 @@ export default function App() {
     const shownDetail = current ?? selected
     const speed = choices?.speeds.find(s => s.key === settings?.speed)
 
-    return <div className="app">
+    return <div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
             onToggleRotate={() => change({autoRotate: !settings?.autoRotate})}
             onResetView={() => globe.current?.resetView()}
             onRefresh={refresh}
             onSettings={() => setSettingsOpen(true)}/>
         <main className="stage">
-            {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
-                autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
-                onSelect={setSelected} onProblem={onProblem}/>}
+            {/* The time window comes before the globe in the document so the ring
+                meets them in reading order, top to bottom (keeb invariant 1). */}
             <div className="top-bar">
                 <TimeWindow windows={windows} selected={windowKey} onChoose={k => change({windowKey: k})}/>
             </div>
+            {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
+                autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
+                onSelect={setSelected} onProblem={onProblem}/>}
             <StatusLine countLine={view.countLine} providers={view.providers} problem={problem || view.notice}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>

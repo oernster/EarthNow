@@ -19,7 +19,7 @@ interface Action {
 }
 
 function RailButton({label, icon, onClick}: Action) {
-    return <button className="rail-btn" data-tip={label} aria-label={label} onClick={onClick}>
+    return <button data-stop className="rail-btn" data-tip={label} aria-label={label} onClick={onClick}>
         <img src={icon} alt="" draggable={false}/>
     </button>
 }

@@ -94,8 +94,10 @@ func main() {
 		dir = ""
 	}
 	// The settings load before the first fetch, so it asks with the saved minimum.
-	prefs := services.NewPreferences(settings.New(dir), quakes.SetMinimum)
+	settingsStore := settings.New(dir)
+	prefs := services.NewPreferences(settingsStore, quakes.SetMinimum)
 	prefs.Load()
+	log.Printf("settings: %s; notice %q", settingsStore.Path(), prefs.Notice())
 	globe.RestoreCached()
 	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, providers)
 

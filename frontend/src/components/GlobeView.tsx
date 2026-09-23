@@ -6,12 +6,16 @@ import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
 import {api} from '../api'
 import {categoryOf} from '../categories'
+import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {fitAltitude, sprite} from '../markers'
+import {noClickFocus} from '../ring'
 import type {EventDTO} from '../types'
 
 const MARKER_ALTITUDE = 0.01
 // NFR-UX-003: the camera focus animation, used by Reset view as well.
 const FOCUS_MS = 1000
+// One plus or minus press animates over this long.
+const ZOOM_MS = 250
 // OrbitControls documents speed 2.0 as one orbit in 30 s, so an orbit takes
 // ORBIT_SECONDS_AT_UNIT_SPEED / speed; the period comes from the settings.
 const ORBIT_SECONDS_AT_UNIT_SPEED = 60
@@ -62,6 +66,56 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         }, IDLE_DELAY_MS)
     })
 
+    // showTip words an event's tooltip at a point and adds its place line once the
+    // lookup answers, unless the tooltip has moved on to another event by then.
+    const showing = useRef<EventDTO | null>(null)
+    const showTip = useRef((e: EventDTO, at: () => {x: number; y: number}) => {
+        showing.current = e
+        const title = `${categoryOf(e.category).emoji} ${e.title}`
+        setTip({...at(), title, place: ''})
+        void api.place(e.lat, e.lng, handlers.current.onProblem).then(place => {
+            if (place !== null && showing.current === e) setTip({...at(), title, place})
+        })
+    })
+
+    // The keyboard cursor (NFR-KBD-004), held by id so a refresh carries it.
+    const cursor = useRef<string | null>(null)
+    const shown = useRef(events)
+    shown.current = events
+
+    const centre = () => {
+        const r = host.current?.getBoundingClientRect()
+        return r ? {x: r.left + r.width / 2, y: r.top + r.height / 2} : {x: 0, y: 0}
+    }
+
+    const onKeyDown = (ev: React.KeyboardEvent) => {
+        const g = globe.current
+        if (!g) return
+        if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+            ev.preventDefault()
+            const id = stepCursor(shown.current.map(e => e.id), cursor.current, ev.key === 'ArrowDown' ? 1 : -1)
+            const e = shown.current.find(x => x.id === id)
+            cursor.current = id
+            if (!e) return
+            g.pointOfView({lat: e.lat, lng: e.lng}, FOCUS_MS)
+            // FR-GEO-006: the cursor shows the tooltip hover would, where the
+            // camera brings the event: the middle of the globe area.
+            showTip.current(e, centre)
+        } else if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault()
+            const e = shown.current.find(x => x.id === cursor.current)
+            if (e) handlers.current.onSelect(e)
+        } else if (ev.key === '+' || ev.key === '=' || ev.key === '-') {
+            ev.preventDefault()
+            g.pointOfView({altitude: zoomed(g.pointOfView().altitude, ev.key !== '-')}, ZOOM_MS)
+        }
+    }
+
+    const onBlur = () => {
+        if (!hovered.current) setTip(null)
+        showing.current = null
+    }
+
     useImperativeHandle(ref, () => ({
         resetView: () => {
             const g = globe.current
@@ -81,14 +135,16 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
                 const e = d as EventDTO | null
                 hovered.current = e
                 if (!e) { setTip(null); return }
-                const title = `${categoryOf(e.category).emoji} ${e.title}`
-                setTip({...pointer.current, title, place: ''})
-                void api.place(e.lat, e.lng, handlers.current.onProblem).then(place => {
-                    if (place !== null && hovered.current === e) setTip({...pointer.current, title, place})
-                })
+                showTip.current(e, () => pointer.current)
             })
         globe.current = g
-        g.controls().autoRotate = rotationWanted.current
+        const controls = g.controls()
+        controls.autoRotate = rotationWanted.current
+        // FR-GLB-006: the wheel zooms between the altitude limits. OrbitControls
+        // measures distance from the centre, so a limit is the radius plus it.
+        const radius = g.getGlobeRadius()
+        controls.minDistance = radius * (1 + MIN_ALTITUDE)
+        controls.maxDistance = radius * (1 + MAX_ALTITUDE)
         const camera = g.camera() as THREE.PerspectiveCamera
         const fit = () => {
             g.width(el.clientWidth).height(el.clientHeight)
@@ -148,7 +204,9 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
 
     // globe.gl owns the host's children, so the tooltip sits beside it.
     return <>
-        <div ref={host} className="globe"/>
+        <div ref={host} className="globe" data-stop tabIndex={-1} onKeyDown={onKeyDown} onBlur={onBlur}
+            onMouseDown={noClickFocus}
+            aria-label="Globe. Up and Down walk the events, Enter opens one, plus and minus zoom."/>
         {tip && <div className="tip" style={{left: tip.x + TIP_OFFSET_PX, top: tip.y + TIP_OFFSET_PX}}>
             <div className="tip-title">{tip.title}</div>
             {tip.place && <div className="tip-place">{tip.place}</div>}

@@ -1,4 +1,5 @@
-# Verifies EarthNow: formatting, vet, staticcheck, the test suite and the coverage floors.
+# Verifies EarthNow: formatting, vet, staticcheck, the test suite, the coverage floors and
+# the frontend suite (Vitest).
 # Ported from ED Voyage Companion's test.ps1.
 #
 #   ./test.ps1              run everything
@@ -88,6 +89,15 @@ foreach ($package in $measured.Keys) {
     $reached = [double]$Matches[1]
     if ($reached -lt $floor) { throw "$package is at $reached%, below its floor of $floor%" }
     Write-Host ("  {0,-44} {1,5}%  floor {2}%" -f $package, $reached, $floor)
+}
+
+Write-Host 'Running the frontend suite...'
+Push-Location (Join-Path $root 'frontend')
+try {
+    npm test
+    if ($LASTEXITCODE -ne 0) { throw "the frontend suite failed with exit code $LASTEXITCODE" }
+} finally {
+    Pop-Location
 }
 
 Write-Host 'All green.'

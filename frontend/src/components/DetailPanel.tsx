@@ -1,8 +1,9 @@
 // The detail panel (FR-SEL-002 to 008, FR-GEO-007): concise source facts with
 // every time given as freshness wording, exact UTC and local time.
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {api} from '../api'
 import {categoryOf} from '../categories'
+import {useFirstStop} from '../ring'
 import type {EventDTO} from '../types'
 
 interface Props {
@@ -27,6 +28,10 @@ function local(iso: string, dayOnly: boolean): string {
 export function DetailPanel({event, inView, onClose, onProblem}: Props) {
     const [place, setPlace] = useState('')
     const cat = categoryOf(event.category)
+    const panel = useRef<HTMLElement>(null)
+    // NFR-KBD-006: opens on its first stop for each event shown; closing hands
+    // focus back to the opener (FR-SEL-007).
+    useFirstStop(panel, event.id)
 
     useEffect(() => {
         setPlace('')
@@ -34,13 +39,14 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
     }, [event.id, event.lat, event.lng, onProblem])
 
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        // A dialog over the panel takes Escape first; one press closes one level.
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.scrim')) onClose() }
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
     }, [onClose])
 
     const eventLocal = local(event.at, event.dayOnly)
-    return <aside className="detail" aria-label="Event details">
+    return <aside ref={panel} className="detail" aria-label="Event details">
         <h2>{cat.emoji} {event.title}</h2>
         {!inView && <p className="detail-note">This event is no longer in the current view.</p>}
         <dl>
@@ -53,10 +59,10 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
             <dt>Provider</dt><dd>{event.provider}</dd>
             <dt>Retrieved</dt><dd>{event.retrieved}<br/>{utc(event.retrievedAt, false)}</dd>
             {event.sourceUrl && <><dt>Source</dt><dd>
-                <button className="link" onClick={() => void api.openSource(event.sourceUrl, onProblem)}>Open the source page</button>
+                <button data-stop className="link" onClick={() => void api.openSource(event.sourceUrl, onProblem)}>Open the source page</button>
             </dd></>}
             {!event.sourceUrl && event.sourceText && <><dt>Source</dt><dd className="plain">{event.sourceText}</dd></>}
         </dl>
-        <div className="detail-actions"><button onClick={onClose}>Close</button></div>
+        <div className="detail-actions"><button data-stop onClick={onClose}>Close</button></div>
     </aside>
 }
