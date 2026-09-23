@@ -28,7 +28,7 @@ $packages = go list ./... | Where-Object { $_ -notmatch '/node_modules/' }
 if ($LASTEXITCODE -ne 0) { throw "go list failed with exit code $LASTEXITCODE" }
 
 Write-Host 'Checking formatting...'
-$unformatted = gofmt -l internal tests | Where-Object { $_ }
+$unformatted = gofmt -l internal tests installer | Where-Object { $_ }
 if ($unformatted) { throw "gofmt reports unformatted files:`n$($unformatted -join "`n")" }
 
 Write-Host 'Vetting...'
@@ -70,6 +70,11 @@ try {
 # cache stops short at five faults the OS will not produce on demand (measured): an open
 # failing other than for absence, encoding a type that always encodes, then creating,
 # writing or closing a temporary file in a folder just made.
+# setup stops short at what acts on the machine itself (measured): the registry writes
+# (the uninstall entry), creating a shortcut through the Windows Script Host, then
+# finding, ending, launching or scheduling the removal of a process. A test must not
+# change the machine it runs on, so those are the deliberate gap; everything portable
+# (extraction and its fence, paths, sizes, copies, versions, the step log) is covered.
 $measured = [ordered]@{
     './internal/infrastructure/cache'             = 84.2
     './internal/infrastructure/geo'               = 100
@@ -77,7 +82,13 @@ $measured = [ordered]@{
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100
     './internal/infrastructure/settings'          = 100
+    './internal/infrastructure/setup'             = 59.9
 }
+
+# Not gated at all, deliberately: internal/infrastructure/window is Win32 focus
+# handling; installer is the setup program's Wails facade over acts that change the
+# machine. Neither has anything a test can reach without the platform behind it, so a
+# floor over either would be a floor at zero, which asserts nothing.
 
 Write-Host 'Measuring infrastructure...'
 foreach ($package in $measured.Keys) {

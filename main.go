@@ -16,6 +16,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/application/services"
@@ -24,14 +25,20 @@ import (
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
 	"github.com/oernster/EarthNow/internal/infrastructure/settings"
+	"github.com/oernster/EarthNow/internal/product"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// Product identity and window geometry (NFR-UX-002).
+// appVersion is overridden at build time with -ldflags "-X main.appVersion=x.y.z"
+// (build.ps1 reads VERSION), so no version literal lives in the source. It is a var
+// because -X silently does nothing to a const.
+var appVersion = "0.0.0-dev"
+
+// The log file and window geometry (NFR-UX-002). The product's name has one home,
+// internal/product, shared with the setup program.
 const (
-	productName  = "EarthNow"
 	logFileName  = "Log.txt"
 	windowWidth  = 1280
 	windowHeight = 800
@@ -53,13 +60,16 @@ func (systemClock) Now() time.Time { return time.Now() }
 // cacheFolder holds the per-provider cache files inside the data folder.
 const cacheFolder = "cache"
 
+// webviewFolder holds WebView2's own data inside the data folder.
+const webviewFolder = "webview"
+
 // dataDir is %LOCALAPPDATA%\EarthNow, created when absent (NFR-PRIV-002).
 func dataDir() (string, error) {
 	base, err := os.UserCacheDir()
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(base, productName)
+	dir := filepath.Join(base, product.Slug)
 	return dir, os.MkdirAll(dir, 0o755)
 }
 
@@ -80,6 +90,7 @@ func openLog() io.Writer {
 func main() {
 	log.SetOutput(openLog())
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	log.Printf("%s %s", product.Name, appVersion)
 
 	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host)
 	quakes := usgs.New(client, usgs.AllMagnitudes)
@@ -101,8 +112,16 @@ func main() {
 	globe.RestoreCached()
 	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, providers)
 
+	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
+	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.
+	windowsOptions := &windows.Options{}
+	if dir != "" {
+		windowsOptions.WebviewUserDataPath = filepath.Join(dir, webviewFolder)
+	}
+
 	err = wails.Run(&options.App{
-		Title:            productName,
+		Windows:          windowsOptions,
+		Title:            product.Name,
 		Width:            windowWidth,
 		Height:           windowHeight,
 		MinWidth:         minWidth,

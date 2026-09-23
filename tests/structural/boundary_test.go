@@ -223,9 +223,49 @@ func lineCount(t *testing.T, path string) int {
 	return strings.Count(string(raw), "\n") + 1
 }
 
+// setupFrontendDir is the setup program's front end. It has no build step, so the
+// files there are the source rather than an output of one.
+var setupFrontendDir = filepath.Join("installer", "frontend", "dist")
+
+// setupFrontendExtensions are the files there that the size rule governs. The icons
+// and the licence copy beside them are not source.
+var setupFrontendExtensions = map[string]bool{".html": true, ".css": true, ".js": true}
+
+// setupFrontendFiles returns the setup program's own source files.
+//
+// The size rule walks the Go. That walk skips every directory called frontend, so the
+// setup program's page sat outside it. In ED Voyage Companion that page reached
+// 880 lines in one file holding its markup, its whole stylesheet and its whole script,
+// with no rule anywhere having anything to say about it.
+func setupFrontendFiles(t *testing.T) []string {
+	t.Helper()
+	dir := filepath.Join(repoRoot(t), setupFrontendDir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("reading %s: %v", filepath.ToSlash(setupFrontendDir), err)
+	}
+	var found []string
+	for _, entry := range entries {
+		if entry.IsDir() || !setupFrontendExtensions[strings.ToLower(filepath.Ext(entry.Name()))] {
+			continue
+		}
+		found = append(found, filepath.Join(dir, entry.Name()))
+	}
+	if len(found) == 0 {
+		t.Fatalf("no source found in %s, the walk is wrong", filepath.ToSlash(setupFrontendDir))
+	}
+	return found
+}
+
+// sizedFiles is every file the size rule governs: the Go and the setup page.
+func sizedFiles(t *testing.T) []string {
+	t.Helper()
+	return append(goFiles(t), setupFrontendFiles(t)...)
+}
+
 func TestCON008_NoFileExceedsTheLineLimit(t *testing.T) {
 	root := repoRoot(t)
-	for _, path := range goFiles(t) {
+	for _, path := range sizedFiles(t) {
 		if count := lineCount(t, path); count > lineLimit {
 			t.Errorf("%s has %d lines, over the %d limit", relative(root, path), count, lineLimit)
 		}
@@ -234,7 +274,7 @@ func TestCON008_NoFileExceedsTheLineLimit(t *testing.T) {
 
 func TestCON008_NoFileInTheDangerBand(t *testing.T) {
 	root := repoRoot(t)
-	for _, path := range goFiles(t) {
+	for _, path := range sizedFiles(t) {
 		if count := lineCount(t, path); count > dangerBand && count <= lineLimit {
 			t.Errorf("%s has %d lines, inside the danger band %d to %d: reduce it to %d or fewer",
 				relative(root, path), count, dangerBand+1, lineLimit, safeLanding)

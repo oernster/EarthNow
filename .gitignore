@@ -44,6 +44,14 @@ build/bin/
 frontend/dist/
 frontend/wailsjs/
 
+# Setup program build outputs. installer/payload.zip is tracked, but only as the
+# 22-byte empty archive that keeps `go build ./...` working; build.ps1 puts that
+# placeholder back after every build. LICENSE.txt is build.ps1's copy of LICENSE.
+dist-installer/
+installer/build/bin/
+installer/frontend/wailsjs/
+installer/frontend/dist/LICENSE.txt
+
 
 # Session resume snapshot (oxygen protocol), never committed
 .claude/resume.md

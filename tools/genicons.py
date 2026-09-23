@@ -12,6 +12,17 @@ over rotate.png, so the two states of the rotation button cannot drift apart:
 every pixel the overlay does not cover is the rotate artwork's own pixel
 (REQUIREMENTS.md Appendix D.2, NFR-UX-004).
 
+The application icon: assets/application-icon.png becomes a multi-size Windows
+.ico beside it (DEL-004, Appendix D.1). That one file is the whole identity:
+build.ps1 places it on both executables; the shortcuts and the taskbar button
+read it out of the binary rather than carrying a copy of their own.
+
+The setup program's artwork: its header mark (256 px) from the application
+icon plus its theme toggle's sun and moon (128 px) from light-mode.png and
+dark-mode.png, written straight into installer/frontend/dist. That page has
+no bundler, so it loads each file as it finds it; shipping a master there
+would put a megabyte and more behind one badge.
+
 Run it when a master changes:
 
     python tools/genicons.py
@@ -58,6 +69,27 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 MASTERS = REPO / "assets"
 OUTPUT = REPO / "frontend" / "src" / "assets" / "icons"
 
+# APP_MASTER is the application's own identity rather than a rail icon.
+APP_MASTER = "application-icon.png"
+
+# ICO_SIZES are the sizes Windows chooses between: the small tray and menu sizes,
+# the taskbar and shortcut sizes, then the large one Explorer uses in its biggest
+# view. Leaving one out makes Windows scale a neighbour, which looks soft.
+ICO_SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+
+# HEADER_SIZE is the setup window's header mark and SETUP_ICON_SIZE its theme
+# button (Appendix D.1). Each is roughly two and a half times the size it is drawn
+# at, crisp on a high-density display without carrying detail nothing shows.
+HEADER_SIZE = 256
+SETUP_ICON_SIZE = 128
+
+SETUP = REPO / "installer" / "frontend" / "dist"
+HEADER = SETUP / "icon.png"
+
+# SETUP_ICONS are the theme toggle's pair; each shows the mode it switches TO
+# (NFR-UX-004), so the sun shows while the page is dark.
+SETUP_ICONS = ("light-mode.png", "dark-mode.png")
+
 
 def overlaid(base_path: pathlib.Path, overlay_path: pathlib.Path) -> Image.Image:
     """Return the base artwork with the overlay fitted inside its bounding box.
@@ -87,24 +119,73 @@ def overlaid(base_path: pathlib.Path, overlay_path: pathlib.Path) -> Image.Image
     return out
 
 
-def render_image(image: Image.Image, target: pathlib.Path) -> int:
+def render_image(image: Image.Image, target: pathlib.Path, size: int = SIZE) -> int:
     """Write one downscaled icon from artwork in memory; return its byte size."""
     box = image.getbbox()
     art = image.crop(box) if box is not None else image
-    inner = SIZE - 2 * PAD
+    inner = size - 2 * PAD
     scale = min(inner / art.width, inner / art.height)
     scaled = art.resize(
         (max(1, round(art.width * scale)), max(1, round(art.height * scale))),
         Image.LANCZOS,
     )
-    canvas = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     canvas.paste(
         scaled,
-        ((SIZE - scaled.width) // 2, (SIZE - scaled.height) // 2),
+        ((size - scaled.width) // 2, (size - scaled.height) // 2),
         scaled,
     )
     canvas.save(target, "PNG", optimize=True)
     return target.stat().st_size
+
+
+def trimmed(master: pathlib.Path) -> Image.Image:
+    """Open a master and crop away the transparent margin around its artwork."""
+    image = Image.open(master).convert("RGBA")
+    box = image.getbbox()
+    return image.crop(box) if box is not None else image
+
+
+def squared(image: Image.Image) -> Image.Image:
+    """Centre artwork on a transparent square, padding once rather than stretching."""
+    side = max(image.width, image.height)
+    square = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    square.paste(image, ((side - image.width) // 2, (side - image.height) // 2), image)
+    return square
+
+
+def render_ico(master: pathlib.Path, target: pathlib.Path) -> int:
+    """Write the multi-size Windows icon; return its byte size.
+
+    It is squared before saving: an .ico entry is square by definition, so a
+    source that is not would be stretched into every size rather than padded once.
+    """
+    squared(trimmed(master)).save(target, "ICO", sizes=ICO_SIZES)
+    return target.stat().st_size
+
+
+def render_setup() -> None:
+    """Write the application .ico and the setup program's three pictures."""
+    app = MASTERS / APP_MASTER
+    if not app.exists():
+        sys.exit(f"\nno application icon at {app}")
+    ico = app.with_suffix(".ico")
+    written = render_ico(app, ico)
+    print(f"\n{app.name:<22} {app.stat().st_size:>9,} -> {written:>7,} bytes  ({ico.name})")
+
+    SETUP.mkdir(parents=True, exist_ok=True)
+    squared(trimmed(app)).resize((HEADER_SIZE, HEADER_SIZE), Image.LANCZOS).save(
+        HEADER, "PNG", optimize=True
+    )
+    print(f"{'':<22} {'':>9} -> {HEADER.stat().st_size:>7,} bytes  (setup header)")
+
+    for name in SETUP_ICONS:
+        master = MASTERS / name
+        if not master.exists():
+            sys.exit(f"no {name} in {MASTERS}; the setup theme toggle wears it")
+        target = SETUP / name
+        written = render_image(Image.open(master).convert("RGBA"), target, SETUP_ICON_SIZE)
+        print(f"{name:<22} {master.stat().st_size:>9,} -> {written:>7,} bytes  (setup {name})")
 
 
 def main() -> int:
@@ -132,6 +213,8 @@ def main() -> int:
     print(f"{STOP_ICON:<22} {'derived':>9} -> {written:>7,} bytes")
 
     print(f"\n{len(masters) + 1} rail icons, {total_in:,} -> {total_out:,} bytes")
+
+    render_setup()
     return 0
 
 
