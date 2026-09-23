@@ -18,6 +18,14 @@ func TestDonateURLIsTheAuthorsPage(t *testing.T) {
 	}
 }
 
+// The About notice uses the symbol, not the word (owner).
+func TestCopyrightUsesTheSymbol(t *testing.T) {
+	t.Parallel()
+	if !strings.HasPrefix(Copyright, "© ") || strings.Contains(Copyright, "Copyright") {
+		t.Fatalf("Copyright = %q, want the symbol and no word", Copyright)
+	}
+}
+
 // NFR-LEG-002: the credits name the imagery and both event sources and say
 // that neither body endorses the product.
 func TestAttributionsCreditTheSources(t *testing.T) {

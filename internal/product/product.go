@@ -30,6 +30,10 @@ const (
 	// LICENSE at the repository root.
 	Licence = "GNU General Public License, version 3"
 
+	// Copyright is the notice the About dialog shows (FR-HLP-001), with the
+	// symbol rather than the word (owner).
+	Copyright = "© Oliver Ernster 2026"
+
 	// DonateURL is where the donate button sends a browser (FR-DON-003, FR-DON-004):
 	// its one home. The application never fetches it; the address is handed to the
 	// desktop, which opens it in the system browser (FR-DON-009).

@@ -1,8 +1,9 @@
 // The action rail down the left side (FR-RAIL-001 to 003). The order is
 // FR-RAIL-002's: the view first (rotation, Reset view, zoom), then the data
 // (Refresh, provider status), then Settings and Help. The donate button sits at
-// the rail's foot (FR-DON-001).
+// the rail's foot (FR-DON-001). Every name is read from railLabels.
 import {icons} from '../icons'
+import {RAIL_LABELS} from '../railLabels'
 import type {HelpKind} from './HelpDialogs'
 import {HelpMenu} from './HelpMenu'
 import {RailButton} from './RailButton'
@@ -21,30 +22,27 @@ interface Props {
     onDonate: () => void
 }
 
-// FR-DON-005: the tooltip and accessible name, as PigeonPost's.
-export const DONATE_LABEL = 'Donate to support EarthNow'
-
 export function Rail(p: Props) {
     // NFR-UX-004: the button shows the state it switches TO. While rotating it
     // shows the crossed icon and offers to stop.
     const rotation = p.autoRotate
-        ? {label: 'Stop rotating', icon: icons.rotateStop}
-        : {label: 'Start rotating', icon: icons.rotate}
-    const statusLabel = p.attention ? 'Provider status: something to report' : 'Provider status'
+        ? {label: RAIL_LABELS.stopRotating, icon: icons.rotateStop}
+        : {label: RAIL_LABELS.startRotating, icon: icons.rotate}
     return <nav className="rail" aria-label="Actions">
         <div className="rail-actions">
             <RailButton {...rotation} onClick={p.onToggleRotate}/>
-            <RailButton label="Reset view" icon={icons.resetView} onClick={p.onResetView}/>
-            <RailButton label="Zoom in" icon={icons.zoomIn} onClick={() => p.onZoom(true)}/>
-            <RailButton label="Zoom out" icon={icons.zoomOut} onClick={() => p.onZoom(false)}/>
-            <RailButton label="Refresh now" icon={icons.refresh} onClick={p.onRefresh}/>
-            <RailButton label={statusLabel} icon={icons.status} attention={p.attention} onClick={p.onStatus}/>
-            <RailButton label="Settings" icon={icons.settings} onClick={p.onSettings}/>
+            <RailButton label={RAIL_LABELS.resetView} icon={icons.resetView} onClick={p.onResetView}/>
+            <RailButton label={RAIL_LABELS.zoomIn} icon={icons.zoomIn} onClick={() => p.onZoom(true)}/>
+            <RailButton label={RAIL_LABELS.zoomOut} icon={icons.zoomOut} onClick={() => p.onZoom(false)}/>
+            <RailButton label={RAIL_LABELS.refresh} icon={icons.refresh} onClick={p.onRefresh}/>
+            <RailButton label={p.attention ? RAIL_LABELS.statusAttention : RAIL_LABELS.status} icon={icons.status}
+                attention={p.attention} onClick={p.onStatus}/>
+            <RailButton label={RAIL_LABELS.settings} icon={icons.settings} onClick={p.onSettings}/>
             <HelpMenu icon={icons.help} onChoose={p.onHelp}/>
         </div>
         {/* FR-DON-001: the donate button is the rail's own button, pinned to its
             foot with no tray of its own. It belongs to nothing on screen, so it
             sits apart, where nothing else is reached by accident. */}
-        <RailButton label={DONATE_LABEL} icon={icons.donate} className="rail-foot" onClick={p.onDonate}/>
+        <RailButton label={RAIL_LABELS.donate} icon={icons.donate} className="rail-foot" onClick={p.onDonate}/>
     </nav>
 }

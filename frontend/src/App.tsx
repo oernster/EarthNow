@@ -113,8 +113,9 @@ export default function App() {
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
-            {/* The mark is decorative: the heading's own text names the product. */}
-            <h1><img className="brand-mark" src={icons.appMark} alt="" aria-hidden="true" draggable={false}/>EarthNow</h1>
+            {/* The mark IS the heading: its artwork carries the product's name
+                (owner), so its alternative text is that name. */}
+            <h1><img className="brand-mark" src={icons.appMark} alt="EarthNow" draggable={false}/></h1>
             <Key counts={view.counts} providers={view.providers}
                 hiddenCategories={hiddenCategories} hiddenProviders={hiddenProviders}
                 onToggleCategory={k => change({hiddenCategories: toggled(settings?.hiddenCategories ?? [], k)})}

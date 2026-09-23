@@ -41,25 +41,27 @@ html, body, #root {
     border-left: 1px solid var(--border);
 }
 
+/* The application's mark is the whole heading (owner): its artwork already reads
+   EarthNow, so no text sits beside it. It is as large as the key column's
+   height allows: three rail glyphs where there is room, giving way to the key
+   (which must never be cut off) down to two at the 600 px minimum window. The
+   heading shrinks in the column's flex; the picture fills whatever it is given. */
 .side h1 {
+    flex: 0 1 calc(var(--rail-glyph-size) * 3);
+    min-height: calc(var(--rail-glyph-size) * 2);
     display: flex;
-    align-items: center;
-    gap: 10px;
+    justify-content: center;
     margin: 0 0 14px;
-    font-size: 26px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
 }
 
-/* The application's mark beside the heading, a little larger than the rail's
-   glyphs (owner): the identity leads, the actions follow. It and the 26px title
-   fill the key column's 188 px inner width without wrapping. */
 .brand-mark {
-    width: calc(var(--rail-glyph-size) * 7 / 6);
-    height: calc(var(--rail-glyph-size) * 7 / 6);
-    flex: none;
+    display: block;
+    height: 100%;
+    aspect-ratio: 1;
     user-select: none;
 }
+
+.side .key { flex: none; }
 
 .key {
     margin: auto 0;
@@ -242,7 +244,10 @@ html, body, #root {
     line-height: 1.45;
 }
 .about-name { font-size: 18px; font-weight: 600; }
-.guide-emoji { font-size: 16px; }
+/* A guide entry leads with the control's own picture, as PigeonPost's does. */
+.guide-entry { display: flex; align-items: flex-start; gap: 10px; }
+.guide-icon { width: 30px; height: 30px; flex: none; object-fit: contain; }
+.guide-emoji { font-size: 22px; line-height: 30px; text-align: center; }
 .status-entry h3 { margin-top: 10px; }
 .dialog .warn { color: var(--warn); }
 
@@ -394,3 +399,4 @@ input:enabled:focus-visible {
 }
 
 .tip-place { color: var(--muted); margin-top: 2px; }
+.tip-keys { color: var(--muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }

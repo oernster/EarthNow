@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 8.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 9.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -14,6 +14,7 @@ edits.
 | 6 | 2026-09-23 | FR-RAIL-001 to 003 added: an action rail down the left side, 68 px wide, carrying the action icons at 48 px with the donate button at its foot. The key moves to the right side (FR-KEY-001, 003); FR-GLB-013's globe area is the window less the rail and the key; FR-DON-001, 002 and 007 follow the donate button into the rail. | NFR-UX-001 leaves 55 px of height for full-width bars at 960 x 600, less than one PigeonPost header (61 px glyphs); a rail spends width instead. 960 less the 220 px key less the 68 px rail leaves 672 px, which at 600 px high is exactly 70% (owner's choice of layout). |
 | 7 | 2026-09-23 | FR-RAIL-002 names the full rail: zoom in and zoom out after Reset view, provider status after Refresh, Help last as a menu of the four help dialogs. The status button carries a dot while FR-STS-003, FR-STS-005 or FR-SET-004 has something to report; standing notices move from the status line to the popover. The filter and time window icons of Appendix D.2 are not rail buttons. | The rail lacked the D.2 icons for status, help and zoom (owner). The key is the filter and the time window's control carries no icon, so neither needs a button (owner, 2026-09-23). Eight buttons plus the donate tray measure 574 px against the 600 px minimum height. |
 | 8 | 2026-09-23 | FR-DON-001, 002 and 008 now seat the donate button in the rail itself, pinned to its foot, with no tray or border of its own; it is the last stop of the rail, after Help. FR-DON-003 names the Go side as the one holder of the address, with the page asking it to open the page; FR-DON-006 covers a refusal the application can observe. | Owner: the button at the bottom left without an additional tray. Ring order is reading order (keeb invariant 1), so a button drawn in the rail is reached with the rail. Wails hands a link to the desktop without reporting whether a browser opened, so the observable refusals are the https allowlist and an unconnected backend. |
+| 9 | 2026-09-23 | NFR-KBD-003 now focuses the WebView2 child directly, with the page asking again through TakeKeyboard when it finds it has no keyboard. NFR-KBD-004 adds that arriving on the globe moves the cursor to an event at once and the tooltip names the keys. FR-HLP-001 adds the copyright notice. FR-HLP-004's guide leads each entry with the control's own picture. The key column's heading is the application mark alone. | `runtime.Show` alone lost the race inside Wails; the log measured the first focus failing and the page's request succeeding. The owner reported Tab after 7 d going nowhere: the globe was a stop painting nothing. The owner asked for the copyright, the guide's pictures as in ClearBudget and PigeonPost and a heading that is the mark alone, since its artwork reads EarthNow. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -352,10 +353,10 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
-| FR-HLP-001 | Must | The About dialog shall show the product name, version from `VERSION`, the licence and the data attributions of NFR-LEG-002. | T | T |
+| FR-HLP-001 | Must | The About dialog shall show the product name, version from `VERSION`, the copyright notice "© Oliver Ernster 2026", the licence and the data attributions of NFR-LEG-002. | T | T |
 | FR-HLP-002 | Must | The licence dialog shall show the full GPL-3.0 text. | T | T |
 | FR-HLP-003 | Must | The third-party notices dialog shall show each bundled dependency and data asset with its licence or terms. | Every entry in `THIRD_PARTY_NOTICES` renders. | T |
-| FR-HLP-004 | Should | The guide dialog shall explain the time window, freshness wording, staleness and each category. | I | I |
+| FR-HLP-004 | Should | The guide dialog shall name every rail button and every category, each entry led by the control's own picture (the rail icon, the category emoji), then explain the time window, freshness wording and staleness. | I | I |
 | FR-HLP-005 | Must | While the About, licence, notices or guide dialog overflows, its reading body shall read itself using the house auto-scroll cycle (CON-007). | Tick-driven Vitest over the ported state machine; hook test under jsdom. | T |
 | FR-HLP-006 | Must | While the detail panel's body overflows, the detail panel shall read itself using the same cycle. | T | T |
 
@@ -394,8 +395,8 @@ Every performance figure is measured on the reference machine.
 | NFR-UX-006 | Must | The main window's heading shall read "EarthNow"; the event count line (FR-CNT-001) carries the sense of now. | T |
 | NFR-KBD-001 | Must | The main window shall implement the keeb ring: Tab and Right forward, Shift+Tab and Left back, wrapping at both ends. | Vitest ring walk. |
 | NFR-KBD-002 | Must | When the main window opens, the application shall focus a neutral sink so no control shows a ring until the first Tab. | T + D |
-| NFR-KBD-003 | Must | When the page's DOM is ready, the host shall hand the webview keyboard focus through a `windowFocuser` seam calling `runtime.Show`. | Counting fake in a Go test; first Tab steps the ring in the real window with no click. |
-| NFR-KBD-004 | Must | The globe shall be one canvas stop on the ring: while it holds focus, Up and Down shall walk the displayed events newest first (wrapping) and move the camera to each; Enter or Space shall open the detail panel; plus and minus shall zoom. | T (cursor walk) + D |
+| NFR-KBD-003 | Must | When the page's DOM is ready, the host shall focus the WebView2 child directly (falling back to `runtime.Show`); if the page finds it holds no keyboard after the settle time, it shall ask the host again. | Vitest over the settle step; the log records each focus attempt; first Tab steps the ring in the real window with no click (D). |
+| NFR-KBD-004 | Must | The globe shall be one canvas stop on the ring: while it holds focus, Up and Down shall walk the displayed events newest first (wrapping) and move the camera to each; Enter or Space shall open the detail panel; plus and minus shall zoom. Arriving on the globe shall move the cursor to an event at once and show its tooltip with a line naming these keys, since the globe paints no ring. | T (cursor walk) + D |
 | NFR-KBD-005 | Must | The time window control shall be one stop per option, bounded for Tab and wrapping for Up and Down. | T |
 | NFR-KBD-006 | Must | Every dialog and the detail panel shall open focused on its first actionable stop, close on Escape and return focus to its opener. | T per dialog. |
 | NFR-KBD-007 | Must | No container, reading body or scroll region shall take focus from a click or paint a ring; a reading body is reachable by Tab only while it overflows and never rings (noborderfocus). | Static CSS scan plus a runtime check, each proved by a planted violation. |

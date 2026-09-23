@@ -5,7 +5,7 @@
 // the rest are asked of the Go side, which holds the one copy of each.
 import {useEffect, useState} from 'react'
 import {api} from '../api'
-import {GUIDE_SECTIONS, guideCategories} from '../guide'
+import {GUIDE_SECTIONS} from '../guide'
 import type {AboutDTO} from '../types'
 import {Dialog} from './Dialog'
 
@@ -39,14 +39,15 @@ function Guide() {
     return <>
         {GUIDE_SECTIONS.map(s => <section key={s.heading}>
             <h3>{s.heading}</h3>
-            {s.paragraphs.map(p => <p key={p}>{p}</p>)}
-        </section>)}
-        <section>
-            <h3>The categories</h3>
-            {guideCategories().map(({category, covers}) => <p key={category.key}>
-                <span className="guide-emoji" aria-hidden="true">{category.emoji}</span> <b>{category.name}</b>: {covers}
+            {s.intro && <p>{s.intro}</p>}
+            {s.entries?.map(e => <p key={e.name} className="guide-entry">
+                {e.icon
+                    ? <img className="guide-icon" src={e.icon} alt="" draggable={false}/>
+                    : <span className="guide-icon guide-emoji" aria-hidden="true">{e.emoji}</span>}
+                <span><b>{e.name}</b>: {e.text}</span>
             </p>)}
-        </section>
+            {s.paragraphs?.map(p => <p key={p}>{p}</p>)}
+        </section>)}
     </>
 }
 
@@ -57,6 +58,7 @@ function About({onProblem}: {onProblem: (reason: string) => void}) {
     return <>
         <p className="about-name">{about.name}</p>
         <p>Version {about.version}</p>
+        <p>{about.copyright}</p>
         <p>Licensed under the {about.licence}.</p>
         <h3>Data and imagery</h3>
         {about.attributions.map(a => <p key={a}>{a}</p>)}

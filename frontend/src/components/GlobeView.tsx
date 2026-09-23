@@ -24,6 +24,11 @@ const IDLE_DELAY_MS = 10_000
 // FR-GLB-003: the input that stops idle rotation.
 const STOPPING_INPUT = ['pointerdown', 'wheel', 'keydown'] as const
 const TIP_OFFSET_PX = 14
+// GLOBE_KEYS names the globe's keys (NFR-KBD-004), for its accessible name and
+// for the tooltip while it holds focus.
+const GLOBE_KEYS = 'Up and Down walk the events, Enter opens one, plus and minus zoom.'
+// NO_EVENTS is what the cursor says when the window holds nothing to walk.
+const NO_EVENTS = 'No events in this time window'
 
 interface Props {
     events: EventDTO[]
@@ -57,6 +62,8 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const handlers = useRef({onSelect, onProblem})
     handlers.current = {onSelect, onProblem}
     const [tip, setTip] = useState<Tip | null>(null)
+    // keyboard is true while the globe holds focus, so the tooltip names the keys.
+    const [keyboard, setKeyboard] = useState(false)
     // The setting as last rendered, read when the idle delay runs out.
     const rotationWanted = useRef(autoRotate)
     const idleTimer = useRef<number | null>(null)
@@ -95,19 +102,43 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         return r ? {x: r.left + r.width / 2, y: r.top + r.height / 2} : {x: 0, y: 0}
     }
 
+    // walk moves the keyboard cursor one event and brings the camera to it.
+    const walk = (delta: 1 | -1) => {
+        const g = globe.current
+        if (!g) return
+        pause.current()
+        const id = stepCursor(shown.current.map(e => e.id), cursor.current, delta)
+        const e = shown.current.find(x => x.id === id)
+        cursor.current = id
+        if (!e) {
+            setTip({...centre(), title: NO_EVENTS, place: ''})
+            return
+        }
+        g.pointOfView({lat: e.lat, lng: e.lng}, FOCUS_MS)
+        // FR-GEO-006: the cursor shows the tooltip hover would, where the
+        // camera brings the event: the middle of the globe area.
+        showTip.current(e, centre)
+    }
+
+    // Arriving by Tab shows where the ring landed (owner): the globe paints no
+    // ring (NFR-KBD-007), so the cursor goes to an event at once, as Down would,
+    // and the tooltip carries the keys. Returning resumes the event it left on.
+    const onFocus = () => {
+        setKeyboard(true)
+        const current = shown.current.find(x => x.id === cursor.current)
+        if (current) {
+            showTip.current(current, centre)
+        } else {
+            walk(1)
+        }
+    }
+
     const onKeyDown = (ev: React.KeyboardEvent) => {
         const g = globe.current
         if (!g) return
         if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
             ev.preventDefault()
-            const id = stepCursor(shown.current.map(e => e.id), cursor.current, ev.key === 'ArrowDown' ? 1 : -1)
-            const e = shown.current.find(x => x.id === id)
-            cursor.current = id
-            if (!e) return
-            g.pointOfView({lat: e.lat, lng: e.lng}, FOCUS_MS)
-            // FR-GEO-006: the cursor shows the tooltip hover would, where the
-            // camera brings the event: the middle of the globe area.
-            showTip.current(e, centre)
+            walk(ev.key === 'ArrowDown' ? 1 : -1)
         } else if (ev.key === 'Enter' || ev.key === ' ') {
             ev.preventDefault()
             const e = shown.current.find(x => x.id === cursor.current)
@@ -119,6 +150,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     }
 
     const onBlur = () => {
+        setKeyboard(false)
         if (!hovered.current) setTip(null)
         showing.current = null
     }
@@ -215,12 +247,12 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
 
     // globe.gl owns the host's children, so the tooltip sits beside it.
     return <>
-        <div ref={host} className="globe" data-stop tabIndex={-1} onKeyDown={onKeyDown} onBlur={onBlur}
-            onMouseDown={noClickFocus}
-            aria-label="Globe. Up and Down walk the events, Enter opens one, plus and minus zoom."/>
+        <div ref={host} className="globe" data-stop tabIndex={-1} onKeyDown={onKeyDown} onFocus={onFocus} onBlur={onBlur}
+            onMouseDown={noClickFocus} aria-label={`Globe. ${GLOBE_KEYS}`}/>
         {tip && <div className="tip" style={{left: tip.x + TIP_OFFSET_PX, top: tip.y + TIP_OFFSET_PX}}>
             <div className="tip-title">{tip.title}</div>
             {tip.place && <div className="tip-place">{tip.place}</div>}
+            {keyboard && <div className="tip-keys">{GLOBE_KEYS}</div>}
         </div>}
     </>
 })

@@ -121,7 +121,7 @@ func main() {
 	log.Printf("settings: %s; notice %q", settingsStore.Path(), prefs.Notice())
 	globe.RestoreCached()
 	help := Help{
-		About:   dto.About{Name: product.Name, Version: appVersion, Licence: product.Licence, Attributions: product.Attributions()},
+		About:   dto.About{Name: product.Name, Version: appVersion, Copyright: product.Copyright, Licence: product.Licence, Attributions: product.Attributions()},
 		Licence: licenceText,
 		Notices: noticesText,
 	}

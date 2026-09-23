@@ -1,15 +1,69 @@
-// The guide's words (FR-HLP-004), kept apart from the markup as PigeonPost keeps
-// guideContent.ts, so a change to what the app says is a change to one document.
-// Category emoji and names are NOT written here: they come from the category
-// table, their one home; this file holds only what each category covers.
-import {CATEGORIES, type CategoryInfo} from './categories'
+// The guide's words (FR-HLP-004), ported from PigeonPost's guideContent.ts: held
+// apart from the dialog that draws them, so the component stays a renderer and
+// the words stay one readable document. It NAMES the furniture first, each entry
+// carrying the REAL picture the control draws (the rail's own icon, the key's own
+// emoji), so a control that is a picture can be recognised by someone who has
+// just met it. Then it states the rules the window cannot say for itself.
+//
+// Names come from their one homes: the rail's from railLabels, the categories'
+// emoji and names from the category table. This file holds only what each does.
+import {CATEGORIES} from './categories'
+import {icons} from './icons'
+import {RAIL_LABELS} from './railLabels'
 
+// GuideEntry is one named piece of furniture: its picture (an image; an emoji for a
+// category), what it is called and what it does.
+export interface GuideEntry {
+    icon?: string
+    emoji?: string
+    name: string
+    text: string
+}
+
+// GuideSection is one block of the document; the dialog draws its entries, then
+// its paragraphs.
 export interface GuideSection {
     heading: string
-    paragraphs: string[]
+    intro?: string
+    entries?: readonly GuideEntry[]
+    paragraphs?: readonly string[]
+}
+
+// COVERS says what each category holds, keyed by the category table's keys.
+export const COVERS: Readonly<Record<string, string>> = {
+    EARTHQUAKE: 'earthquakes from the USGS, at or above the minimum magnitude chosen in Settings, plus any earthquake EONET reports.',
+    VOLCANO: 'volcanic activity tracked by EONET.',
+    WILDFIRE: 'wildfires tracked by EONET.',
+    SEVERE_STORM: 'tropical cyclones and other severe storms tracked by EONET.',
+    FLOOD: 'floods tracked by EONET.',
+    LANDSLIDE: 'landslides tracked by EONET.',
+    DROUGHT: 'droughts tracked by EONET.',
+    DUST: 'dust storms and haze tracked by EONET.',
+    ICE: 'sea and lake ice, such as icebergs, tracked by EONET.',
+    OTHER: 'any EONET event in a category not listed above.',
 }
 
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
+    {
+        heading: 'The buttons down the left',
+        intro: 'Hover any of them or reach it with Tab to see its name.',
+        entries: [
+            {icon: icons.rotate, name: RAIL_LABELS.startRotating, text: 'turns the globe slowly while you are not using it. While it turns, the button shows a cross and stops it.'},
+            {icon: icons.resetView, name: RAIL_LABELS.resetView, text: 'brings the whole globe back into view.'},
+            {icon: icons.zoomIn, name: RAIL_LABELS.zoomIn, text: 'moves the camera closer; the mouse wheel does the same.'},
+            {icon: icons.zoomOut, name: RAIL_LABELS.zoomOut, text: 'moves the camera further away.'},
+            {icon: icons.refresh, name: RAIL_LABELS.refresh, text: 'fetches every source at once; it can be used again after a short pause.'},
+            {icon: icons.status, name: RAIL_LABELS.status, text: 'each source\'s state, why a fetch failed and when the next attempt is. A dot on the button means there is something to read.'},
+            {icon: icons.settings, name: RAIL_LABELS.settings, text: 'idle rotation, its speed and the smallest earthquake shown.'},
+            {icon: icons.help, name: RAIL_LABELS.help, text: 'this guide, About, the licence and the third-party notices.'},
+            {icon: icons.donate, name: RAIL_LABELS.donate, text: 'opens the donation page in your browser. Nothing is held back without a donation.'},
+        ],
+    },
+    {
+        heading: 'The categories',
+        intro: 'The key on the right names each one; pressing a row hides or shows its events.',
+        entries: CATEGORIES.map(c => ({emoji: c.emoji, name: c.name, text: COVERS[c.key] ?? ''})),
+    },
     {
         heading: 'The time window',
         paragraphs: [
@@ -29,27 +83,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
         heading: 'Stale and failed sources',
         paragraphs: [
             'A source is marked stale when its last successful fetch is several of its refresh intervals old, so its events may be out of date.',
-            'When a fetch fails, the globe keeps showing what that source last gave and tries again after a wait that grows with each failure. The status button on the left gives the reason and the time of the next attempt.',
-            'Refresh fetches every source at once; it can be used again after a short pause.',
+            'When a fetch fails, the globe keeps showing what that source last gave and tries again after a wait that grows with each failure. The status button gives the reason and the time of the next attempt.',
         ],
     },
 ]
-
-// COVERS says what each category holds, keyed by the category table's keys.
-export const COVERS: Readonly<Record<string, string>> = {
-    EARTHQUAKE: 'Earthquakes from the USGS, at or above the minimum magnitude chosen in Settings, plus any earthquake EONET reports.',
-    VOLCANO: 'Volcanic activity tracked by EONET.',
-    WILDFIRE: 'Wildfires tracked by EONET.',
-    SEVERE_STORM: 'Tropical cyclones and other severe storms tracked by EONET.',
-    FLOOD: 'Floods tracked by EONET.',
-    LANDSLIDE: 'Landslides tracked by EONET.',
-    DROUGHT: 'Droughts tracked by EONET.',
-    DUST: 'Dust storms and haze tracked by EONET.',
-    ICE: 'Sea and lake ice, such as icebergs, tracked by EONET.',
-    OTHER: 'Any EONET event in a category not listed above.',
-}
-
-/** guideCategories answers each category, in the table's order, with what it covers. */
-export function guideCategories(): {category: CategoryInfo; covers: string}[] {
-    return CATEGORIES.map(category => ({category, covers: COVERS[category.key] ?? ''}))
-}

@@ -75,6 +75,7 @@ type Settings struct {
 type About struct {
 	Name         string   `json:"name"`
 	Version      string   `json:"version"`
+	Copyright    string   `json:"copyright"`
 	Licence      string   `json:"licence"`
 	Attributions []string `json:"attributions"`
 }

@@ -7,7 +7,8 @@ import {useRef} from 'react'
 import {Dialog} from './components/Dialog'
 import {HelpDialog} from './components/HelpDialogs'
 import {HelpMenu} from './components/HelpMenu'
-import {DONATE_LABEL, Rail} from './components/Rail'
+import {Rail} from './components/Rail'
+import {RAIL_LABELS} from './railLabels'
 import {donate} from './donate'
 import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {CATEGORIES} from './categories'
@@ -137,7 +138,7 @@ describe('FR-RAIL-002 the rail', () => {
             onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
         const labels = Array.from(document.querySelectorAll('.rail-btn')).map(b => b.getAttribute('aria-label'))
         expect(labels).toEqual(['Start rotating', 'Reset view', 'Zoom in', 'Zoom out', 'Refresh now',
-            'Provider status', 'Settings', 'Help', DONATE_LABEL])
+            'Provider status', 'Settings', 'Help', RAIL_LABELS.donate])
     })
 
     it('zooms in and out from its buttons', () => {
@@ -178,7 +179,7 @@ describe('FR-STS-003 the provider status popover', () => {
 
 describe('the help dialogs', () => {
     const bound = {
-        About: () => Promise.resolve({name: 'Product', version: '1.2.3', licence: 'a licence', attributions: ['credit one']}),
+        About: () => Promise.resolve({name: 'Product', version: '1.2.3', copyright: '© Someone 2026', licence: 'a licence', attributions: ['credit one']}),
         Licence: () => Promise.resolve('the licence text'),
         Notices: () => Promise.resolve('the notices text'),
     }
@@ -191,6 +192,7 @@ describe('the help dialogs', () => {
         expect(screen.getByText('Product')).toBeTruthy()
         expect(screen.getByText('Licensed under the a licence.')).toBeTruthy()
         expect(screen.getByText('credit one')).toBeTruthy()
+        expect(screen.getByText('© Someone 2026')).toBeTruthy()
     })
 
     it('FR-HLP-002 and 003 show the licence and the notices in full', async () => {

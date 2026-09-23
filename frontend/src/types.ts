@@ -61,6 +61,7 @@ export interface SettingsDTO {
 export interface AboutDTO {
     name: string
     version: string
+    copyright: string
     licence: string
     attributions: string[]
 }
