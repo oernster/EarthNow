@@ -29,8 +29,9 @@ var Magnitudes = []Magnitude{
 	{Key: "4.5", Label: "4.5 and above", Minimum: 4.5},
 }
 
-// DefaultMagnitude is the owner's default of 3.0 (OQ-003).
-const DefaultMagnitude = "3.0"
+// DefaultMagnitude is the owner's default of 2.5 (OQ-003, amended 2026-09-23):
+// 362 earthquakes that week against 243 at 3.0.
+const DefaultMagnitude = "2.5"
 
 // Speeds are FR-SET-003's idle rotation presets. Normal is FR-GLB-002's one
 // revolution per 240 s; the other two halve and double it.

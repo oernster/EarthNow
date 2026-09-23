@@ -18,6 +18,7 @@ export interface EventDTO {
     band: number
     sourceUrl: string
     sourceText: string
+    ended: boolean
 }
 
 export interface ProviderDTO {

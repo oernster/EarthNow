@@ -54,6 +54,7 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
         <h2>{cat.emoji} {event.title}</h2>
         <div key={event.id} ref={autoScroll} className="reading-body" data-stop data-reading tabIndex={-1} onMouseDown={noClickFocus}>
             {!inView && <p className="detail-note">This event is no longer in the current view.</p>}
+            {event.ended && <p className="detail-note">{event.provider} has marked this event as ended.</p>}
             <dl>
                 <dt>Category</dt><dd>{cat.name}</dd>
                 {place && <><dt>Where</dt><dd>{place}</dd></>}

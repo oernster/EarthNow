@@ -240,6 +240,7 @@ func toDTO(s Shown, now time.Time) dto.Event {
 		Retrieved:   freshness.Retrieved(s.RetrievedAt, now),
 		Band:        event.Band(s.Event, o),
 		SourceURL:   SafeURL(s.Event.SourceURL),
+		Ended:       s.Event.Ended(),
 	}
 	if out.SourceURL == "" {
 		out.SourceText = s.Event.SourceURL

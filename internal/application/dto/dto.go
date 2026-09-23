@@ -22,6 +22,8 @@ type Event struct {
 	Band        int     `json:"band"`
 	SourceURL   string  `json:"sourceUrl"`
 	SourceText  string  `json:"sourceText"`
+	// Ended is true when the source has closed the event (FR-PRV-001).
+	Ended bool `json:"ended"`
 }
 
 // Provider is one source's state for the status area.

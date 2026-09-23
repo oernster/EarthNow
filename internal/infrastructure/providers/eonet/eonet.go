@@ -59,10 +59,12 @@ func (a *Adapter) Name() event.Provider { return event.EONET }
 // Interval implements ports.Provider.
 func (a *Adapter) Interval() time.Duration { return Interval }
 
-// URL is the request of FR-PRV-001: open events over the widest window.
+// URL is the request of FR-PRV-001: every event of the widest window, open and
+// closed alike. Asking for open ones alone dropped 63 of the week's 80 events on
+// 2026-09-23 (most of its wildfires and floods), though each happened inside it.
 func URL() string {
 	days := int(window.Widest.Length / (hoursPerDay * time.Hour))
-	return fmt.Sprintf("https://%s/api/v3/events?status=open&days=%d", Host, days)
+	return fmt.Sprintf("https://%s/api/v3/events?status=all&days=%d", Host, days)
 }
 
 // Fetch implements ports.Provider. EONET sends no Last-Modified (measured
@@ -158,10 +160,10 @@ func mapEvent(w wireEvent) (event.Event, bool) {
 		Category:        event.Other,
 		Title:           w.Title,
 		Observations:    obs,
-		Status:          "open",
+		Status:          event.StatusOpen,
 	}
 	if w.Closed != nil {
-		e.Status = "closed"
+		e.Status = event.StatusClosed
 	}
 	if w.Description != nil {
 		e.Description = *w.Description

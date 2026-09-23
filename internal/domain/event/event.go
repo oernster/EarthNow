@@ -116,6 +116,16 @@ type Event struct {
 	Extras          Extras
 }
 
+// StatusOpen and StatusClosed are EONET's two states for an event. A closed event
+// still happened inside the window and is shown, marked as ended (FR-PRV-001).
+const (
+	StatusOpen   = "open"
+	StatusClosed = "closed"
+)
+
+// Ended reports whether the source has closed the event.
+func (e Event) Ended() bool { return e.Status == StatusClosed }
+
 // ID is the event's identity across refreshes (DATA-008).
 func (e Event) ID() string {
 	return string(e.Provider) + ":" + e.ProviderEventID

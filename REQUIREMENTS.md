@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 10.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 11.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -16,6 +16,7 @@ edits.
 | 8 | 2026-09-23 | FR-DON-001, 002 and 008 now seat the donate button in the rail itself, pinned to its foot, with no tray or border of its own; it is the last stop of the rail, after Help. FR-DON-003 names the Go side as the one holder of the address, with the page asking it to open the page; FR-DON-006 covers a refusal the application can observe. | Owner: the button at the bottom left without an additional tray. Ring order is reading order (keeb invariant 1), so a button drawn in the rail is reached with the rail. Wails hands a link to the desktop without reporting whether a browser opened, so the observable refusals are the https allowlist and an unconnected backend. |
 | 9 | 2026-09-23 | NFR-KBD-003 now focuses the WebView2 child directly, with the page asking again through TakeKeyboard when it finds it has no keyboard. NFR-KBD-004 adds that arriving on the globe moves the cursor to an event at once and the tooltip names the keys. FR-HLP-001 adds the copyright notice. FR-HLP-004's guide leads each entry with the control's own picture. The key column's heading is the application mark alone. | `runtime.Show` alone lost the race inside Wails; the log measured the first focus failing and the page's request succeeding. The owner reported Tab after 7 d going nowhere: the globe was a stop painting nothing. The owner asked for the copyright, the guide's pictures as in ClearBudget and PigeonPost and a heading that is the mark alone, since its artwork reads EarthNow. |
 | 10 | 2026-09-23 | FR-SEL-009 added: the source link is a page, never a data file; the EONET adapter takes the first source that is a page; a source that is only a file is shown as text. | The owner opened a hurricane's source and received a download. Measured in the live EONET feed: three storms list a JTWC `.tcw` warning file first (two with an NHC page second, one with nothing else) and one iceberg source is a `.csv`. |
+| 11 | 2026-09-23 | FR-PRV-001 now retrieves every EONET event of the week, open and closed, a closed one marked as ended in its detail panel. FR-SET-002 and OQ-003 lower the default USGS minimum magnitude to 2.5. | The owner doubted how little the globe showed. Measured that day: EONET held 80 events for the week while the open-only request returned 17, dropping most wildfires and floods though each happened inside the window; USGS held 362 earthquakes at 2.5 and above against 243 at 3.0 (owner's choice). |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -273,7 +274,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
-| FR-PRV-001 | Must | The EONET provider shall retrieve open events for the widest time window (7 days) from `/api/v3/events?status=open&days=7`. | Request URL asserted in a test with a fake HTTP client. | T |
+| FR-PRV-001 | Must | The EONET provider shall retrieve every event of the widest time window (7 days), open and closed, from `/api/v3/events?status=all&days=7`; the detail panel shall say when the source has marked an event as ended. | Request URL asserted in a test with a fake HTTP client. | T |
 | FR-PRV-002 | Must | The EONET provider shall parse the response body as JSON whatever `Content-Type` the server declares. | Measured 2026-09-23: EONET labels a JSON body `application/rss+xml` even when `Accept: application/json` is sent. Fixture served with that header parses. | T |
 | FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 3.0: `2.5_week.geojson` filtered to 3.0 and above; 238 events in the week measured 2026-09-23). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
 | FR-PRV-004 | Must | The USGS provider shall send `If-Modified-Since` carrying the `Last-Modified` value of its previous successful response. | Measured: USGS sends `Last-Modified`. Second request carries the header; a 304 keeps the stored events. | T |
@@ -347,7 +348,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
 | FR-SET-001 | Must | The settings dialog shall offer auto-rotate on or off. | T | T |
-| FR-SET-002 | Should | The settings dialog shall offer the USGS minimum magnitude: all, 1.0, 2.5, 3.0 (default), 4.5. | Changing to 4.5 switches the next fetch to `4.5_week.geojson`. | T |
+| FR-SET-002 | Should | The settings dialog shall offer the USGS minimum magnitude: all, 1.0, 2.5 (default), 3.0, 4.5. | Changing to 4.5 switches the next fetch to `4.5_week.geojson`. | T |
 | FR-SET-003 | Could | The settings dialog shall offer the idle rotation speed from three presets. | T | T |
 | FR-SET-004 | Must | If the settings file is missing or unreadable, then the application shall start with defaults and state which file was not read in the status popover. | T | T |
 
@@ -522,7 +523,7 @@ the owner on 2026-09-23; each answer now lives in the requirement it settled:
 |---|---|---|
 | OQ-001 | globe.gl, not CesiumJS | 2.5 |
 | OQ-002 | every drafted number accepted; the performance ones are targets Phase 0 measures | FR-GLB-002, 006; FR-PRV-005, 006, 010, 011; NFR-PERF, NFR-FRESH-001, NFR-UX-002, 003; NFR-OBS-002 |
-| OQ-003 | default USGS minimum magnitude 3.0 | FR-PRV-003, FR-SET-002 |
+| OQ-003 | default USGS minimum magnitude 2.5 (was 3.0; amendment 11) | FR-PRV-003, FR-SET-002 |
 | OQ-004 | idle rotation is not gated on the OS reduced-motion setting | FR-GLB-012 |
 | OQ-005 | magnitude bands below 3.0, 3.0 to 4.5, 4.5 to 6, 6 and above | FR-MRK-003 |
 | OQ-006 | Blue Marble at 5400 x 2700, reviewed after the spike | D.4 |

@@ -4,6 +4,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {act, fireEvent, render, screen} from '@testing-library/react'
 import {useRef} from 'react'
+import {DetailPanel} from './components/DetailPanel'
 import {Dialog} from './components/Dialog'
 import {HelpDialog} from './components/HelpDialogs'
 import {HelpMenu} from './components/HelpMenu'
@@ -264,5 +265,23 @@ describe('FR-DON the donate button', () => {
         donate(onProblem)
         await act(async () => undefined)
         expect(onProblem).toHaveBeenCalledWith('The donation page could not be opened: not an https link')
+    })
+})
+
+describe('FR-PRV-001 an ended event', () => {
+    afterEach(() => { delete (window as unknown as {go?: unknown}).go })
+
+    it('says in its detail panel that the source has ended it', async () => {
+        ;(window as unknown as {go: unknown}).go = {main: {App: {Place: () => Promise.resolve('')}}}
+        const e = {id: 'EONET:1', provider: 'EONET', category: 'WILDFIRE', title: 'Fire', description: '', lat: 1, lng: 2,
+            at: '2026-09-20T00:00:00Z', dayOnly: true, reported: 'r', retrievedAt: '2026-09-23T00:00:00Z', retrieved: 'x',
+            measurement: '', band: 0, sourceUrl: '', sourceText: '', ended: true}
+        const {unmount} = render(<DetailPanel event={e} inView onClose={() => undefined} onProblem={() => undefined}/>)
+        await act(async () => undefined)
+        expect(screen.getByText('EONET has marked this event as ended.')).toBeTruthy()
+        unmount()
+        render(<DetailPanel event={{...e, ended: false}} inView onClose={() => undefined} onProblem={() => undefined}/>)
+        await act(async () => undefined)
+        expect(screen.queryByText('EONET has marked this event as ended.')).toBeNull()
     })
 })

@@ -54,8 +54,14 @@ func TestFRSET004_MissingFileStartsOnDefaultsAndSaysSo(t *testing.T) {
 	if p.Notice() != `No settings file at C:\data\settings.json yet; using defaults` {
 		t.Errorf("notice = %q", p.Notice())
 	}
-	if len(applied) != 1 || applied[0] != 3.0 {
-		t.Errorf("minimums applied = %v", applied)
+	var want float64
+	for _, m := range Magnitudes {
+		if m.Key == DefaultMagnitude {
+			want = m.Minimum
+		}
+	}
+	if len(applied) != 1 || applied[0] != want {
+		t.Errorf("minimums applied = %v, want the default's %v", applied, want)
 	}
 }
 

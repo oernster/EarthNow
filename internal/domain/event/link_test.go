@@ -39,3 +39,11 @@ func TestFirstPagePrefersAPageAndKeepsAFileWhenThereIsNone(t *testing.T) {
 		t.Errorf("no sources answered %q", got)
 	}
 }
+
+// FR-PRV-001: a closed EONET event still shows, marked as ended.
+func TestEndedReadsTheClosedStatus(t *testing.T) {
+	t.Parallel()
+	if !(Event{Status: StatusClosed}).Ended() || (Event{Status: StatusOpen}).Ended() || (Event{}).Ended() {
+		t.Error("Ended misreads the status")
+	}
+}

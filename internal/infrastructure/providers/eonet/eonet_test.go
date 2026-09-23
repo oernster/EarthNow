@@ -32,7 +32,7 @@ func byID(t *testing.T, events []event.Event, id string) event.Event {
 
 func TestFRPRV001_URLAsksForOpenEventsOverTheWidestWindow(t *testing.T) {
 	t.Parallel()
-	if got := URL(); got != "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=7" {
+	if got := URL(); got != "https://eonet.gsfc.nasa.gov/api/v3/events?status=all&days=7" {
 		t.Errorf("URL() = %q", got)
 	}
 	a := New(nil)

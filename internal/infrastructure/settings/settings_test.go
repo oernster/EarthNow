@@ -15,7 +15,7 @@ import (
 	"github.com/oernster/EarthNow/internal/application/ports"
 )
 
-var defaults = ports.Settings{AutoRotate: true, Magnitude: "3.0", Speed: "normal", Window: "24h"}
+var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h"}
 
 func storeIn(t *testing.T) *File {
 	t.Helper()
