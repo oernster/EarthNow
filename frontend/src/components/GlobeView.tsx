@@ -37,9 +37,16 @@ interface Props {
 // GlobeHandle is what the rail drives directly.
 export interface GlobeHandle {
     resetView: () => void
+    // zoom is one plus or minus press from the rail (FR-GLB-006's limits hold).
+    zoom: (zoomIn: boolean) => void
 }
 
 interface Tip { x: number; y: number; title: string; place: string }
+
+// zoomOnce is one zoom step, the same from a key and from the rail.
+function zoomOnce(g: GlobeInstance, zoomIn: boolean) {
+    g.pointOfView({altitude: zoomed(g.pointOfView().altitude, zoomIn)}, ZOOM_MS)
+}
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     {events, selectedId, autoRotate, secondsPerRevolution, onSelect, onProblem}, ref) {
@@ -107,7 +114,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             if (e) handlers.current.onSelect(e)
         } else if (ev.key === '+' || ev.key === '=' || ev.key === '-') {
             ev.preventDefault()
-            g.pointOfView({altitude: zoomed(g.pointOfView().altitude, ev.key !== '-')}, ZOOM_MS)
+            zoomOnce(g, ev.key !== '-')
         }
     }
 
@@ -120,6 +127,10 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         resetView: () => {
             const g = globe.current
             if (g) g.pointOfView({altitude: fitAltitude(g.camera() as THREE.PerspectiveCamera)}, FOCUS_MS)
+        },
+        zoom: (zoomIn: boolean) => {
+            const g = globe.current
+            if (g) zoomOnce(g, zoomIn)
         },
     }), [])
 

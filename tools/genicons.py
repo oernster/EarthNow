@@ -23,6 +23,10 @@ dark-mode.png, written straight into installer/frontend/dist. That page has
 no bundler, so it loads each file as it finds it; shipping a master there
 would put a megabyte and more behind one badge.
 
+The donate mark: cropped to its artwork and scaled by height to four times the
+rail glyph, never squared, since a wide picture on a square canvas spends its
+height on nothing (FR-DON-002).
+
 Run it when a master changes:
 
     python tools/genicons.py
@@ -85,6 +89,18 @@ SETUP_ICON_SIZE = 128
 
 SETUP = REPO / "installer" / "frontend" / "dist"
 HEADER = SETUP / "icon.png"
+
+# The donate mark (FR-DON-002, Appendix D.1) is a wide picture, not an icon, so
+# it is cropped to its artwork and scaled by height alone rather than squared.
+# DONATE_HEIGHT is four times the rail's 48 px glyph, crisp under display scaling.
+DONATE_MASTER = "donate.png"
+RAIL_GLYPH_PX = 48
+DONATE_HEIGHT = 4 * RAIL_GLYPH_PX
+
+# DONATE_OUTPUTS receive the same render in one loop, so no copy can drift from
+# another. The site's copy (docs/donate.png, FR-DON-010) joins this list when the
+# site is built.
+DONATE_OUTPUTS = (REPO / "frontend" / "src" / "assets" / DONATE_MASTER,)
 
 # SETUP_ICONS are the theme toggle's pair; each shows the mode it switches TO
 # (NFR-UX-004), so the sun shows while the page is dark.
@@ -171,7 +187,8 @@ def render_setup() -> None:
         sys.exit(f"\nno application icon at {app}")
     ico = app.with_suffix(".ico")
     written = render_ico(app, ico)
-    print(f"\n{app.name:<22} {app.stat().st_size:>9,} -> {written:>7,} bytes  ({ico.name})")
+    source = app.stat().st_size
+    print(f"\n{app.name:<22} {source:>9,} -> {written:>7,} bytes  ({ico.name})")
 
     SETUP.mkdir(parents=True, exist_ok=True)
     squared(trimmed(app)).resize((HEADER_SIZE, HEADER_SIZE), Image.LANCZOS).save(
@@ -184,8 +201,27 @@ def render_setup() -> None:
         if not master.exists():
             sys.exit(f"no {name} in {MASTERS}; the setup theme toggle wears it")
         target = SETUP / name
-        written = render_image(Image.open(master).convert("RGBA"), target, SETUP_ICON_SIZE)
-        print(f"{name:<22} {master.stat().st_size:>9,} -> {written:>7,} bytes  (setup {name})")
+        written = render_image(
+            Image.open(master).convert("RGBA"), target, SETUP_ICON_SIZE
+        )
+        source = master.stat().st_size
+        print(f"{name:<22} {source:>9,} -> {written:>7,} bytes  (setup {name})")
+
+
+def render_donate() -> None:
+    """Write the donate mark to every destination from one render."""
+    master = MASTERS / DONATE_MASTER
+    if not master.exists():
+        sys.exit(f"no {DONATE_MASTER} in {MASTERS}; the donate button wears it")
+    art = trimmed(master)
+    width = max(1, round(art.width * DONATE_HEIGHT / art.height))
+    mark = art.resize((width, DONATE_HEIGHT), Image.LANCZOS)
+    for target in DONATE_OUTPUTS:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        mark.save(target, "PNG", optimize=True)
+        source, size = master.stat().st_size, target.stat().st_size
+        drawn = f"{width} x {DONATE_HEIGHT}"
+        print(f"{DONATE_MASTER:<22} {source:>9,} -> {size:>7,} bytes  ({drawn})")
 
 
 def main() -> int:
@@ -215,6 +251,7 @@ def main() -> int:
     print(f"\n{len(masters) + 1} rail icons, {total_in:,} -> {total_out:,} bytes")
 
     render_setup()
+    render_donate()
 
     # The front end wants the application icon too, beside the heading in the key
     # column (and as the About crest to come), as the reference writes it.

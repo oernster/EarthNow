@@ -25,4 +25,26 @@ const (
 	// Slug is the same identity where only a file name will do. It must stay free of
 	// the characters a path refuses.
 	Slug = "EarthNow"
+
+	// Licence names the licence of EarthNow's own code (CON-004); the full text is
+	// LICENSE at the repository root.
+	Licence = "GNU General Public License, version 3"
+
+	// DonateURL is where the donate button sends a browser (FR-DON-003, FR-DON-004):
+	// its one home. The application never fetches it; the address is handed to the
+	// desktop, which opens it in the system browser (FR-DON-009).
+	DonateURL = "https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE"
 )
+
+// Attributions answers the credits the About dialog shows (NFR-LEG-002): the
+// imagery and the event data, credited without implying endorsement. A fresh
+// slice each call, so no caller can change what the next one reads.
+func Attributions() []string {
+	return []string{
+		"Earth imagery: NASA Earth Observatory (Blue Marble Next Generation).",
+		"Natural events: NASA Earth Observatory Natural Event Tracker (EONET).",
+		"Earthquakes: USGS Earthquake Hazards Program.",
+		"Place names and borders: Natural Earth.",
+		"Neither NASA nor the USGS endorses " + Name + ".",
+	}
+}

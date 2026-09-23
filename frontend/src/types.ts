@@ -58,6 +58,13 @@ export interface SettingsDTO {
     hiddenProviders: string[]
 }
 
+export interface AboutDTO {
+    name: string
+    version: string
+    licence: string
+    attributions: string[]
+}
+
 export interface SettingChoicesDTO {
     magnitudes: ChoiceDTO[]
     speeds: SpeedDTO[]

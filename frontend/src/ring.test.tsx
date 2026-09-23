@@ -1,30 +1,10 @@
-// The keyboard ring, ported from ED Voyage Companion's hooks.test.tsx.
-//
-// jsdom performs no layout, so every element reports no offset parent and the
-// ring would find no stops. layOut states the shape of the page explicitly; what
-// is asserted is what the ring then does with it.
+// The keyboard ring, ported from ED Voyage Companion's hooks.test.tsx. The page's
+// shape is stated by testLayout, since jsdom lays nothing out.
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {fireEvent, render, screen} from '@testing-library/react'
 import {useRef, useState} from 'react'
 import {useFirstStop, useRing, walkGroup} from './ring'
-
-function layOut() {
-    Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
-        configurable: true,
-        get(this: HTMLElement) { return this.parentElement },
-    })
-}
-
-function unlayOut() {
-    delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetParent
-}
-
-/** named identifies whatever holds focus; null when nothing does. */
-function named(): string | null {
-    const active = document.activeElement as HTMLElement | null
-    if (active === null || active === document.body) return null
-    return active.getAttribute('aria-label') ?? active.textContent
-}
+import {layOut, named, unlayOut} from './testLayout'
 
 function Ringed({enabled = true, onToggle = () => undefined}: {enabled?: boolean; onToggle?: () => void}) {
     const shell = useRef<HTMLDivElement>(null)

@@ -16,6 +16,7 @@ import (
 	"github.com/oernster/EarthNow/internal/domain/event"
 	"github.com/oernster/EarthNow/internal/domain/freshness"
 	"github.com/oernster/EarthNow/internal/infrastructure/geo"
+	"github.com/oernster/EarthNow/internal/product"
 )
 
 // changedEvent tells the page to ask for a fresh view.
@@ -31,17 +32,26 @@ type App struct {
 	globe  *services.Globe
 	sched  *services.Scheduler
 	prefs  *services.Preferences
+	help   Help
 	byName map[event.Provider]ports.Provider
 	wake   chan struct{}
 }
 
+// Help is what the help dialogs read (FR-HLP-001 to 003), gathered at the
+// composition root: the texts are embedded there and the version is stamped there.
+type Help struct {
+	About   dto.About
+	Licence string
+	Notices string
+}
+
 // NewApp builds the facade.
-func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, providers []ports.Provider) *App {
+func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, help Help, providers []ports.Provider) *App {
 	byName := map[event.Provider]ports.Provider{}
 	for _, p := range providers {
 		byName[p.Name()] = p
 	}
-	return &App{globe: globe, sched: sched, prefs: prefs, byName: byName, wake: make(chan struct{}, 1)}
+	return &App{globe: globe, sched: sched, prefs: prefs, help: help, byName: byName, wake: make(chan struct{}, 1)}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -204,12 +214,29 @@ func (a *App) SaveSettings(chosen dto.Settings) dto.Settings {
 	return held
 }
 
+// About answers what the About dialog shows (FR-HLP-001).
+func (a *App) About() dto.About { return a.help.About }
+
+// Licence answers the full text of EarthNow's licence (FR-HLP-002).
+func (a *App) Licence() string { return a.help.Licence }
+
+// Notices answers the third-party notices (FR-HLP-003).
+func (a *App) Notices() string { return a.help.Notices }
+
 // Place answers the nearest-place line for a point (FR-GEO-001).
 func (a *App) Place(lat, lng float64) string { return a.globe.Place(lat, lng) }
 
 // OpenSource opens a source page in the system browser, never in the app
 // (FR-SEL-005). Only an https link is opened.
-func (a *App) OpenSource(link string) error {
+func (a *App) OpenSource(link string) error { return a.openExternal(link) }
+
+// Donate opens the donation page in the system browser (FR-DON-003). The page
+// never holds the address, whose one home is internal/product. It goes through
+// the same https allowlist as a source link. Nothing is fetched here.
+func (a *App) Donate() error { return a.openExternal(product.DonateURL) }
+
+// openExternal hands an https link to the desktop; anything else is refused.
+func (a *App) openExternal(link string) error {
 	if services.SafeURL(link) == "" {
 		return fmt.Errorf("%w: %q", ErrUnsafeURL, link)
 	}

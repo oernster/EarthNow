@@ -32,6 +32,15 @@ export function noClickFocus(ev: {preventDefault: () => void}) {
     ev.preventDefault()
 }
 
+/**
+ * overflows reports whether a region has anything to scroll. A reading body
+ * (data-reading) is a stop only while it does (keeb: a scrollable region is a
+ * stop while it overflows), so the answer is taken afresh on every move.
+ */
+export function overflows(element: HTMLElement): boolean {
+    return element.scrollHeight > element.clientHeight
+}
+
 /** liveStops answers the usable stops inside root, in document order. */
 export function liveStops(root: HTMLElement | null): HTMLElement[] {
     if (!root) return []
@@ -39,8 +48,22 @@ export function liveStops(root: HTMLElement | null): HTMLElement[] {
         element =>
             !element.hasAttribute('disabled') &&
             element.getAttribute('aria-hidden') !== 'true' &&
-            element.offsetParent !== null,
+            element.offsetParent !== null &&
+            (!element.hasAttribute('data-reading') || overflows(element)),
     )
+}
+
+/**
+ * indexOnRing answers where focus sits on the ring. Focus inside an open popup
+ * (a menu) counts as resting on the stop that controls it through aria-controls,
+ * so Tab or an arrow steps on from that stop as the popup closes (keeb: Tab
+ * exits a popup to the outer ring, the reverse of entering).
+ */
+export function indexOnRing(list: HTMLElement[], active: HTMLElement): number {
+    const at = list.indexOf(active)
+    if (at >= 0) return at
+    const popup = active.closest<HTMLElement>('[role="menu"]')?.id
+    return popup ? list.findIndex(stop => stop.getAttribute('aria-controls') === popup) : -1
 }
 
 /**
@@ -79,7 +102,7 @@ export function useRing(container: React.RefObject<HTMLElement | null>, enabled 
         const list = liveStops(container.current)
         if (list.length === 0) return
         const active = document.activeElement as HTMLElement | null
-        const found = active ? list.indexOf(active) : -1
+        const found = active ? indexOnRing(list, active) : -1
         const neutral = delta > 0 ? 0 : list.length - 1
         const raw = found >= 0 ? found + delta : mark.current === null ? neutral : mark.current + delta
         const next = (raw + list.length) % list.length
@@ -127,6 +150,9 @@ export function useRing(container: React.RefObject<HTMLElement | null>, enabled 
  *
  * key re-runs the entry for a surface that stays mounted while its content
  * changes, as the detail panel does from one event to the next.
+ *
+ * A reading body is passed over on entry, so a dialog never opens on the page
+ * of text it holds (noborderfocus: no dialog OPENS on a reading pane).
  */
 export function useFirstStop(container: React.RefObject<HTMLElement | null>, key: unknown = null) {
     const opener = useRef<HTMLElement | null>(null)
@@ -136,7 +162,7 @@ export function useFirstStop(container: React.RefObject<HTMLElement | null>, key
             const held = document.activeElement
             opener.current = held instanceof HTMLElement && held !== document.body ? held : null
         }
-        liveStops(container.current)[0]?.focus()
+        liveStops(container.current).find(stop => !stop.hasAttribute('data-reading'))?.focus()
     }, [container, key])
 
     useEffect(() => () => {

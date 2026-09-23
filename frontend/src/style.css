@@ -210,6 +210,83 @@ html, body, #root {
 .field-row input { accent-color: var(--ring); margin: 0; }
 .dialog-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
 .dialog-actions button { border-color: var(--border); }
+.dialog h3 { margin: 14px 0 6px; font-size: 14px; font-weight: 600; }
+.dialog p { margin: 0 0 8px; line-height: 1.45; }
+
+/* A reading dialog (About, guide, licence, notices): the body reads itself and
+   Close stays pinned beneath it (PigeonPost's pinned-actions). */
+.dialog.reading {
+    width: 620px;
+    height: min(640px, calc(100% - 32px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* The self-reading body of a dialog or the detail panel. It is a stop only
+   while it overflows and paints no ring in any state (noborderfocus: a text
+   view never rings). */
+.reading-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+.reading-body:focus { outline: none; }
+.reading-text {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+}
+.about-name { font-size: 18px; font-weight: 600; }
+.guide-emoji { font-size: 16px; }
+.status-entry h3 { margin-top: 10px; }
+.dialog .warn { color: var(--warn); }
+
+/* The Help menu opens to the right of its rail button, where the tooltip
+   would; the tooltip gives way while the menu is open. */
+.rail-menu { position: relative; }
+.menu {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 8px);
+    z-index: 55;
+    display: flex;
+    flex-direction: column;
+    min-width: 190px;
+    padding: 4px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+.menu button { text-align: left; white-space: nowrap; }
+[data-tip][aria-expanded="true"]:hover::after,
+[data-tip][aria-expanded="true"]:focus-visible::after { content: none; }
+
+/* FR-DON-001: the donate button is an ordinary rail button pinned to the rail's
+   foot; no tray, no second set of dimensions. Its tooltip opens to the right
+   and upwards, so neither the window's left edge nor its foot clips it
+   (FR-DON-007). */
+.rail-foot { margin-top: auto; }
+.rail-foot[data-tip]:hover::after,
+.rail-foot[data-tip]:focus-visible::after {
+    top: auto;
+    bottom: 0;
+    transform: none;
+}
+
+/* A rail button with something waiting to be read carries a dot. */
+.rail-btn.attention::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--warn);
+}
 
 .time-window {
     display: flex;
@@ -281,7 +358,9 @@ input:enabled:focus-visible {
     right: 12px;
     width: 340px;
     max-height: calc(100% - 110px);
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-sizing: border-box;
     padding: 14px 16px;
     background: var(--surface);

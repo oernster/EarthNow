@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 6.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 8.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -12,6 +12,8 @@ edits.
 | 4 | 2026-09-23 | FR-GEO-001 to 008 added: hovering a marker shows the nearest populated place with its country, distance and direction, resolved offline from embedded Natural Earth data; the keyboard cursor and the detail panel show the same line. | Owner request, hover rather than click. Offline because NFR-PRIV-001 allows no host beyond the two providers. |
 | 5 | 2026-09-23 | DATA-005 now marks day precision per event, only when every date is midnight; DATA-012 added for USGS types and withdrawn events. | The captured EONET fixture showed a storm track with a genuine 00:00Z fix, which the per-date rule would have misread. USGS feeds carry quarry blasts and explosions, which are not earthquakes. |
 | 6 | 2026-09-23 | FR-RAIL-001 to 003 added: an action rail down the left side, 68 px wide, carrying the action icons at 48 px with the donate button at its foot. The key moves to the right side (FR-KEY-001, 003); FR-GLB-013's globe area is the window less the rail and the key; FR-DON-001, 002 and 007 follow the donate button into the rail. | NFR-UX-001 leaves 55 px of height for full-width bars at 960 x 600, less than one PigeonPost header (61 px glyphs); a rail spends width instead. 960 less the 220 px key less the 68 px rail leaves 672 px, which at 600 px high is exactly 70% (owner's choice of layout). |
+| 7 | 2026-09-23 | FR-RAIL-002 names the full rail: zoom in and zoom out after Reset view, provider status after Refresh, Help last as a menu of the four help dialogs. The status button carries a dot while FR-STS-003, FR-STS-005 or FR-SET-004 has something to report; standing notices move from the status line to the popover. The filter and time window icons of Appendix D.2 are not rail buttons. | The rail lacked the D.2 icons for status, help and zoom (owner). The key is the filter and the time window's control carries no icon, so neither needs a button (owner, 2026-09-23). Eight buttons plus the donate tray measure 574 px against the 600 px minimum height. |
+| 8 | 2026-09-23 | FR-DON-001, 002 and 008 now seat the donate button in the rail itself, pinned to its foot, with no tray or border of its own; it is the last stop of the rail, after Help. FR-DON-003 names the Go side as the one holder of the address, with the page asking it to open the page; FR-DON-006 covers a refusal the application can observe. | Owner: the button at the bottom left without an additional tray. Ring order is reading order (keeb invariant 1), so a button drawn in the rail is reached with the rail. Wails hands a link to the desktop without reporting whether a browser opened, so the observable refusals are the https allowlist and an unconnected backend. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -300,7 +302,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-KEY-002 | Must | The key shall read its emoji and names from the category table (Appendix D.3), the same single home the markers read. | Structural test: no emoji literal outside the category table. | T |
 | FR-KEY-003 | Must | The key shall never overlap the globe: the globe area ends at the key's left edge (FR-GLB-013). | D at the minimum window size. | D |
 | FR-RAIL-001 | Must | The main window shall carry an action rail down its left side, 68 px wide, holding the action buttons one above another, each drawing its artwork at the rail's glyph size of 48 px (`--rail-glyph-size`); the globe area begins at the rail's right edge. | T (render) + D at the minimum window size. | T + D |
-| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), Reset view (FR-GLB-008), Refresh (FR-PRV-009), Settings (FR-SET), then Help when it exists (FR-HLP). | T | T |
+| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), Reset view (FR-GLB-008), zoom in and zoom out (FR-GLB-006), Refresh (FR-PRV-009), provider status (FR-STS-003), Settings (FR-SET), then Help, a menu opening the guide, About, the licence and the third-party notices (FR-HLP). | Vitest reads the rail's accessible names in that order. | T |
 | FR-RAIL-003 | Must | Every rail button's tooltip shall open to the right of the button, so it is not clipped at the window's left edge. | D at the minimum window size. | D |
 | FR-KEY-004 | Should | Each key row shall show the count of that category's displayed events. | 3 displayed quakes read "〰️ Earthquake 3". | T |
 | FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
@@ -361,14 +363,14 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
-| FR-DON-001 | Must | The action rail (FR-RAIL-001) shall end in a tray ported from PigeonPost's `BottomBar.tsx`: a `footer` at the rail's foot wearing the rail's own button class, which adds only a top border, so the donate button matches the rail's buttons exactly. | Inspection: no second set of button dimensions in the stylesheet. | I |
-| FR-DON-002 | Must | The rail's tray shall hold the donate button alone, drawn at the rail's glyph size (`--rail-glyph-size`). | T (render) | T |
-| FR-DON-003 | Must | When the donate button is activated, the application shall hand `https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE` to the system browser through the same external-open facade and scheme allowlist as FR-SEL-005. | Vitest with the api mocked asserts the address literally; proved to bite by altering one character. | T |
+| FR-DON-001 | Must | The action rail (FR-RAIL-001) shall end in the donate button, pinned to the rail's foot, built as every other rail button is (`RailButton`) with no tray, border or second set of dimensions. | Inspection: no second set of button dimensions in the stylesheet; Vitest reads the button outside the rail's action group with the rail button class. | T + I |
+| FR-DON-002 | Must | The donate button shall draw its artwork inside the rail's glyph box (`--rail-glyph-size`), cropped to the artwork and scaled by height by `tools/genicons.py` from `assets/donate.png`. | T (render) | T |
+| FR-DON-003 | Must | When the donate button is activated, the application shall hand `https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE` to the system browser through the same external-open facade and scheme allowlist as FR-SEL-005; the page asks the Go side to open it and never holds the address. | Go test asserts the address literally and its https scheme, proved to bite by altering one character; Vitest asserts the page calls the facade. | T |
 | FR-DON-004 | Must | The donate address shall have exactly one home: a named constant beside the product identity. | Structural test: the address string appears exactly once across `frontend/src` and `internal` combined. | T |
 | FR-DON-005 | Must | The donate button shall carry the tooltip and accessible name "Donate to support EarthNow", as PigeonPost's does. | T | T |
-| FR-DON-006 | Must | If the system declines to open a browser, then the status area shall say the donation page could not be opened. | T with a refusing fake opener. | T |
+| FR-DON-006 | Must | If opening the donation page is refused (the allowlist or an unconnected backend), then the status area shall say the donation page could not be opened. | T with a refusing fake facade. | T |
 | FR-DON-007 | Must | The donate tooltip shall open to the right of the button and upwards, so it is clipped neither at the window's left edge nor at its foot. | D at the minimum window size. | D |
-| FR-DON-008 | Must | The donate button shall be the last stop of the main window's ring, reached in document order after the panes. | Vitest ring walk reads it last. | T |
+| FR-DON-008 | Must | The donate button shall be the rail's last stop, reached after Help. | Vitest reads it last among the rail's buttons. | T |
 | FR-DON-009 | Must | The application shall fetch nothing from the donate address itself; no feature shall depend on a donation. | I | I |
 | FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | Computed height measured at 1.8 times the line box. | D |
 
@@ -552,7 +554,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
-| `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing `frontend/src/assets/donate.png` and `docs/donate.png` in one loop so they cannot drift. |
+| `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` now, `docs/donate.png` joining when the site is built (FR-DON-010). |
 
 ### D.2 Action icons (generated to 208 px, house nav-band style)
 

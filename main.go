@@ -18,6 +18,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
+	"github.com/oernster/EarthNow/internal/application/dto"
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/application/services"
 	"github.com/oernster/EarthNow/internal/infrastructure/cache"
@@ -30,6 +31,15 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+// The licence and the notices each have one home at the repository root; the
+// help dialogs read the same files the repository ships (FR-HLP-002, FR-HLP-003).
+
+//go:embed LICENSE
+var licenceText string
+
+//go:embed THIRD_PARTY_NOTICES
+var noticesText string
 
 // appVersion is overridden at build time with -ldflags "-X main.appVersion=x.y.z"
 // (build.ps1 reads VERSION), so no version literal lives in the source. It is a var
@@ -110,7 +120,12 @@ func main() {
 	prefs.Load()
 	log.Printf("settings: %s; notice %q", settingsStore.Path(), prefs.Notice())
 	globe.RestoreCached()
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, providers)
+	help := Help{
+		About:   dto.About{Name: product.Name, Version: appVersion, Licence: product.Licence, Attributions: product.Attributions()},
+		Licence: licenceText,
+		Notices: noticesText,
+	}
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

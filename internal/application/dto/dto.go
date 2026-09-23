@@ -71,6 +71,14 @@ type Settings struct {
 	HiddenProviders  []string `json:"hiddenProviders"`
 }
 
+// About is what the About dialog shows (FR-HLP-001).
+type About struct {
+	Name         string   `json:"name"`
+	Version      string   `json:"version"`
+	Licence      string   `json:"licence"`
+	Attributions []string `json:"attributions"`
+}
+
 // SettingChoices is what the settings dialog offers.
 type SettingChoices struct {
 	Magnitudes []Choice `json:"magnitudes"`

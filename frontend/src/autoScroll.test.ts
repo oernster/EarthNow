@@ -1,25 +1,12 @@
-// The setup program's auto-scroll (installer/frontend/dist/setup-scroll.js), ported
-// with PigeonPost's autoScroll.test.ts. The setup page has no build step, so the
-// script is plain JS; it exports itself to CommonJS outside the page, which is how
-// it is loaded here. createRequire takes a path rather than import.meta.url, which
-// is not a file URL under jsdom (measured).
-import {createRequire} from 'node:module'
-import {join} from 'node:path'
+// The house auto-scroll (installer/frontend/dist/auto-scroll.js, the one home the
+// setup page and the application share), ported with PigeonPost's
+// autoScroll.test.ts. The machine is driven tick by tick, never by waiting.
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import * as m from '../../installer/frontend/dist/auto-scroll.js'
+import type {AutoScrollState} from '../../installer/frontend/dist/auto-scroll.js'
 
-interface State { phase: string; waitMs: number; ticksToStep: number }
-interface View { scrollTop: number; maxScrollTop: number }
-interface Machine {
-    TICK_MS: number; START_HOLD_MS: number; DESCENT_PX: number; DESCENT_TICKS_PER_STEP: number
-    BOTTOM_HOLD_MS: number; REWIND_PX: number; TOP_HOLD_MS: number; MANUAL_HOLD_MS: number
-    initialAutoScrollState: () => State
-    suspended: (s: State) => State
-    autoScrollTick: (s: State, v: View) => {state: State; delta: number}
-    startAutoScroll: (el: HTMLElement) => () => void
-}
-
-const load = createRequire(join(process.cwd(), 'package.json'))
-const m = load('../installer/frontend/dist/setup-scroll.js') as Machine
+type State = AutoScrollState
+type View = {scrollTop: number; maxScrollTop: number}
 
 const view = (scrollTop: number, maxScrollTop = 1000): View => ({scrollTop, maxScrollTop})
 
@@ -36,7 +23,7 @@ function run(state: State, ticks: number, start = 0, max = 1000) {
 
 const ticksFor = (ms: number) => Math.ceil(ms / m.TICK_MS)
 
-describe('setup licence auto-scroll: opening', () => {
+describe('auto-scroll: opening', () => {
     it('holds still on open, before the first descent', () => {
         const {state, scrollTop} = run(m.initialAutoScrollState(), ticksFor(m.START_HOLD_MS) - 1)
         expect(state.phase).toBe('pauseTop')
@@ -48,7 +35,7 @@ describe('setup licence auto-scroll: opening', () => {
     })
 })
 
-describe('setup licence auto-scroll: the reading pass', () => {
+describe('auto-scroll: the reading pass', () => {
     const reading = (): State => ({phase: 'down', waitMs: 0, ticksToStep: m.DESCENT_TICKS_PER_STEP})
 
     it('advances a pixel every second tick, not every tick', () => {
@@ -69,7 +56,7 @@ describe('setup licence auto-scroll: the reading pass', () => {
     })
 })
 
-describe('setup licence auto-scroll: the rewind', () => {
+describe('auto-scroll: the rewind', () => {
     const rewinding = (): State => ({phase: 'up', waitMs: 0, ticksToStep: m.DESCENT_TICKS_PER_STEP})
 
     it('travels far faster than the reading pass', () => {
@@ -85,18 +72,18 @@ describe('setup licence auto-scroll: the rewind', () => {
     })
 
     it('goes back to reading after the top hold', () => {
-        const held = {phase: 'pauseTop', waitMs: m.TOP_HOLD_MS, ticksToStep: 1}
+        const held: State = {phase: 'pauseTop', waitMs: m.TOP_HOLD_MS, ticksToStep: 1}
         expect(run(held, ticksFor(m.TOP_HOLD_MS)).state.phase).toBe('down')
     })
 
     it('waits at the bottom, then rewinds rather than reading on', () => {
-        const held = {phase: 'pauseBottom', waitMs: m.BOTTOM_HOLD_MS, ticksToStep: 1}
+        const held: State = {phase: 'pauseBottom', waitMs: m.BOTTOM_HOLD_MS, ticksToStep: 1}
         expect(run(held, ticksFor(m.BOTTOM_HOLD_MS) - 1, 1000).state.phase).toBe('pauseBottom')
         expect(run(held, ticksFor(m.BOTTOM_HOLD_MS), 1000).state.phase).toBe('up')
     })
 })
 
-describe('setup licence auto-scroll: manual reading', () => {
+describe('auto-scroll: manual reading', () => {
     it('holds still for the whole suspension, then resumes from where the reader left it', () => {
         const held = m.suspended(m.initialAutoScrollState())
         expect(held.waitMs).toBe(m.MANUAL_HOLD_MS)
@@ -116,7 +103,7 @@ describe('setup licence auto-scroll: manual reading', () => {
     })
 })
 
-describe('setup licence auto-scroll: the driver', () => {
+describe('auto-scroll: the driver', () => {
     beforeEach(() => vi.useFakeTimers())
     afterEach(() => vi.useRealTimers())
 
@@ -149,6 +136,23 @@ describe('setup licence auto-scroll: the driver', () => {
         vi.advanceTimersByTime(m.MANUAL_HOLD_MS - m.TICK_MS)
         expect(el.scrollTop).toBe(reached)
         vi.advanceTimersByTime(m.TICK_MS * m.DESCENT_TICKS_PER_STEP * 10)
+        expect(el.scrollTop).toBeGreaterThan(reached)
+        stop()
+    })
+
+    it('freezes in place while inactive and ignores input, then carries on', () => {
+        const el = surface()
+        let looking = true
+        const stop = m.startAutoScroll(el, () => looking)
+        vi.advanceTimersByTime(m.START_HOLD_MS + m.TICK_MS * m.DESCENT_TICKS_PER_STEP * 10)
+        const reached = el.scrollTop
+        looking = false
+        el.dispatchEvent(new Event('wheel'))
+        vi.advanceTimersByTime(m.START_HOLD_MS)
+        expect(el.scrollTop).toBe(reached)
+        looking = true
+        // Not suspended by the wheel that arrived while frozen: it reads on at once.
+        vi.advanceTimersByTime(m.TICK_MS * m.DESCENT_TICKS_PER_STEP)
         expect(el.scrollTop).toBeGreaterThan(reached)
         stop()
     })

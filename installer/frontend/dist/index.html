@@ -93,7 +93,9 @@
     <div class="footer" id="footer"></div>
 </div>
 
-<script src="setup-scroll.js"></script>
+<!-- The auto-scroll machine is a module shared with the application; setup-shell.js
+     is a classic script, so the one function it calls is handed to it here. -->
+<script type="module">import {startAutoScroll} from './auto-scroll.js'; window.startAutoScroll = startAutoScroll</script>
 <script src="setup-shell.js"></script>
 <script src="setup-routes.js"></script>
 </body>

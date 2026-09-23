@@ -4,12 +4,15 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {api, on} from './api'
 import {DetailPanel} from './components/DetailPanel'
+import {HelpDialog, type HelpKind} from './components/HelpDialogs'
 import {GlobeView, type GlobeHandle} from './components/GlobeView'
 import {Key} from './components/Key'
 import {Rail} from './components/Rail'
 import {SettingsDialog} from './components/SettingsDialog'
 import {StatusLine} from './components/StatusLine'
+import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {TimeWindow} from './components/TimeWindow'
+import {donate} from './donate'
 import {icons} from './icons'
 import {useRing} from './ring'
 import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
@@ -25,13 +28,16 @@ export default function App() {
     const [settings, setSettings] = useState<SettingsDTO | null>(null)
     const [choices, setChoices] = useState<SettingChoicesDTO | null>(null)
     const [settingsOpen, setSettingsOpen] = useState(false)
+    const [statusOpen, setStatusOpen] = useState(false)
+    const [help, setHelp] = useState<HelpKind | null>(null)
     const [view, setView] = useState<ViewDTO>(EMPTY_VIEW)
     const [selected, setSelected] = useState<EventDTO | null>(null)
     const [problem, setProblem] = useState('')
     const globe = useRef<GlobeHandle>(null)
     // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
     const shell = useRef<HTMLDivElement>(null)
-    useRing(shell, !settingsOpen)
+    const modalOpen = settingsOpen || statusOpen || help !== null
+    useRing(shell, !modalOpen)
     const onProblem = useCallback((reason: string) => setProblem(reason), [])
 
     const windowKey = settings?.windowKey ?? ''
@@ -80,9 +86,14 @@ export default function App() {
     return <div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
             onToggleRotate={() => change({autoRotate: !settings?.autoRotate})}
+            attention={needsAttention(view.providers, view.notice)}
             onResetView={() => globe.current?.resetView()}
+            onZoom={zoomIn => globe.current?.zoom(zoomIn)}
             onRefresh={refresh}
-            onSettings={() => setSettingsOpen(true)}/>
+            onStatus={() => setStatusOpen(true)}
+            onSettings={() => setSettingsOpen(true)}
+            onHelp={setHelp}
+            onDonate={() => donate(onProblem)}/>
         <main className="stage">
             {/* The time window comes before the globe in the document so the ring
                 meets them in reading order, top to bottom (keeb invariant 1). */}
@@ -92,7 +103,7 @@ export default function App() {
             {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
                 onSelect={setSelected} onProblem={onProblem}/>}
-            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem || view.notice}/>
+            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
@@ -106,5 +117,7 @@ export default function App() {
         </aside>
         {settingsOpen && settings && choices && <SettingsDialog settings={settings} choices={choices}
             onChange={change} onClose={() => setSettingsOpen(false)}/>}
+        {statusOpen && <StatusPanel providers={view.providers} notice={view.notice} onClose={() => setStatusOpen(false)}/>}
+        {help && <HelpDialog kind={help} onClose={() => setHelp(null)} onProblem={onProblem}/>}
     </div>
 }
