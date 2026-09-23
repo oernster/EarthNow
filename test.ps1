@@ -75,6 +75,7 @@ $measured = [ordered]@{
     './internal/infrastructure/httpfetch'         = 96.6
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100
+    './internal/infrastructure/settings'          = 100
 }
 
 Write-Host 'Measuring infrastructure...'

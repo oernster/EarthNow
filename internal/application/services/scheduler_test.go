@@ -108,3 +108,35 @@ func TestFRPRV009_FRPRV010_ManualRefreshWithCooldown(t *testing.T) {
 		t.Errorf("a still-running EONET was made due: %q", got)
 	}
 }
+
+func TestFRSET002_ExpediteFetchesTheChangedProviderNow(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	s := schedulerFor(clock)
+	s.Due()
+	s.Succeeded(event.USGS)
+	s.Succeeded(event.EONET)
+	clock.now = noon.Add(10 * time.Second)
+	s.Expedite(event.USGS)
+	s.Expedite(event.Provider("NONE"))
+	if got := names(s.Due()); got != "USGS " {
+		t.Fatalf("idle expedite due = %q", got)
+	}
+	// Mid-fetch: the running fetch asks the old question, so the provider is
+	// due again as soon as it ends, success or failure.
+	s.Expedite(event.USGS)
+	s.Succeeded(event.USGS)
+	if got := s.NextAttempt(event.USGS); !got.Equal(clock.now) {
+		t.Errorf("after success next = %v, want now", got)
+	}
+	s.Due()
+	s.Expedite(event.USGS)
+	if got := s.Failed(event.USGS); got != 0 || !s.NextAttempt(event.USGS).Equal(clock.now) {
+		t.Errorf("after failure delay = %v, next %v", got, s.NextAttempt(event.USGS))
+	}
+	s.Due()
+	s.Succeeded(event.USGS)
+	if got := s.NextAttempt(event.USGS); !got.Equal(clock.now.Add(time.Minute)) {
+		t.Errorf("an honoured expedite lingered: next %v", got)
+	}
+}

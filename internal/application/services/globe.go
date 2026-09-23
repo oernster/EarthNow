@@ -165,10 +165,10 @@ func (g *Globe) record(p event.Provider, a attempt) {
 }
 
 // Windows answers the time window choices (FR-TW-001).
-func (g *Globe) Windows() []dto.Window {
-	var out []dto.Window
+func (g *Globe) Windows() []dto.Choice {
+	var out []dto.Choice
 	for _, w := range window.All() {
-		out = append(out, dto.Window{Key: w.Key, Label: w.Label})
+		out = append(out, dto.Choice{Key: w.Key, Label: w.Label})
 	}
 	return out
 }

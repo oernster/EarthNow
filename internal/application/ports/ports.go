@@ -29,6 +29,28 @@ type SnapshotCache interface {
 	Save(p event.Provider, snap Snapshot) error
 }
 
+// Settings is what the reader has chosen that outlives a run (FR-SET-001 to
+// 003, FR-FLT-005). Choices are held by key; the application owns what each
+// key means.
+type Settings struct {
+	AutoRotate       bool
+	Magnitude        string
+	Speed            string
+	Window           string
+	HiddenCategories []string
+	HiddenProviders  []string
+}
+
+// SettingsStore keeps the settings between runs (FR-SET-004). Load starts from
+// defaults, so a field the file does not hold keeps its default; it answers
+// false with no error when there is no file, which is absence rather than a
+// fault. Path names the file, so a notice can say which one was not read.
+type SettingsStore interface {
+	Load(defaults Settings) (Settings, bool, error)
+	Save(Settings) error
+	Path() string
+}
+
 // Geocoder words where a point is (FR-GEO-001 to 003).
 type Geocoder interface {
 	Describe(lat, lng float64) string

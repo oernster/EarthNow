@@ -38,7 +38,27 @@ export interface ViewDTO {
     notice: string
 }
 
-export interface WindowDTO {
+export interface ChoiceDTO {
     key: string
     label: string
+}
+
+export interface SpeedDTO {
+    key: string
+    label: string
+    secondsPerRevolution: number
+}
+
+export interface SettingsDTO {
+    autoRotate: boolean
+    magnitude: string
+    speed: string
+    windowKey: string
+    hiddenCategories: string[]
+    hiddenProviders: string[]
+}
+
+export interface SettingChoicesDTO {
+    magnitudes: ChoiceDTO[]
+    speeds: SpeedDTO[]
 }

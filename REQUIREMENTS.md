@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 5.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 6.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -11,6 +11,7 @@ edits.
 | 3 | 2026-09-23 | FR-KEY-001 to 004 added: a key down the left side naming each category's emoji. | Owner request: the emoji need a key. |
 | 4 | 2026-09-23 | FR-GEO-001 to 008 added: hovering a marker shows the nearest populated place with its country, distance and direction, resolved offline from embedded Natural Earth data; the keyboard cursor and the detail panel show the same line. | Owner request, hover rather than click. Offline because NFR-PRIV-001 allows no host beyond the two providers. |
 | 5 | 2026-09-23 | DATA-005 now marks day precision per event, only when every date is midnight; DATA-012 added for USGS types and withdrawn events. | The captured EONET fixture showed a storm track with a genuine 00:00Z fix, which the per-date rule would have misread. USGS feeds carry quarry blasts and explosions, which are not earthquakes. |
+| 6 | 2026-09-23 | FR-RAIL-001 to 003 added: an action rail down the left side, 68 px wide, carrying the action icons at 48 px with the donate button at its foot. The key moves to the right side (FR-KEY-001, 003); FR-GLB-013's globe area is the window less the rail and the key; FR-DON-001, 002 and 007 follow the donate button into the rail. | NFR-UX-001 leaves 55 px of height for full-width bars at 960 x 600, less than one PigeonPost header (61 px glyphs); a rail spends width instead. 960 less the 220 px key less the 68 px rail leaves 672 px, which at 600 px high is exactly 70% (owner's choice of layout). |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -244,7 +245,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-GLB-006 | Must | When the user scrolls the wheel over the globe, the globe view shall zoom between the minimum and maximum altitudes (0.15 and 4.0 globe radii). | Zoom clamps at both limits. | T + D |
 | FR-GLB-007 | Must | When an event is selected, the globe view shall animate the camera to centre that event over the focus duration (NFR-UX-003), keeping the current altitude. | Given a selected event on the far side, the camera arrives centred on it at unchanged altitude. | D |
 | FR-GLB-008 | Should | When "Reset view" is activated, the globe view shall return the camera to the fit altitude (FR-GLB-013). | D | D |
-| FR-GLB-013 | Must | When the application starts or the globe area is resized, the globe view shall set the camera altitude so the whole globe fits the globe area with its drawn diameter between 85% and 92% of the area's shorter side. The globe area is the window less the key (FR-KEY-001) and the bars. | Spike measured 2026-09-23 at 1264 x 761: altitude 1.629, diameter 671 px, 88.2% of the shorter side; the whole globe visible. | T (fit maths) + D |
+| FR-GLB-013 | Must | When the application starts or the globe area is resized, the globe view shall set the camera altitude so the whole globe fits the globe area with its drawn diameter between 85% and 92% of the area's shorter side. The globe area is the window less the action rail (FR-RAIL-001) and the key (FR-KEY-001). | Spike measured 2026-09-23 at 1264 x 761: altitude 1.629, diameter 671 px, 88.2% of the shorter side; the whole globe visible. | T (fit maths) + D |
 | FR-GLB-010 | Must | While auto-rotate is on, the rotation button shall show `rotate` with the `negative` overlay and the tooltip "Stop rotating"; while auto-rotate is off, it shall show plain `rotate` with the tooltip "Start rotating" (NFR-UX-004). | Given rotation on, the button shows the crossed icon; one press stops rotation and the button shows the plain icon. | T |
 | FR-GLB-011 | Must | When the rotation button is activated, the application shall switch auto-rotate and persist the new value as the FR-SET-001 setting. | The button and the settings dialog never disagree. | T |
 | FR-GLB-012 | Must | The globe view shall rotate on idle whatever the operating system's reduced-motion or animation-effects setting; the auto-rotate setting is the only switch. | With Windows Animation effects off, rotation still starts after the idle delay. Rationale: on Windows that switch is commonly turned off for performance, the same ground on which the house scroll ruling declined to gate on it. | T |
@@ -295,9 +296,12 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-FLT-003 | Must | When "All events" is activated, the filter control shall switch every category toggle on. | T | T |
 | FR-FLT-004 | Must | The filter control shall offer one toggle per provider. | Switching off USGS hides every USGS event. | T |
 | FR-FLT-005 | Should | When the application closes, the settings store shall persist the time window and filter state; when the application starts, the controls shall restore them. | T | T |
-| FR-KEY-001 | Must | While the globe view is showing, the main window shall show a key down its left side listing each category in DATA-002 order as its emoji beside its category name. | Every category in the category table renders one key row, emoji first. | T |
+| FR-KEY-001 | Must | While the globe view is showing, the main window shall show a key down its right side listing each category in DATA-002 order as its emoji beside its category name. | Every category in the category table renders one key row, emoji first. | T |
 | FR-KEY-002 | Must | The key shall read its emoji and names from the category table (Appendix D.3), the same single home the markers read. | Structural test: no emoji literal outside the category table. | T |
-| FR-KEY-003 | Must | The key shall never overlap the globe: the globe area begins at the key's right edge (FR-GLB-013). | D at the minimum window size. | D |
+| FR-KEY-003 | Must | The key shall never overlap the globe: the globe area ends at the key's left edge (FR-GLB-013). | D at the minimum window size. | D |
+| FR-RAIL-001 | Must | The main window shall carry an action rail down its left side, 68 px wide, holding the action buttons one above another, each drawing its artwork at the rail's glyph size of 48 px (`--rail-glyph-size`); the globe area begins at the rail's right edge. | T (render) + D at the minimum window size. | T + D |
+| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), Reset view (FR-GLB-008), Refresh (FR-PRV-009), Settings (FR-SET), then Help when it exists (FR-HLP). | T | T |
+| FR-RAIL-003 | Must | Every rail button's tooltip shall open to the right of the button, so it is not clipped at the window's left edge. | D at the minimum window size. | D |
 | FR-KEY-004 | Should | Each key row shall show the count of that category's displayed events. | 3 displayed quakes read "〰️ Earthquake 3". | T |
 | FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
 
@@ -357,13 +361,13 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
-| FR-DON-001 | Must | The main window shall carry a bottom tray ported from PigeonPost's `BottomBar.tsx`: a `footer` wearing the header bar's own class plus `bottombar`, which adds only a top border in place of the bottom one, so the tray matches the header's height exactly. | Inspection: no second set of bar dimensions in the stylesheet. | I |
-| FR-DON-002 | Must | The bottom tray shall hold the donate button alone, at its far left, drawn at the header's own glyph height (`--titlebar-icon-size`). | T (render) | T |
+| FR-DON-001 | Must | The action rail (FR-RAIL-001) shall end in a tray ported from PigeonPost's `BottomBar.tsx`: a `footer` at the rail's foot wearing the rail's own button class, which adds only a top border, so the donate button matches the rail's buttons exactly. | Inspection: no second set of button dimensions in the stylesheet. | I |
+| FR-DON-002 | Must | The rail's tray shall hold the donate button alone, drawn at the rail's glyph size (`--rail-glyph-size`). | T (render) | T |
 | FR-DON-003 | Must | When the donate button is activated, the application shall hand `https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE` to the system browser through the same external-open facade and scheme allowlist as FR-SEL-005. | Vitest with the api mocked asserts the address literally; proved to bite by altering one character. | T |
 | FR-DON-004 | Must | The donate address shall have exactly one home: a named constant beside the product identity. | Structural test: the address string appears exactly once across `frontend/src` and `internal` combined. | T |
 | FR-DON-005 | Must | The donate button shall carry the tooltip and accessible name "Donate to support EarthNow", as PigeonPost's does. | T | T |
 | FR-DON-006 | Must | If the system declines to open a browser, then the status area shall say the donation page could not be opened. | T with a refusing fake opener. | T |
-| FR-DON-007 | Must | The donate tooltip shall open upwards and left-aligned to the button, so it is not clipped at the window's bottom-left corner. | D at the minimum window size. | D |
+| FR-DON-007 | Must | The donate tooltip shall open to the right of the button and upwards, so it is clipped neither at the window's left edge nor at its foot. | D at the minimum window size. | D |
 | FR-DON-008 | Must | The donate button shall be the last stop of the main window's ring, reached in document order after the panes. | Vitest ring walk reads it last. | T |
 | FR-DON-009 | Must | The application shall fetch nothing from the donate address itself; no feature shall depend on a donation. | I | I |
 | FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | Computed height measured at 1.8 times the line box. | D |

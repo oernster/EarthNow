@@ -15,10 +15,11 @@ const BackoffCeiling = 30 * time.Minute
 const ManualCooldown = 30 * time.Second
 
 type schedule struct {
-	interval time.Duration
-	failures int
-	nextDue  time.Time
-	running  bool
+	interval  time.Duration
+	failures  int
+	nextDue   time.Time
+	running   bool
+	expedited bool
 }
 
 // Scheduler decides when each provider is next fetched. It holds no timer:
@@ -82,6 +83,31 @@ func (s *Scheduler) Succeeded(p event.Provider) {
 	st := s.states[p]
 	st.running, st.failures = false, 0
 	st.nextDue = s.clock.Now().Add(st.interval)
+	s.honourExpedite(st)
+}
+
+// Expedite makes one provider due now because its query changed (FR-SET-002).
+// A provider mid-fetch is asking the old question, so it falls due again the
+// moment that fetch ends rather than a whole interval later.
+func (s *Scheduler) Expedite(p event.Provider) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.states[p]
+	if !ok {
+		return
+	}
+	if st.running {
+		st.expedited = true
+		return
+	}
+	st.nextDue = s.clock.Now()
+}
+
+func (s *Scheduler) honourExpedite(st *schedule) {
+	if st.expedited {
+		st.expedited = false
+		st.nextDue = s.clock.Now()
+	}
 }
 
 // Failed schedules the retry: the delay doubles from the interval with each
@@ -101,6 +127,10 @@ func (s *Scheduler) Failed(p event.Provider) time.Duration {
 		delay = BackoffCeiling
 	}
 	st.nextDue = s.clock.Now().Add(delay)
+	if st.expedited {
+		s.honourExpedite(st)
+		return 0
+	}
 	return delay
 }
 

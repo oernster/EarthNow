@@ -46,8 +46,33 @@ type View struct {
 	Notice string `json:"notice"`
 }
 
-// Window is one choice in the time window control.
-type Window struct {
+// Choice is one option of a control: a time window, a minimum magnitude.
+type Choice struct {
 	Key   string `json:"key"`
 	Label string `json:"label"`
+}
+
+// Speed is one idle rotation preset (FR-SET-003) with the period the globe
+// turns at, so the page holds no rotation figure of its own.
+type Speed struct {
+	Key                  string `json:"key"`
+	Label                string `json:"label"`
+	SecondsPerRevolution int    `json:"secondsPerRevolution"`
+}
+
+// Settings is what the reader has chosen that outlives a run (FR-SET-001 to
+// 003, FR-FLT-005). Every list is empty rather than absent.
+type Settings struct {
+	AutoRotate       bool     `json:"autoRotate"`
+	Magnitude        string   `json:"magnitude"`
+	Speed            string   `json:"speed"`
+	WindowKey        string   `json:"windowKey"`
+	HiddenCategories []string `json:"hiddenCategories"`
+	HiddenProviders  []string `json:"hiddenProviders"`
+}
+
+// SettingChoices is what the settings dialog offers.
+type SettingChoices struct {
+	Magnitudes []Choice `json:"magnitudes"`
+	Speeds     []Speed  `json:"speeds"`
 }

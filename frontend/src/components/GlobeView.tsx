@@ -1,6 +1,6 @@
 // The globe (FR-GLB, FR-MRK): texture, fitted camera, idle rotation, emoji
 // markers, hover place lines and selection with a camera focus.
-import {useEffect, useRef, useState} from 'react'
+import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react'
 import Globe, {type GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
@@ -10,24 +10,35 @@ import {fitAltitude, sprite} from '../markers'
 import type {EventDTO} from '../types'
 
 const MARKER_ALTITUDE = 0.01
+// NFR-UX-003: the camera focus animation, used by Reset view as well.
 const FOCUS_MS = 1000
-// FR-GLB-002: one revolution per 240 s. OrbitControls documents speed 2.0 as
-// one orbit in 30 s, so an orbit takes ORBIT_SECONDS_AT_UNIT_SPEED / speed.
-const SECONDS_PER_REVOLUTION = 240
+// OrbitControls documents speed 2.0 as one orbit in 30 s, so an orbit takes
+// ORBIT_SECONDS_AT_UNIT_SPEED / speed; the period comes from the settings.
 const ORBIT_SECONDS_AT_UNIT_SPEED = 60
-const ROTATE_SPEED = ORBIT_SECONDS_AT_UNIT_SPEED / SECONDS_PER_REVOLUTION
+// FR-GLB-002: rotation resumes after this long without input on the globe.
+const IDLE_DELAY_MS = 10_000
+// FR-GLB-003: the input that stops idle rotation.
+const STOPPING_INPUT = ['pointerdown', 'wheel', 'keydown'] as const
 const TIP_OFFSET_PX = 14
 
 interface Props {
     events: EventDTO[]
     selectedId: string | null
+    autoRotate: boolean
+    secondsPerRevolution: number
     onSelect: (e: EventDTO) => void
     onProblem: (reason: string) => void
 }
 
+// GlobeHandle is what the rail drives directly.
+export interface GlobeHandle {
+    resetView: () => void
+}
+
 interface Tip { x: number; y: number; title: string; place: string }
 
-export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
+export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
+    {events, selectedId, autoRotate, secondsPerRevolution, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const globe = useRef<GlobeInstance | null>(null)
     const hovered = useRef<EventDTO | null>(null)
@@ -35,6 +46,28 @@ export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
     const handlers = useRef({onSelect, onProblem})
     handlers.current = {onSelect, onProblem}
     const [tip, setTip] = useState<Tip | null>(null)
+    // The setting as last rendered, read when the idle delay runs out.
+    const rotationWanted = useRef(autoRotate)
+    const idleTimer = useRef<number | null>(null)
+
+    // pause stops rotation for input and restarts it after the idle delay.
+    const pause = useRef(() => {
+        const g = globe.current
+        if (!g) return
+        g.controls().autoRotate = false
+        if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
+        idleTimer.current = window.setTimeout(() => {
+            idleTimer.current = null
+            if (globe.current) globe.current.controls().autoRotate = rotationWanted.current
+        }, IDLE_DELAY_MS)
+    })
+
+    useImperativeHandle(ref, () => ({
+        resetView: () => {
+            const g = globe.current
+            if (g) g.pointOfView({altitude: fitAltitude(g.camera() as THREE.PerspectiveCamera)}, FOCUS_MS)
+        },
+    }), [])
 
     useEffect(() => {
         const el = host.current
@@ -55,9 +88,7 @@ export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
                 })
             })
         globe.current = g
-        const controls = g.controls()
-        controls.autoRotate = true
-        controls.autoRotateSpeed = ROTATE_SPEED
+        g.controls().autoRotate = rotationWanted.current
         const camera = g.camera() as THREE.PerspectiveCamera
         const fit = () => {
             g.width(el.clientWidth).height(el.clientHeight)
@@ -71,13 +102,29 @@ export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
             if (hovered.current) setTip(t => t && {...t, ...pointer.current})
         }
         el.addEventListener('mousemove', onMove)
+        const onInput = () => pause.current()
+        STOPPING_INPUT.forEach(name => el.addEventListener(name, onInput))
         return () => {
             observer.disconnect()
             el.removeEventListener('mousemove', onMove)
+            STOPPING_INPUT.forEach(name => el.removeEventListener(name, onInput))
+            if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
             g._destructor()
             globe.current = null
         }
     }, [])
+
+    // The setting is the only switch (FR-GLB-004, FR-GLB-012). Switching it on
+    // starts rotation at once unless input is still inside its idle delay.
+    useEffect(() => {
+        rotationWanted.current = autoRotate
+        const g = globe.current
+        if (!g) return
+        const controls = g.controls()
+        controls.autoRotateSpeed = ORBIT_SECONDS_AT_UNIT_SPEED / secondsPerRevolution
+        if (!autoRotate) controls.autoRotate = false
+        else if (idleTimer.current === null) controls.autoRotate = true
+    }, [autoRotate, secondsPerRevolution])
 
     useEffect(() => {
         const g = globe.current
@@ -93,7 +140,7 @@ export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
         const g = globe.current
         const chosen = events.find(e => e.id === selectedId)
         if (!g || !chosen) return
-        g.controls().autoRotate = false
+        pause.current()
         g.pointOfView({lat: chosen.lat, lng: chosen.lng}, FOCUS_MS)
     // Focus once per selection, not on every refresh of the same event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,4 +154,4 @@ export function GlobeView({events, selectedId, onSelect, onProblem}: Props) {
             {tip.place && <div className="tip-place">{tip.place}</div>}
         </div>}
     </>
-}
+})

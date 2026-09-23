@@ -23,6 +23,7 @@ import (
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
+	"github.com/oernster/EarthNow/internal/infrastructure/settings"
 )
 
 //go:embed all:frontend/dist
@@ -81,18 +82,24 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host)
-	providers := []ports.Provider{eonet.New(client), usgs.New(client, usgs.DefaultMinimum)}
+	quakes := usgs.New(client, usgs.AllMagnitudes)
+	providers := []ports.Provider{eonet.New(client), quakes}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
-	if dir, err := dataDir(); err == nil {
+	dir, err := dataDir()
+	if err == nil {
 		globe.UseCache(cache.New(filepath.Join(dir, cacheFolder), responseCap))
 	} else {
-		log.Printf("no cache folder: %v", err)
+		log.Printf("no data folder: %v", err)
+		dir = ""
 	}
+	// The settings load before the first fetch, so it asks with the saved minimum.
+	prefs := services.NewPreferences(settings.New(dir), quakes.SetMinimum)
+	prefs.Load()
 	globe.RestoreCached()
-	app := NewApp(globe, services.NewScheduler(clock, providers), providers)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, providers)
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:            productName,
 		Width:            windowWidth,
 		Height:           windowHeight,

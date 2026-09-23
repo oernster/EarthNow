@@ -1,13 +1,16 @@
 // The one door to the Go side. Every call takes a refusal handler as its last
 // argument and answers null rather than rejecting, so a call without one does
 // not compile and nothing is left for a console nobody opens (NFR-REL-004).
-import type {ViewDTO, WindowDTO} from './types'
+import type {ChoiceDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 
 type Refused = (reason: string) => void
 
 interface Bound {
     View(windowKey: string, hiddenCategories: string[], hiddenProviders: string[]): Promise<ViewDTO>
-    Windows(): Promise<WindowDTO[]>
+    Windows(): Promise<ChoiceDTO[]>
+    Settings(): Promise<SettingsDTO>
+    SettingChoices(): Promise<SettingChoicesDTO>
+    SaveSettings(chosen: SettingsDTO): Promise<SettingsDTO>
     Place(lat: number, lng: number): Promise<string>
     OpenSource(link: string): Promise<void>
     RefreshNow(): Promise<string>
@@ -39,6 +42,10 @@ export const api = {
     view: (windowKey: string, hiddenCategories: string[], hiddenProviders: string[], onRefused: Refused) =>
         call(b => b.View(windowKey, hiddenCategories, hiddenProviders), onRefused),
     windows: (onRefused: Refused) => call(b => b.Windows(), onRefused),
+    settings: (onRefused: Refused) => call(b => b.Settings(), onRefused),
+    settingChoices: (onRefused: Refused) => call(b => b.SettingChoices(), onRefused),
+    // saveSettings answers the settings as now held, which may differ from those sent.
+    saveSettings: (chosen: SettingsDTO, onRefused: Refused) => call(b => b.SaveSettings(chosen), onRefused),
     place: (lat: number, lng: number, onRefused: Refused) => call(b => b.Place(lat, lng), onRefused),
     openSource: (link: string, onRefused: Refused) => call(b => b.OpenSource(link), onRefused),
     // refreshNow answers "" when a refresh started, else when one becomes available.

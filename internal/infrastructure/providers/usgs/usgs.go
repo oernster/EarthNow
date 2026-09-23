@@ -8,6 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/oernster/EarthNow/internal/application/ports"
@@ -23,9 +26,6 @@ const Interval = time.Minute
 
 // AllMagnitudes is the minimum that keeps every event, "all" in settings.
 var AllMagnitudes = math.Inf(-1)
-
-// DefaultMinimum is the owner's default of 3.0 (FR-PRV-003).
-const DefaultMinimum = 3.0
 
 // feed is one published threshold: the feeds exist only at these (measured).
 type feed struct {
@@ -51,12 +51,44 @@ type Fetcher interface {
 // Adapter is the USGS provider.
 type Adapter struct {
 	fetcher Fetcher
+	mu      sync.Mutex
 	minimum float64
 }
 
 // New builds the adapter keeping events at or above minimum magnitude.
 func New(fetcher Fetcher, minimum float64) *Adapter {
 	return &Adapter{fetcher: fetcher, minimum: minimum}
+}
+
+// SetMinimum changes the minimum magnitude from the next fetch on (FR-SET-002).
+func (a *Adapter) SetMinimum(minimum float64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.minimum = minimum
+}
+
+// validatorSeparator joins the minimum a validator was taken under to the
+// source's Last-Modified. It cannot occur in the minimum's own wording.
+const validatorSeparator = "|"
+
+// validatorFor words a validator so it answers "changed since?" for one
+// minimum only. Two minimums can share a feed (2.5 and 3.0 both read the 2.5
+// feed), so the URL alone would not tell them apart.
+func validatorFor(minimum float64, lastModified string) string {
+	if lastModified == "" {
+		return ""
+	}
+	return strconv.FormatFloat(minimum, 'g', -1, 64) + validatorSeparator + lastModified
+}
+
+// lastModifiedFrom answers the Last-Modified to send; empty when the validator
+// was taken under another minimum or in another shape.
+func lastModifiedFrom(minimum float64, validator string) string {
+	key, lastModified, found := strings.Cut(validator, validatorSeparator)
+	if !found || key != strconv.FormatFloat(minimum, 'g', -1, 64) {
+		return ""
+	}
+	return lastModified
 }
 
 // Name implements ports.Provider.
@@ -76,20 +108,24 @@ func URL(minimum float64) string {
 	return fmt.Sprintf("https://%s/earthquakes/feed/v1.0/summary/%s_week.geojson", Host, chosen.name)
 }
 
-// Fetch implements ports.Provider, conditional on the last Last-Modified.
+// Fetch implements ports.Provider, conditional on the last Last-Modified taken
+// under the current minimum.
 func (a *Adapter) Fetch(ctx context.Context, validator string) (ports.Fetched, error) {
-	resp, err := a.fetcher.Get(ctx, URL(a.minimum), validator)
+	a.mu.Lock()
+	minimum := a.minimum
+	a.mu.Unlock()
+	resp, err := a.fetcher.Get(ctx, URL(minimum), lastModifiedFrom(minimum, validator))
 	if err != nil {
 		return ports.Fetched{}, fmt.Errorf("USGS: %w", err)
 	}
 	if resp.NotModified {
-		return ports.Fetched{NotModified: true, Validator: resp.LastModified}, nil
+		return ports.Fetched{NotModified: true, Validator: validatorFor(minimum, resp.LastModified)}, nil
 	}
-	events, dropped, err := Parse(resp.Body, a.minimum)
+	events, dropped, err := Parse(resp.Body, minimum)
 	if err != nil {
 		return ports.Fetched{}, fmt.Errorf("USGS: %w", err)
 	}
-	return ports.Fetched{Events: events, Validator: resp.LastModified, Dropped: dropped}, nil
+	return ports.Fetched{Events: events, Validator: validatorFor(minimum, resp.LastModified), Dropped: dropped}, nil
 }
 
 type wireFeature struct {

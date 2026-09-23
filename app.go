@@ -30,17 +30,18 @@ type App struct {
 	ctx    context.Context
 	globe  *services.Globe
 	sched  *services.Scheduler
+	prefs  *services.Preferences
 	byName map[event.Provider]ports.Provider
 	wake   chan struct{}
 }
 
 // NewApp builds the facade.
-func NewApp(globe *services.Globe, sched *services.Scheduler, providers []ports.Provider) *App {
+func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, providers []ports.Provider) *App {
 	byName := map[event.Provider]ports.Provider{}
 	for _, p := range providers {
 		byName[p.Name()] = p
 	}
-	return &App{globe: globe, sched: sched, byName: byName, wake: make(chan struct{}, 1)}
+	return &App{globe: globe, sched: sched, prefs: prefs, byName: byName, wake: make(chan struct{}, 1)}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -176,11 +177,32 @@ func (a *App) View(windowKey string, hiddenCategories, hiddenProviders []string)
 			view.Providers[i].NextAttempt = "next attempt " + freshness.Until(a.sched.NextAttempt(event.Provider(p.Name)), now)
 		}
 	}
+	view.Notice = services.JoinNotices(view.Notice, a.prefs.Notice())
 	return view
 }
 
 // Windows answers the time window choices.
-func (a *App) Windows() []dto.Window { return a.globe.Windows() }
+func (a *App) Windows() []dto.Choice { return a.globe.Windows() }
+
+// Settings answers the reader's settings as held.
+func (a *App) Settings() dto.Settings { return a.prefs.Current() }
+
+// SettingChoices answers what the settings dialog offers.
+func (a *App) SettingChoices() dto.SettingChoices { return a.prefs.Choices() }
+
+// SaveSettings keeps the page's settings and answers them as now held. A
+// provider whose query changed is fetched again at once (FR-SET-002).
+func (a *App) SaveSettings(chosen dto.Settings) dto.Settings {
+	held, refetch := a.prefs.Update(chosen)
+	for _, p := range refetch {
+		log.Printf("%s: query changed; fetching again", p)
+		a.sched.Expedite(p)
+	}
+	if len(refetch) > 0 {
+		a.nudge()
+	}
+	return held
+}
 
 // Place answers the nearest-place line for a point (FR-GEO-001).
 func (a *App) Place(lat, lng float64) string { return a.globe.Place(lat, lng) }

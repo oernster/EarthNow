@@ -23,12 +23,12 @@ func fixture(t *testing.T) []byte {
 func TestFRPRV003_URLPicksTheHighestFeedNotAboveTheMinimum(t *testing.T) {
 	t.Parallel()
 	cases := map[float64]string{
-		AllMagnitudes:  "all",
-		1.0:            "1.0",
-		2.0:            "1.0",
-		DefaultMinimum: "2.5",
-		4.5:            "4.5",
-		6.0:            "4.5",
+		AllMagnitudes: "all",
+		1.0:           "1.0",
+		2.0:           "1.0",
+		ownerDefault:  "2.5",
+		4.5:           "4.5",
+		6.0:           "4.5",
 	}
 	for minimum, name := range cases {
 		want := "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/" + name + "_week.geojson"
@@ -36,7 +36,7 @@ func TestFRPRV003_URLPicksTheHighestFeedNotAboveTheMinimum(t *testing.T) {
 			t.Errorf("URL(%v) = %q, want %q", minimum, got, want)
 		}
 	}
-	a := New(nil, DefaultMinimum)
+	a := New(nil, ownerDefault)
 	if a.Name() != event.USGS || a.Interval() != time.Minute {
 		t.Error("Name or Interval wrong")
 	}
@@ -59,9 +59,9 @@ func TestParseCapturedFixture(t *testing.T) {
 	if first.Extras.DepthKm == nil || first.UpdatedAt.IsZero() || first.SourceURL != "https://earthquake.usgs.gov/earthquakes/eventpage/pr71534228" {
 		t.Errorf("first extras = %+v", first)
 	}
-	atThree, _, _ := Parse(fixture(t), DefaultMinimum)
+	atThree, _, _ := Parse(fixture(t), ownerDefault)
 	for _, e := range atThree {
-		if e.Observations[0].Measurement.Value < DefaultMinimum {
+		if e.Observations[0].Measurement.Value < ownerDefault {
 			t.Errorf("%s at M%v kept under a 3.0 minimum", e.ProviderEventID, e.Observations[0].Measurement.Value)
 		}
 	}
@@ -102,7 +102,7 @@ func TestFRPRV013_MalformedFeaturesDroppedWithdrawnOnesLeftOut(t *testing.T) {
 	if events[1].Observations[0].Measurement != nil {
 		t.Error("a quake with no magnitude was given one")
 	}
-	if kept, _, _ := Parse([]byte(body), DefaultMinimum); len(kept) != 0 {
+	if kept, _, _ := Parse([]byte(body), ownerDefault); len(kept) != 0 {
 		t.Errorf("events without a magnitude passed a 3.0 minimum: %+v", kept)
 	}
 }
@@ -122,19 +122,59 @@ func (f *fakeFetcher) Get(_ context.Context, rawURL, validator string) (httpfetc
 func TestFRPRV004_FetchIsConditional(t *testing.T) {
 	t.Parallel()
 	full := &fakeFetcher{resp: httpfetch.Response{Body: fixture(t), LastModified: "Wed, 23 Sep 2026 11:52:04 GMT"}}
-	got, err := New(full, DefaultMinimum).Fetch(context.Background(), "")
-	if err != nil || got.NotModified || got.Validator != "Wed, 23 Sep 2026 11:52:04 GMT" || full.url != URL(DefaultMinimum) {
+	got, err := New(full, ownerDefault).Fetch(context.Background(), "")
+	if err != nil || got.NotModified || got.Validator == "" || full.url != URL(ownerDefault) {
 		t.Errorf("full fetch = %+v, %v", got, err)
 	}
-	same := &fakeFetcher{resp: httpfetch.Response{NotModified: true, LastModified: "v"}}
-	got, err = New(same, DefaultMinimum).Fetch(context.Background(), "Wed, 23 Sep 2026 11:52:04 GMT")
-	if err != nil || !got.NotModified || got.Events != nil || same.validator != "Wed, 23 Sep 2026 11:52:04 GMT" {
-		t.Errorf("conditional fetch = %+v, %v, sent %q", got, err, same.validator)
+	same := &fakeFetcher{resp: httpfetch.Response{NotModified: true}}
+	again, err := New(same, ownerDefault).Fetch(context.Background(), got.Validator)
+	if err != nil || !again.NotModified || again.Events != nil || same.validator != "Wed, 23 Sep 2026 11:52:04 GMT" {
+		t.Errorf("conditional fetch = %+v, %v, sent %q", again, err, same.validator)
 	}
-	if _, err := New(&fakeFetcher{err: errors.New("timeout")}, DefaultMinimum).Fetch(context.Background(), ""); err == nil {
+	// A validator from before the minimum was part of it is sent as nothing.
+	if _, _ = New(same, ownerDefault).Fetch(context.Background(), "Wed, 23 Sep 2026 11:52:04 GMT"); same.validator != "" {
+		t.Errorf("a bare Last-Modified was sent as %q", same.validator)
+	}
+}
+
+func TestFRSET002_SetMinimumSwitchesTheNextFetch(t *testing.T) {
+	t.Parallel()
+	f := &fakeFetcher{resp: httpfetch.Response{Body: fixture(t)}}
+	a := New(f, ownerDefault)
+	a.SetMinimum(4.5)
+	if _, err := a.Fetch(context.Background(), ""); err != nil || f.url != URL(4.5) {
+		t.Errorf("after SetMinimum(4.5) fetched %s, %v", f.url, err)
+	}
+}
+
+// ownerDefault is FR-SET-002's default minimum, whose home is the settings.
+const ownerDefault = 3.0
+
+// A validator answers "changed since?" for one feed and one filter only. 2.5
+// and 3.0 share the 2.5 feed, so a 304 there would keep the 2.5 set under a
+// 3.0 setting (FR-SET-002).
+func TestFRSET002_ValidatorIsNotSentAcrossAMinimumChange(t *testing.T) {
+	t.Parallel()
+	first := &fakeFetcher{resp: httpfetch.Response{Body: fixture(t), LastModified: "Wed, 23 Sep 2026 11:52:04 GMT"}}
+	got, err := New(first, 2.5).Fetch(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := &fakeFetcher{resp: httpfetch.Response{Body: fixture(t)}}
+	if _, err := New(next, ownerDefault).Fetch(context.Background(), got.Validator); err != nil {
+		t.Fatal(err)
+	}
+	if next.validator != "" || next.url != URL(2.5) {
+		t.Errorf("after 2.5 to 3.0 the adapter sent %q to %s", next.validator, next.url)
+	}
+}
+
+func TestFetchFailures(t *testing.T) {
+	t.Parallel()
+	if _, err := New(&fakeFetcher{err: errors.New("timeout")}, ownerDefault).Fetch(context.Background(), ""); err == nil {
 		t.Error("a failed fetch was reported as success")
 	}
-	if _, err := New(&fakeFetcher{resp: httpfetch.Response{Body: []byte("x")}}, DefaultMinimum).Fetch(context.Background(), ""); err == nil {
+	if _, err := New(&fakeFetcher{resp: httpfetch.Response{Body: []byte("x")}}, ownerDefault).Fetch(context.Background(), ""); err == nil {
 		t.Error("an unparseable body was reported as success")
 	}
 }

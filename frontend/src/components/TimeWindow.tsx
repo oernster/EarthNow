@@ -1,8 +1,8 @@
 // The time window control (FR-TW-001): one button per window.
-import type {WindowDTO} from '../types'
+import type {ChoiceDTO} from '../types'
 
 interface Props {
-    windows: WindowDTO[]
+    windows: ChoiceDTO[]
     selected: string
     onChoose: (key: string) => void
 }
