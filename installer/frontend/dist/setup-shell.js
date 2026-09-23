@@ -113,9 +113,12 @@ async function showLicence() {
         text.textContent = 'The licence text is not in this build of setup.'
     }
     showScreen('licence')
+    // The licence reads itself (scroll skill); a fresh cycle each time it opens.
+    text.scrollTop = 0
+    const stopReading = startAutoScroll(text)
     setFooter([{
         label: 'Back', kind: 'primary',
-        onClick: () => { showScreen(back.screen); setFooter(back.footer) },
+        onClick: () => { stopReading(); showScreen(back.screen); setFooter(back.footer) },
     }])
 }
 

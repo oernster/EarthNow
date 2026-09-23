@@ -10,6 +10,7 @@ import {Rail} from './components/Rail'
 import {SettingsDialog} from './components/SettingsDialog'
 import {StatusLine} from './components/StatusLine'
 import {TimeWindow} from './components/TimeWindow'
+import {icons} from './icons'
 import {useRing} from './ring'
 import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 
@@ -95,7 +96,8 @@ export default function App() {
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
-            <h1>EarthNow</h1>
+            {/* The mark is decorative: the heading's own text names the product. */}
+            <h1><img className="brand-mark" src={icons.appMark} alt="" aria-hidden="true" draggable={false}/>EarthNow</h1>
             <Key counts={view.counts} providers={view.providers}
                 hiddenCategories={hiddenCategories} hiddenProviders={hiddenProviders}
                 onToggleCategory={k => change({hiddenCategories: toggled(settings?.hiddenCategories ?? [], k)})}

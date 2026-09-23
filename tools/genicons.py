@@ -215,6 +215,12 @@ def main() -> int:
     print(f"\n{len(masters) + 1} rail icons, {total_in:,} -> {total_out:,} bytes")
 
     render_setup()
+
+    # The front end wants the application icon too, beside the heading in the key
+    # column (and as the About crest to come), as the reference writes it.
+    app = MASTERS / APP_MASTER
+    written = render_image(Image.open(app).convert("RGBA"), OUTPUT / APP_MASTER)
+    print(f"{APP_MASTER:<22} {'':>9} -> {written:>7,} bytes  (page mark)")
     return 0
 
 
