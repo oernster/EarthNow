@@ -1,0 +1,501 @@
+{
+ "type": "FeatureCollection",
+ "metadata": {
+  "generated": 1790169011000,
+  "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson",
+  "title": "USGS Magnitude 2.5+ Earthquakes, Past Week",
+  "status": 200,
+  "api": "2.7.0",
+  "count": 358
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 3.21,
+    "place": "65 km SE of Punta Cana, Dominican Republic",
+    "time": 1790167038460,
+    "updated": 1790168588580,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/pr71534228",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/pr71534228.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 159,
+    "net": "pr",
+    "code": "71534228",
+    "ids": ",pr71534228,",
+    "sources": ",pr,",
+    "types": ",origin,phase-data,",
+    "nst": 11,
+    "dmin": 0.5264,
+    "rms": 0.31,
+    "gap": 202,
+    "magType": "md",
+    "type": "earthquake",
+    "title": "M 3.2 - 65 km SE of Punta Cana, Dominican Republic"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -68.0333333333333,
+     18.1023333333333,
+     42.45
+    ]
+   },
+   "id": "pr71534228"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 3.2,
+    "place": "27 km ESE of Skwentna, Alaska",
+    "time": 1790160980795,
+    "updated": 1790161280194,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/aka2026swhrry",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/aka2026swhrry.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": 2.313,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 158,
+    "net": "ak",
+    "code": "a2026swhrry",
+    "ids": ",aka2026swhrry,",
+    "sources": ",ak,",
+    "types": ",origin,phase-data,shakemap,",
+    "nst": 165,
+    "dmin": 0.3,
+    "rms": 1.1,
+    "gap": 25,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 3.2 - 27 km ESE of Skwentna, Alaska"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -150.919,
+     61.899,
+     68.6
+    ]
+   },
+   "id": "aka2026swhrry"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.84,
+    "place": "9 km WNW of Anza, CA",
+    "time": 1790160728320,
+    "updated": 1790163434343,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41337559",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/ci41337559.geojson",
+    "felt": 3,
+    "cdi": 2,
+    "mmi": null,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 125,
+    "net": "ci",
+    "code": "41337559",
+    "ids": ",ci41337559,",
+    "sources": ",ci,",
+    "types": ",dyfi,focal-mechanism,nearby-cities,origin,phase-data,scitech-link,",
+    "nst": 129,
+    "dmin": 0.02041,
+    "rms": 0.2,
+    "gap": 11,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 2.8 - 9 km WNW of Anza, CA"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -116.77,
+     33.5738333333333,
+     12.33
+    ]
+   },
+   "id": "ci41337559"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 3.2,
+    "place": "21 km SW of Susitna, Alaska",
+    "time": 1790160605702,
+    "updated": 1790161152312,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/aka2026swhmgk",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/aka2026swhmgk.geojson",
+    "felt": 1,
+    "cdi": 2,
+    "mmi": 2.544,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 158,
+    "net": "ak",
+    "code": "a2026swhmgk",
+    "ids": ",aka2026swhmgk,",
+    "sources": ",ak,",
+    "types": ",dyfi,origin,phase-data,shakemap,",
+    "nst": 174,
+    "dmin": 0.4,
+    "rms": 1.1,
+    "gap": 29,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 3.2 - 21 km SW of Susitna, Alaska"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -150.742,
+     61.384,
+     60.9
+    ]
+   },
+   "id": "aka2026swhmgk"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 4.4,
+    "place": "Socotra region",
+    "time": 1790159585103,
+    "updated": 1790167744040,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx2s",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/us6000tx2s.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 298,
+    "net": "us",
+    "code": "6000tx2s",
+    "ids": ",us6000tx2s,",
+    "sources": ",us,",
+    "types": ",origin,phase-data,",
+    "nst": 22,
+    "dmin": 11.043,
+    "rms": 0.49,
+    "gap": 117,
+    "magType": "mb",
+    "type": "earthquake",
+    "title": "M 4.4 - Socotra region"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     56.8032,
+     13.8587,
+     10
+    ]
+   },
+   "id": "us6000tx2s"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.6,
+    "place": "53 km W of Cohoe, Alaska",
+    "time": 1790158671394,
+    "updated": 1790158978906,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/aka2026swgkjb",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/aka2026swgkjb.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 104,
+    "net": "ak",
+    "code": "a2026swgkjb",
+    "ids": ",aka2026swgkjb,",
+    "sources": ",ak,",
+    "types": ",origin,phase-data,",
+    "nst": 115,
+    "dmin": 0.1,
+    "rms": 0.6,
+    "gap": 33,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 2.6 - 53 km W of Cohoe, Alaska"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -152.265,
+     60.463,
+     109.1
+    ]
+   },
+   "id": "aka2026swgkjb"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.8,
+    "place": "50 km W of Anchor Point, Alaska",
+    "time": 1790158336828,
+    "updated": 1790158609928,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/aka2026swgfml",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/aka2026swgfml.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 121,
+    "net": "ak",
+    "code": "a2026swgfml",
+    "ids": ",aka2026swgfml,",
+    "sources": ",ak,",
+    "types": ",origin,phase-data,",
+    "nst": 144,
+    "dmin": 0.2,
+    "rms": 1,
+    "gap": 59,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 2.8 - 50 km W of Anchor Point, Alaska"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -152.709,
+     59.859,
+     93.7
+    ]
+   },
+   "id": "aka2026swgfml"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 5.3,
+    "place": "51 km WSW of Arauco, Argentina",
+    "time": 1790155274600,
+    "updated": 1790158101044,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx29",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/us6000tx29.geojson",
+    "felt": 2,
+    "cdi": 4.3,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 433,
+    "net": "us",
+    "code": "6000tx29",
+    "ids": ",us6000tx29,",
+    "sources": ",us,",
+    "types": ",dyfi,moment-tensor,origin,phase-data,",
+    "nst": 99,
+    "dmin": 3.003,
+    "rms": 0.95,
+    "gap": 29,
+    "magType": "mww",
+    "type": "earthquake",
+    "title": "M 5.3 - 51 km WSW of Arauco, Argentina"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -67.2912,
+     -28.7298,
+     121.534
+    ]
+   },
+   "id": "us6000tx29"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 4.9,
+    "place": "Scotia Sea",
+    "time": 1790152918018,
+    "updated": 1790156000806,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx23",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/us6000tx23.geojson",
+    "felt": 0,
+    "cdi": 1,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 369,
+    "net": "us",
+    "code": "6000tx23",
+    "ids": ",us6000tx23,",
+    "sources": ",us,",
+    "types": ",dyfi,origin,phase-data,",
+    "nst": 49,
+    "dmin": 8.489,
+    "rms": 1.23,
+    "gap": 56,
+    "magType": "mb",
+    "type": "earthquake",
+    "title": "M 4.9 - Scotia Sea"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -47.6004,
+     -60.2661,
+     10
+    ]
+   },
+   "id": "us6000tx23"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.8,
+    "place": "13 km WNW of Whites City, New Mexico",
+    "time": 1790152378574,
+    "updated": 1790156757040,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tx1x",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/us6000tx1x.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 121,
+    "net": "us",
+    "code": "6000tx1x",
+    "ids": ",us6000tx1x,",
+    "sources": ",us,",
+    "types": ",origin,phase-data,",
+    "nst": 37,
+    "dmin": 0.498,
+    "rms": 0.45,
+    "gap": 70,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 2.8 - 13 km WNW of Whites City, New Mexico"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -104.5044,
+     32.2341,
+     8.033
+    ]
+   },
+   "id": "us6000tx1x"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.6,
+    "place": "72 km ENE of Ouzinkie, Alaska",
+    "time": 1790145102731,
+    "updated": 1790145358756,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/aka2026svywgt",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/aka2026svywgt.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "automatic",
+    "tsunami": 0,
+    "sig": 104,
+    "net": "ak",
+    "code": "a2026svywgt",
+    "ids": ",aka2026svywgt,",
+    "sources": ",ak,",
+    "types": ",origin,phase-data,",
+    "nst": 76,
+    "dmin": 0.6,
+    "rms": 0.7,
+    "gap": 153,
+    "magType": "ml",
+    "type": "earthquake",
+    "title": "M 2.6 - 72 km ENE of Ouzinkie, Alaska"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -151.427,
+     58.233,
+     15.7
+    ]
+   },
+   "id": "aka2026svywgt"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 2.51,
+    "place": "5 km SW of Guánica, Puerto Rico",
+    "time": 1790144136520,
+    "updated": 1790146587980,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/pr71534208",
+    "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/pr71534208.geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": null,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 97,
+    "net": "pr",
+    "code": "71534208",
+    "ids": ",pr71534208,",
+    "sources": ",pr,",
+    "types": ",origin,phase-data,",
+    "nst": 11,
+    "dmin": 0.07565,
+    "rms": 0.13,
+    "gap": 190,
+    "magType": "md",
+    "type": "earthquake",
+    "title": "M 2.5 - 5 km SW of Guánica, Puerto Rico"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -66.9513333333333,
+     17.943,
+     6.99
+    ]
+   },
+   "id": "pr71534208"
+  }
+ ],
+ "bbox": [
+  -179.465,
+  -62.7008,
+  0.1,
+  178.472,
+  69.544,
+  583.682
+ ]
+}

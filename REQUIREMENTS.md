@@ -1,7 +1,16 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23).** Changes from here arrive as
-numbered amendments with a reason, never as silent edits.
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 5.**
+Changes from here arrive as numbered amendments with a reason, never as silent
+edits.
+
+| No. | Date | Change | Reason |
+|---|---|---|---|
+| 1 | 2026-09-23 | FR-SPK-006 now requires the built executable to run standalone from another folder; the second-account install is removed. FR-SPK-003's Greenwich coordinate corrected to (51.4778, -0.0014). | The second-account install was not house style (owner). The earlier longitude carried the wrong sign; Greenwich lies just west of 0. |
+| 2 | 2026-09-23 | FR-GLB-013 added: the camera altitude fits the whole globe to the globe area at launch and on resize. FR-GLB-007 keeps the altitude on focus; FR-GLB-008 resets to the fit altitude; NFR-UX-001 reads "globe area". | The spike's fixed altitude clipped the globe top and bottom at 1264 x 761 (owner's screenshot). |
+| 3 | 2026-09-23 | FR-KEY-001 to 004 added: a key down the left side naming each category's emoji. | Owner request: the emoji need a key. |
+| 4 | 2026-09-23 | FR-GEO-001 to 008 added: hovering a marker shows the nearest populated place with its country, distance and direction, resolved offline from embedded Natural Earth data; the keyboard cursor and the detail panel show the same line. | Owner request, hover rather than click. Offline because NFR-PRIV-001 allows no host beyond the two providers. |
+| 5 | 2026-09-23 | DATA-005 now marks day precision per event, only when every date is midnight; DATA-012 added for USGS types and withdrawn events. | The captured EONET fixture showed a storm track with a genuine 00:00Z fix, which the per-date rule would have misread. USGS feeds carry quarry blasts and explosions, which are not earthquakes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -198,11 +207,28 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 |---|---|---|---|---|
 | FR-SPK-001 | Must | When the spike build is launched, the application shall open a window showing the textured globe against a black background. | Given a fresh build, when launched, then the globe is visible with the Blue Marble texture. | D |
 | FR-SPK-002 | Must | The spike shall report the WebGL context version and the renderer string in its log. | Log line reads `webgl2` on the reference machine. | D |
-| FR-SPK-003 | Must | When given the coordinate (51.4779, 0.0015), the spike shall draw a marker at the Greenwich Observatory. | Visual check against the texture's coastline at maximum zoom; error under one marker diameter. | D |
+| FR-SPK-003 | Must | When given the coordinate (51.4778, -0.0014), the spike shall draw a marker at the Greenwich Observatory. | Visual check against the texture's coastline at maximum zoom; error under one marker diameter. | D |
 | FR-SPK-004 | Must | When a marker is clicked, the spike shall log that marker's identifier. | Clicking the Greenwich marker logs its id. | D |
 | FR-SPK-005 | Must | When a marker is selected, the spike shall animate the camera to centre that marker. | Camera centres the marker within the focus duration of NFR-UX-003. | D |
-| FR-SPK-006 | Must | The spike shall build through `build.ps1` into an installable setup program that runs on a second Windows user account. | Installed as a second user with no administrator prompt, then launched successfully. | D |
+| FR-SPK-006 | Must | The spike's built executable shall run standalone from a folder outside the repository, with the globe library and texture embedded. | Copied alone to another folder and launched; the globe draws and the log records its frames. | D |
 | FR-SPK-007 | Must | The spike shall render the measured worst-case marker count (2,500 markers) at the frame rate of NFR-PERF-002. | Frame-time log over 60 s of idle rotation. | D |
+
+**Phase 0 result (2026-09-23), measured in the spike's real WebView2 window at
+1264 x 761 on the reference machine (RTX 4060):**
+
+| ID | Result |
+|---|---|
+| FR-SPK-001 | Met: textured globe on black, confirmed by the owner's screenshot. |
+| FR-SPK-002 | Met: `webgl2`, ANGLE Direct3D 11; maximum texture size 16,384 px, so the 21,600 px texture was never an option. |
+| FR-SPK-003 | Met: the Greenwich marker drew on London (owner's check). |
+| FR-SPK-004 | Met: markers respond to the pointer; 24 hover lookups logged. |
+| FR-SPK-005 | Met: camera asked for 51.4778, -0.0014 and arrived at 51.4778, -0.0014 within 1.2 s. |
+| FR-SPK-006 | Met: the 14.9 MB executable ran alone from a temporary folder. |
+| FR-SPK-007 | Met: 2,501 emoji sprites, median frame 10.00 ms, 99th percentile 10.10 ms, worst single frame 30 to 40 ms across runs. |
+| NFR-PERF-001 | First globe frame 627 to 654 ms from process start across three runs; the 20-start sample is still to take. |
+| FR-GLB-013 | Globe diameter 671 px in a 1064 x 761 globe area (88.2%). |
+| FR-GEO | Nearest-place lookup 503 to 548 us per hover, 154 ms to load the data at start. Natural Earth spells French Guiana's region "Guinaa" (raw bytes checked); the product carries a documented correction table for such source errors. |
+| Clustering | globe.gl and three-globe offer none (their typings checked); FR-MRK-007 is written by EarthNow. |
 
 ### 3.2 Functional requirements
 
@@ -216,8 +242,9 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-GLB-004 | Must | While auto-rotate is switched off in settings, the globe view shall not rotate on idle. | Toggle off, wait 30 s, no rotation. | T |
 | FR-GLB-005 | Must | When the user drags on the globe, the globe view shall rotate the globe with the drag. | D | D |
 | FR-GLB-006 | Must | When the user scrolls the wheel over the globe, the globe view shall zoom between the minimum and maximum altitudes (0.15 and 4.0 globe radii). | Zoom clamps at both limits. | T + D |
-| FR-GLB-007 | Must | When an event is selected, the globe view shall animate the camera to centre that event over the focus duration (NFR-UX-003). | Given a selected event on the far side, the camera arrives centred on it. | D |
-| FR-GLB-008 | Should | When "Reset view" is activated, the globe view shall return the camera to its launch altitude. | D | D |
+| FR-GLB-007 | Must | When an event is selected, the globe view shall animate the camera to centre that event over the focus duration (NFR-UX-003), keeping the current altitude. | Given a selected event on the far side, the camera arrives centred on it at unchanged altitude. | D |
+| FR-GLB-008 | Should | When "Reset view" is activated, the globe view shall return the camera to the fit altitude (FR-GLB-013). | D | D |
+| FR-GLB-013 | Must | When the application starts or the globe area is resized, the globe view shall set the camera altitude so the whole globe fits the globe area with its drawn diameter between 85% and 92% of the area's shorter side. The globe area is the window less the key (FR-KEY-001) and the bars. | Spike measured 2026-09-23 at 1264 x 761: altitude 1.629, diameter 671 px, 88.2% of the shorter side; the whole globe visible. | T (fit maths) + D |
 | FR-GLB-010 | Must | While auto-rotate is on, the rotation button shall show `rotate` with the `negative` overlay and the tooltip "Stop rotating"; while auto-rotate is off, it shall show plain `rotate` with the tooltip "Start rotating" (NFR-UX-004). | Given rotation on, the button shows the crossed icon; one press stops rotation and the button shows the plain icon. | T |
 | FR-GLB-011 | Must | When the rotation button is activated, the application shall switch auto-rotate and persist the new value as the FR-SET-001 setting. | The button and the settings dialog never disagree. | T |
 | FR-GLB-012 | Must | The globe view shall rotate on idle whatever the operating system's reduced-motion or animation-effects setting; the auto-rotate setting is the only switch. | With Windows Animation effects off, rotation still starts after the idle delay. Rationale: on Windows that switch is commonly turned off for performance, the same ground on which the house scroll ruling declined to gate on it. | T |
@@ -268,6 +295,10 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-FLT-003 | Must | When "All events" is activated, the filter control shall switch every category toggle on. | T | T |
 | FR-FLT-004 | Must | The filter control shall offer one toggle per provider. | Switching off USGS hides every USGS event. | T |
 | FR-FLT-005 | Should | When the application closes, the settings store shall persist the time window and filter state; when the application starts, the controls shall restore them. | T | T |
+| FR-KEY-001 | Must | While the globe view is showing, the main window shall show a key down its left side listing each category in DATA-002 order as its emoji beside its category name. | Every category in the category table renders one key row, emoji first. | T |
+| FR-KEY-002 | Must | The key shall read its emoji and names from the category table (Appendix D.3), the same single home the markers read. | Structural test: no emoji literal outside the category table. | T |
+| FR-KEY-003 | Must | The key shall never overlap the globe: the globe area begins at the key's right edge (FR-GLB-013). | D at the minimum window size. | D |
+| FR-KEY-004 | Should | Each key row shall show the count of that category's displayed events. | 3 displayed quakes read "〰️ Earthquake 3". | T |
 | FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
 
 #### 3.2.5 Selection and detail
@@ -276,6 +307,14 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 |---|---|---|---|---|
 | FR-SEL-001 | Must | When a marker is activated, the application shall select its event and open the detail panel for it. | D | D |
 | FR-SEL-002 | Must | The detail panel shall show title, category, provider, latitude and longitude, event time, retrieved-at time, measurement (when present) and the source link (when present). | Fixture event with every field renders every row; one missing magnitude omits that row. | T |
+| FR-GEO-001 | Must | When the pointer hovers a marker, the marker tooltip shall show, beneath the event title, the nearest populated place to the event's marker position, with its country, distance and compass direction, worded "23 km NE of Tromsø, Norway". | Fixture event at (69.70, 19.10) reads a distance and direction from Tromsø, Norway, computed by great-circle distance. | T |
+| FR-GEO-002 | Must | Where the event's position lies inside a country's boundary, the place line shall name that country as the event's country, even when the nearest populated place lies across a border. | Fixture point just inside one country, nearer a city across the border, names the country it lies in and the city with its own country. | T |
+| FR-GEO-003 | Must | Where the event's position lies inside no country's boundary, the place line shall word it as at sea, still naming the nearest populated place with its distance and direction. | Mid-Atlantic fixture reads "At sea; 1,240 km W of ..." | T |
+| FR-GEO-004 | Must | The application shall resolve places from data embedded in the application, never from a network service (NFR-PRIV-001). | Structural test: the geocoder package imports no network package. | T |
+| FR-GEO-005 | Must | Distances shall be rounded to whole kilometres and directions to the eight compass points, so no precision beyond the source's is claimed. | T | T |
+| FR-GEO-006 | Must | While the globe's keyboard cursor rests on an event (NFR-KBD-004), the globe view shall show that event's tooltip, place line included, as hover does. | Down arrow onto a fixture event shows its tooltip with the place line. | T |
+| FR-GEO-007 | Must | The detail panel shall repeat the place line for the selected event. | T | T |
+| FR-GEO-008 | Must | The populated places and country boundaries shall come from Natural Earth (public domain, R6), embedded in the application and credited in the third-party notices. | I on `THIRD_PARTY_NOTICES`. | I |
 | FR-SEL-003 | Must | The detail panel shall show each time as freshness wording (NFR-FRESH-002), as an exact UTC timestamp and as the same instant in the machine's local time zone. | T | T |
 | FR-SEL-004 | Must | Where the event time has day precision (DATA-005), the detail panel shall show the date alone and word freshness in days. | Sea-ice fixture dated 2026-09-18T00:00:00Z on 2026-09-23 reads "Reported for 18 Sep 2026, 5 days ago", never "Observed 5 days 11 h ago". | T |
 | FR-SEL-005 | Must | When the source link is activated, the application shall open it in the system browser. | T (fake opener receives the URL) | T |
@@ -341,7 +380,7 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
-| NFR-UX-001 | Must | The globe shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
+| NFR-UX-001 | Must | The globe area (FR-GLB-013) shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
 | NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 600 pixels. | I |
 | NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
 | NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
@@ -385,7 +424,8 @@ Every performance figure is measured on the reference machine.
 | DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
 | DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the polygon's centroid. |
 | DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window. |
-| DATA-005 | Must | An EONET geometry date of exactly 00:00:00Z shall be marked day precision. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z while wildfire times carried minutes. This may misclassify a genuine midnight report; the error falls on the side of less claimed precision. |
+| DATA-005 | Must | An EONET event whose every geometry date is exactly 00:00:00Z shall have all its observations marked day precision; an event with any other time of day keeps instant precision throughout. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z; wildfire times carried minutes; Hurricane Polo's 6-hourly track held a genuine 00:00Z fix beside 06:00, 12:00 and 18:00. A single-point event reported at exactly midnight is still read as a date; the error falls on the side of less claimed precision. |
+| DATA-012 | Must | A USGS feature shall map to EARTHQUAKE only when its `type` is `earthquake`; any other type (quarry blast, explosion, ice quake) shall map to OTHER with the type kept as the source category. A feature whose status is `deleted` shall not be shown. |
 | DATA-006 | Must | EONET categories shall map: earthquakes to EARTHQUAKE, volcanoes to VOLCANO, wildfires to WILDFIRE, severeStorms to SEVERE_STORM, floods to FLOOD, landslides to LANDSLIDE, drought to DROUGHT, dustHaze to DUST, seaLakeIce to ICE; snow, tempExtremes, waterColor, manmade and any unknown id to OTHER, the original id kept in metadata. The 13 source ids were read from `/api/v3/categories` on 2026-09-23. |
 | DATA-007 | Must | The mapping shall be data in the EONET adapter, never conditionals in the UI or the domain. |
 | DATA-008 | Must | A re-fetched event with an existing id shall replace the stored one; no two stored events shall share an id. |
