@@ -18,6 +18,7 @@ interface Bound {
     Licence(): Promise<string>
     Notices(): Promise<string>
     Donate(): Promise<void>
+    TakeKeyboard(): Promise<void>
 }
 
 interface Runtime {
@@ -60,6 +61,8 @@ export const api = {
     // donate hands the donation page to the system browser. The page never holds
     // the address; its one home is internal/product (FR-DON-004).
     donate: (onRefused: Refused) => call(b => b.Donate(), onRefused),
+    // takeKeyboard asks the Go side to focus the webview, as a click would.
+    takeKeyboard: (onRefused: Refused) => call(b => b.TakeKeyboard(), onRefused),
 }
 
 // on subscribes to a backend event; the answer unsubscribes. Outside the app

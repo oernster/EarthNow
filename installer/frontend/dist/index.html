@@ -93,9 +93,12 @@
     <div class="footer" id="footer"></div>
 </div>
 
-<!-- The auto-scroll machine is a module shared with the application; setup-shell.js
-     is a classic script, so the one function it calls is handed to it here. -->
+<!-- The auto-scroll machine and the keyboard repair are modules shared with the
+     application; the page's own scripts are classic, so the functions they call are
+     handed to them here. Module scripts run before DOMContentLoaded, which is when
+     setup-routes.js starts. -->
 <script type="module">import {startAutoScroll} from './auto-scroll.js'; window.startAutoScroll = startAutoScroll</script>
+<script type="module">import {settleKeyboard} from './settle-keyboard.js'; window.settleKeyboard = settleKeyboard</script>
 <script src="setup-shell.js"></script>
 <script src="setup-routes.js"></script>
 </body>

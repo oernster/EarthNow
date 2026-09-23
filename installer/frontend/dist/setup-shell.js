@@ -65,10 +65,6 @@ function setFooter(buttons) {
 // first Tab. After it, each new screen leads with its own go-ahead.
 let acted = false
 
-// keyboardSettleMs is how long the webview is given to come up holding the
-// keyboard before the page decides it has not.
-const keyboardSettleMs = 400
-
 // focusFooter puts focus on the button a screen leads with, so Enter does the
 // obvious thing and the ring says where it would land.
 function focusFooter() {
@@ -77,21 +73,6 @@ function focusFooter() {
     if (first) first.focus()
 }
 
-// settleKeyboard repairs a launch that came up with no keyboard at all.
-//
-// Wails hands the webview its keyboard from the main window's WM_SETFOCUS, which
-// Windows raises only on a change of focus; the handler for it is bound inside
-// an asynchronous callback: whether the first focus arrives before there is a
-// handler for it is a race. Focusing an element is not the same as the document
-// HAVING focus. The page is the only thing that can tell, so it checks once and
-// asks for the keyboard back.
-function settleKeyboard() {
-    window.focus()
-    window.setTimeout(() => {
-        if (document.hasFocus()) return
-        void backend().TakeKeyboard().then(() => window.focus())
-    }, keyboardSettleMs)
-}
 
 /* ---------------------------------------------------------------- licence */
 

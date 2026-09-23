@@ -12,6 +12,7 @@ import {SettingsDialog} from './components/SettingsDialog'
 import {StatusLine} from './components/StatusLine'
 import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {TimeWindow} from './components/TimeWindow'
+import {settleKeyboard} from '../../installer/frontend/dist/settle-keyboard.js'
 import {donate} from './donate'
 import {icons} from './icons'
 import {useRing} from './ring'
@@ -63,6 +64,11 @@ export default function App() {
     const refresh = () => {
         void api.refreshNow(onProblem).then(wait => { if (wait !== null) setProblem(wait) })
     }
+
+    // NFR-KBD-002: the window starts neutral while still holding the keyboard, so the
+    // first Tab reaches the ring. A launch that lost the race inside Wails asks for
+    // it; nothing on the page is focused either way (the setup page's repair).
+    useEffect(() => settleKeyboard(() => api.takeKeyboard(onProblem)), [onProblem])
 
     useEffect(() => {
         void api.windows(onProblem).then(w => { if (w) setWindows(w) })

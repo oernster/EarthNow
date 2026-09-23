@@ -142,7 +142,8 @@ async function init() {
     $('running-title').textContent = `${appName} is open`
     applyTheme(state.prefersDark ? 'dark' : 'light')
     route(state)
-    settleKeyboard()
+    // A launch that came up with no keyboard asks for it (settle-keyboard.js).
+    settleKeyboard(() => backend().TakeKeyboard())
 }
 
 // The drawn mark is the fallback. A real icon.png beside this page replaces it;

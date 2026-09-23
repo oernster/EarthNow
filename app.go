@@ -16,6 +16,7 @@ import (
 	"github.com/oernster/EarthNow/internal/domain/event"
 	"github.com/oernster/EarthNow/internal/domain/freshness"
 	"github.com/oernster/EarthNow/internal/infrastructure/geo"
+	"github.com/oernster/EarthNow/internal/infrastructure/window"
 	"github.com/oernster/EarthNow/internal/product"
 )
 
@@ -62,12 +63,29 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // domReady hands the webview the keyboard, which it cannot take for itself
-// (keeb: hosted webview rule, measured in SymChit).
-func (a *App) domReady(ctx context.Context) {
-	if ctx != nil {
-		wruntime.Show(ctx)
+// (keeb: hosted webview rule). Ported from the setup program's installer/app.go:
+// raising the window alone loses a race inside Wails (see
+// internal/infrastructure/window), so the WebView2 child is focused directly, as
+// a click would.
+func (a *App) domReady(context.Context) { a.show() }
+
+// show gives the webview the keyboard, falling back to asking Wails for the window.
+func (a *App) show() {
+	focused := window.TakeFocus()
+	log.Printf("keyboard: webview child focused %v", focused)
+	if focused {
+		return
+	}
+	if a.ctx != nil {
+		wruntime.Show(a.ctx)
 	}
 }
+
+// TakeKeyboard is called by the page when it finds it has no keyboard. The page is
+// the only thing that can tell: from Go the window looks focused either way. It is
+// the second half of the repair, since domReady runs before the webview is
+// necessarily ready to keep what it is given.
+func (a *App) TakeKeyboard() { a.show() }
 
 // guard runs background work with a recover at its top: a panic is logged
 // and told to the page instead of ending the run (NFR-REL-003).
