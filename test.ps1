@@ -1,5 +1,5 @@
-# Verifies EarthNow: formatting, vet, staticcheck, the test suite, the coverage floors and
-# the frontend suite (Vitest).
+# Verifies EarthNow: formatting, vet, staticcheck, the test suite, the coverage floors,
+# the frontend suite (Vitest) and the third-party notices.
 # Ported from ED Voyage Companion's test.ps1.
 #
 #   ./test.ps1              run everything
@@ -75,6 +75,13 @@ try {
 # finding, ending, launching or scheduling the removal of a process. A test must not
 # change the machine it runs on, so those are the deliberate gap; everything portable
 # (extraction and its fence, paths, sizes, copies, versions, the step log) is covered.
+# setup also reads 61.4% on a machine where EarthNow is installed: the installed-version
+# read then runs three statements past its early return, 121 of 197 against 118
+# (measured). The floor is the figure for a machine without it.
+# runlog stops short at what only a crashing child process reaches, where coverage is
+# not collected (sending the error output to the log; its crash tests prove it lands),
+# then at faults the OS will not produce on demand: the log failing to open, to report
+# its size or to close; the runtime refusing a crash file.
 $measured = [ordered]@{
     './internal/infrastructure/cache'             = 84.2
     './internal/infrastructure/geo'               = 100
@@ -82,6 +89,7 @@ $measured = [ordered]@{
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100
     './internal/infrastructure/providers/gvp'     = 100
+    './internal/infrastructure/runlog'            = 77.4
     './internal/infrastructure/settings'          = 100
     './internal/infrastructure/setup'             = 59.9
 }
@@ -111,6 +119,12 @@ try {
 } finally {
     Pop-Location
 }
+
+# NFR-LEG-001: the notices must name every shipped component and carry its licence
+# text, so a dependency added or bumped without them fails here.
+Write-Host 'Checking the third-party notices...'
+python (Join-Path $root 'tools/notices.py') --check
+if ($LASTEXITCODE -ne 0) { throw "the notices check failed with exit code $LASTEXITCODE" }
 
 Write-Host 'All green.'
 

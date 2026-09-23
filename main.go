@@ -6,6 +6,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/gvp"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
+	"github.com/oernster/EarthNow/internal/infrastructure/runlog"
 	"github.com/oernster/EarthNow/internal/infrastructure/settings"
 	"github.com/oernster/EarthNow/internal/product"
 )
@@ -47,10 +49,8 @@ var noticesText string
 // because -X silently does nothing to a const.
 var appVersion = "0.0.0-dev"
 
-// The log file and window geometry (NFR-UX-002). The product's name has one home,
-// internal/product, shared with the setup program.
+// The window geometry (NFR-UX-002).
 const (
-	logFileName  = "Log.txt"
 	windowWidth  = 1280
 	windowHeight = 800
 	minWidth     = 960
@@ -84,24 +84,29 @@ func dataDir() (string, error) {
 	return dir, os.MkdirAll(dir, 0o755)
 }
 
-// openLog points the standard logger at %LOCALAPPDATA%\EarthNow\Log.txt; a log
-// that cannot be opened falls back to standard error rather than ending the run.
-func openLog() io.Writer {
+// keepLog opens %LOCALAPPDATA%\EarthNow\Log.txt, keeping what earlier runs wrote
+// and rotating at its limit (NFR-OBS-002), then points the run's error output at
+// it, so a panic leaves a record (NFR-REL-002). A log that cannot be opened falls
+// back to standard error rather than ending the run (NFR-REL-001).
+func keepLog() io.Writer {
 	dir, err := dataDir()
 	if err != nil {
 		return os.Stderr
 	}
-	f, err := os.Create(filepath.Join(dir, logFileName))
+	runLog, err := runlog.Open(dir, appVersion, time.Now())
 	if err != nil {
 		return os.Stderr
 	}
-	return f
+	if err := runLog.Keep(); err != nil {
+		_, _ = fmt.Fprintf(runLog, "the error output could not be kept in the log: %v\n", err)
+	}
+	return runLog
 }
 
 func main() {
-	log.SetOutput(openLog())
+	// NFR-REL-002: the first act, before anything that could fail.
+	log.SetOutput(keepLog())
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.Printf("%s %s", product.Name, appVersion)
 
 	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host)
 	quakes := usgs.New(client, usgs.AllMagnitudes)
