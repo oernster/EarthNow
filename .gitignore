@@ -31,24 +31,31 @@ go.work.sum
 # .idea/
 # .vscode/
 
-# Phase 0 spike: downloaded source data and build outputs
+# Phase 0 spike: the throwaway spike module and its downloaded source data. Its
+# measured results live in REQUIREMENTS.md; nothing tracked reads the code.
 spike-assets/
-spike/build/bin/
-spike/frontend/node_modules/
-spike/frontend/dist/
+spike/
 node_modules/
 
 
-# Build outputs
-build/bin/
+# Build outputs. build/ holds nothing but generated files: build.ps1 copies the
+# icon in from assets/ on every build, Wails writes its default Windows manifest
+# and version info when absent and bin/ is the built executable.
+build/
 frontend/dist/
 frontend/wailsjs/
+frontend/package.json.md5
 
 # Setup program build outputs. installer/payload.zip is tracked, but only as the
 # 22-byte empty archive that keeps `go build ./...` working; build.ps1 puts that
 # placeholder back after every build. LICENSE.txt is build.ps1's copy of LICENSE.
 dist-installer/
 installer/build/bin/
+# build.ps1 copies the icon in on every build and Wails writes the manifest when
+# absent. installer/build/windows/info.json is tracked, so it is named nowhere here.
+installer/build/appicon.png
+installer/build/windows/icon.ico
+installer/build/windows/wails.exe.manifest
 installer/frontend/wailsjs/
 installer/frontend/dist/LICENSE.txt
 
