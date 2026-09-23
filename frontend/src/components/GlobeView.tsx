@@ -6,8 +6,9 @@ import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
 import {api} from '../api'
 import {categoryOf} from '../categories'
+import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
-import {fitAltitude, sprite} from '../markers'
+import {clusterSprite, fitAltitude, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
 import type {EventDTO} from '../types'
 
@@ -53,11 +54,31 @@ function zoomOnce(g: GlobeInstance, zoomIn: boolean) {
     g.pointOfView({altitude: zoomed(g.pointOfView().altitude, zoomIn)}, ZOOM_MS)
 }
 
+// markerRadius is the sphere the markers sit on, in globe units.
+function markerRadius(g: GlobeInstance): number {
+    return g.getGlobeRadius() * (1 + MARKER_ALTITUDE)
+}
+
+function eventTitle(e: EventDTO): string {
+    return `${categoryOf(e.category).emoji} ${e.title}`
+}
+
+// clusterTitle counts a cluster's members by category, largest first.
+function clusterTitle(members: readonly EventDTO[]): string {
+    const counts = new Map<string, number>()
+    members.forEach(e => {
+        const emoji = categoryOf(e.category).emoji
+        counts.set(emoji, (counts.get(emoji) ?? 0) + 1)
+    })
+    const parts = [...counts].sort((a, b) => b[1] - a[1]).map(([emoji, n]) => `${emoji} ${n}`)
+    return `${members.length} events: ${parts.join('  ')}`
+}
+
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     {events, selectedId, autoRotate, secondsPerRevolution, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const globe = useRef<GlobeInstance | null>(null)
-    const hovered = useRef<EventDTO | null>(null)
+    const hovered = useRef<MarkerItem | null>(null)
     const pointer = useRef({x: 0, y: 0})
     const handlers = useRef({onSelect, onProblem})
     handlers.current = {onSelect, onProblem}
@@ -80,22 +101,43 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         }, IDLE_DELAY_MS)
     })
 
-    // showTip words an event's tooltip at a point and adds its place line once the
-    // lookup answers, unless the tooltip has moved on to another event by then.
-    const showing = useRef<EventDTO | null>(null)
-    const showTip = useRef((e: EventDTO, at: () => {x: number; y: number}) => {
-        showing.current = e
-        const title = `${categoryOf(e.category).emoji} ${e.title}`
+    // showTip words a marker's tooltip at a point and adds its place line once the
+    // lookup answers, unless the tooltip has moved on to another marker by then.
+    const showing = useRef<object | null>(null)
+    const showTip = useRef((title: string, where: {lat: number; lng: number}, at: () => {x: number; y: number}) => {
+        showing.current = where
         setTip({...at(), title, place: ''})
-        void api.place(e.lat, e.lng, handlers.current.onProblem).then(place => {
-            if (place !== null && showing.current === e) setTip({...at(), title, place})
+        void api.place(where.lat, where.lng, handlers.current.onProblem).then(place => {
+            if (place !== null && showing.current === where) setTip({...at(), title, place})
         })
     })
 
-    // The keyboard cursor (NFR-KBD-004), held by id so a refresh carries it.
-    const cursor = useRef<string | null>(null)
+    // The marker layout (FR-MRK-007): what is drawn at the current scale, the
+    // altitude over the fit altitude, with the sprites made for it so a zoom can
+    // resize them in place rather than drawing them again.
     const shown = useRef(events)
     shown.current = events
+    const selected = useRef(selectedId)
+    selected.current = selectedId
+    const fitted = useRef(1)
+    const scale = useRef(1)
+    const sprites = useRef<THREE.Object3D[]>([])
+    const laidOut = useRef('')
+    const layout = (force: boolean) => {
+        const g = globe.current
+        if (!g) return
+        const items = clusterEvents(shown.current, scale.current, markerRadius(g), selected.current)
+        const key = layoutKey(items)
+        if (!force && key === laidOut.current) return
+        laidOut.current = key
+        sprites.current = []
+        g.objectsData(items)
+    }
+    const relayout = useRef(layout)
+    relayout.current = layout
+
+    // The keyboard cursor (NFR-KBD-004), held by id so a refresh carries it.
+    const cursor = useRef<string | null>(null)
 
     const centre = () => {
         const r = host.current?.getBoundingClientRect()
@@ -117,7 +159,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         g.pointOfView({lat: e.lat, lng: e.lng}, FOCUS_MS)
         // FR-GEO-006: the cursor shows the tooltip hover would, where the
         // camera brings the event: the middle of the globe area.
-        showTip.current(e, centre)
+        showTip.current(eventTitle(e), e, centre)
     }
 
     // Arriving by Tab shows where the ring landed (owner): the globe paints no
@@ -127,7 +169,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         setKeyboard(true)
         const current = shown.current.find(x => x.id === cursor.current)
         if (current) {
-            showTip.current(current, centre)
+            showTip.current(eventTitle(current), current, centre)
         } else {
             walk(1)
         }
@@ -173,12 +215,41 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             .globeImageUrl(earthTexture)
             .backgroundColor('#000000')
             .objectLat('lat').objectLng('lng').objectAltitude(MARKER_ALTITUDE)
-            .onObjectClick((d: object) => handlers.current.onSelect(d as EventDTO))
+            .objectThreeObject((d: object) => {
+                const item = d as MarkerItem
+                const made = item.kind === 'cluster'
+                    ? clusterSprite(item.members.length, item.size, scale.current)
+                    : sprite(item.event, item.event.id === selected.current, scale.current)
+                sprites.current.push(made)
+                return made
+            })
+            .onObjectClick((d: object) => {
+                const item = d as MarkerItem
+                if (item.kind === 'event') {
+                    handlers.current.onSelect(item.event)
+                    return
+                }
+                // FR-MRK-008: towards the cluster until its members separate.
+                pause.current()
+                const altitude = separatingAltitude(item.members, g.pointOfView().altitude,
+                    fitted.current, markerRadius(g), viewHalfAngle(g.camera() as THREE.PerspectiveCamera))
+                g.pointOfView({lat: item.lat, lng: item.lng, altitude}, FOCUS_MS)
+            })
             .onObjectHover((d: object | null) => {
-                const e = d as EventDTO | null
-                hovered.current = e
-                if (!e) { setTip(null); return }
-                showTip.current(e, () => pointer.current)
+                const item = d as MarkerItem | null
+                hovered.current = item
+                if (!item) { setTip(null); return }
+                const title = item.kind === 'cluster' ? clusterTitle(item.members) : eventTitle(item.event)
+                showTip.current(title, item, () => pointer.current)
+            })
+            // A zoom resizes every sprite in place and regroups only when the
+            // grouping changes; rotation leaves the altitude, so it costs nothing.
+            .onZoom(({altitude}) => {
+                const next = altitude / fitted.current
+                if (next === scale.current) return
+                scale.current = next
+                sprites.current.forEach(s => rescale(s, next))
+                relayout.current(false)
             })
         globe.current = g
         const controls = g.controls()
@@ -190,8 +261,18 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         controls.maxDistance = radius * (1 + MAX_ALTITUDE)
         const camera = g.camera() as THREE.PerspectiveCamera
         const fit = () => {
+            // A host with no size yet has no aspect: a fit then sets the camera to
+            // NaN and every later fit keeps its NaN place, so the globe never draws
+            // (measured with a host first attached at 0 x 0). The observer fits
+            // again once there is a size.
+            if (el.clientWidth === 0 || el.clientHeight === 0) return
             g.width(el.clientWidth).height(el.clientHeight)
-            g.pointOfView({altitude: fitAltitude(camera)})
+            fitted.current = fitAltitude(camera)
+            g.pointOfView({altitude: fitted.current})
+            // At the fit altitude every marker is its own fit size.
+            scale.current = 1
+            sprites.current.forEach(s => rescale(s, scale.current))
+            relayout.current(false)
         }
         fit()
         const observer = new ResizeObserver(fit)
@@ -225,15 +306,8 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         else if (idleTimer.current === null) controls.autoRotate = true
     }, [autoRotate, secondsPerRevolution])
 
-    useEffect(() => {
-        const g = globe.current
-        if (!g) return
-        g.objectThreeObject((d: object) => {
-            const e = d as EventDTO
-            return sprite(e, e.id === selectedId)
-        })
-        g.objectsData(events)
-    }, [events, selectedId])
+    // New events or a new selection draw afresh; the sprites carry both.
+    useEffect(() => relayout.current(true), [events, selectedId])
 
     useEffect(() => {
         const g = globe.current
