@@ -10,7 +10,7 @@ import {TimeWindow} from './components/TimeWindow'
 import type {EventDTO, ViewDTO, WindowDTO} from './types'
 
 const DEFAULT_WINDOW = '24h'
-const EMPTY_VIEW: ViewDTO = {windowKey: DEFAULT_WINDOW, countLine: '', events: [], counts: {}, providers: []}
+const EMPTY_VIEW: ViewDTO = {windowKey: DEFAULT_WINDOW, countLine: '', events: [], counts: {}, providers: [], notice: ''}
 
 export default function App() {
     const [windows, setWindows] = useState<WindowDTO[]>([])
@@ -62,7 +62,7 @@ export default function App() {
                 <TimeWindow windows={windows} selected={windowKey} onChoose={setWindowKey}/>
                 <button className="refresh" onClick={refresh} title="Fetch the latest data from every source now">Refresh</button>
             </div>
-            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}/>
+            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem || view.notice}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
     </div>

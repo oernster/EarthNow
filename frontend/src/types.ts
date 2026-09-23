@@ -35,6 +35,7 @@ export interface ViewDTO {
     events: EventDTO[]
     counts: Record<string, number>
     providers: ProviderDTO[]
+    notice: string
 }
 
 export interface WindowDTO {

@@ -42,6 +42,8 @@ type View struct {
 	Events    []Event        `json:"events"`
 	Counts    map[string]int `json:"counts"`
 	Providers []Provider     `json:"providers"`
+	// Notice is a standing problem the reader should know about; empty when none.
+	Notice string `json:"notice"`
 }
 
 // Window is one choice in the time window control.

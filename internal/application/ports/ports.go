@@ -15,6 +15,20 @@ type Clock interface {
 	Now() time.Time
 }
 
+// Snapshot is one provider's last successful set and when it arrived.
+type Snapshot struct {
+	Events      []event.Event
+	RetrievedAt time.Time
+	Validator   string
+}
+
+// SnapshotCache keeps each provider's last successful set across runs
+// (FR-STS-004, DATA-009). Load answers false when nothing is held.
+type SnapshotCache interface {
+	Load(p event.Provider) (Snapshot, bool, error)
+	Save(p event.Provider, snap Snapshot) error
+}
+
 // Geocoder words where a point is (FR-GEO-001 to 003).
 type Geocoder interface {
 	Describe(lat, lng float64) string

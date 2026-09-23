@@ -19,6 +19,7 @@ import (
 
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/application/services"
+	"github.com/oernster/EarthNow/internal/infrastructure/cache"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
@@ -48,15 +49,24 @@ type systemClock struct{}
 
 func (systemClock) Now() time.Time { return time.Now() }
 
+// cacheFolder holds the per-provider cache files inside the data folder.
+const cacheFolder = "cache"
+
+// dataDir is %LOCALAPPDATA%\EarthNow, created when absent (NFR-PRIV-002).
+func dataDir() (string, error) {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(base, productName)
+	return dir, os.MkdirAll(dir, 0o755)
+}
+
 // openLog points the standard logger at %LOCALAPPDATA%\EarthNow\Log.txt; a log
 // that cannot be opened falls back to standard error rather than ending the run.
 func openLog() io.Writer {
-	base, err := os.UserCacheDir()
+	dir, err := dataDir()
 	if err != nil {
-		return os.Stderr
-	}
-	dir := filepath.Join(base, productName)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return os.Stderr
 	}
 	f, err := os.Create(filepath.Join(dir, logFileName))
@@ -74,6 +84,12 @@ func main() {
 	providers := []ports.Provider{eonet.New(client), usgs.New(client, usgs.DefaultMinimum)}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
+	if dir, err := dataDir(); err == nil {
+		globe.UseCache(cache.New(filepath.Join(dir, cacheFolder), responseCap))
+	} else {
+		log.Printf("no cache folder: %v", err)
+	}
+	globe.RestoreCached()
 	app := NewApp(globe, services.NewScheduler(clock, providers), providers)
 
 	err := wails.Run(&options.App{

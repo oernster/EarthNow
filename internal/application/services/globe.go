@@ -35,6 +35,62 @@ type Globe struct {
 	mu        sync.Mutex
 	attempts  map[event.Provider]attempt
 	geocoder  ports.Geocoder
+	cache     ports.SnapshotCache
+	notice    string
+}
+
+// UseCache keeps each provider's set across runs. Without one the events live
+// in memory only, which the view's notice says (FR-STS-005).
+func (g *Globe) UseCache(cache ports.SnapshotCache) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.cache = cache
+}
+
+// NoCache is the notice given when events cannot be kept across a restart.
+const NoCache = "Events are held in memory only and will not survive a restart"
+
+// RestoreCached puts each provider's cached set back before any fetch, so
+// the globe shows the last known events at once, marked with their retrieval
+// time (FR-STS-004). An unreadable cache is a notice, never a stop.
+func (g *Globe) RestoreCached() {
+	g.mu.Lock()
+	cache := g.cache
+	g.mu.Unlock()
+	if cache == nil {
+		g.setNotice(NoCache)
+		return
+	}
+	for _, p := range g.providers {
+		snap, held, err := cache.Load(p.Name())
+		if err != nil {
+			g.setNotice("Cached events could not be read: " + err.Error())
+			continue
+		}
+		if held {
+			g.store.Restore(p.Name(), snap)
+		}
+	}
+}
+
+func (g *Globe) setNotice(n string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.notice = n
+}
+
+// save writes a provider's set to the cache after a successful fetch.
+func (g *Globe) save(p event.Provider) {
+	g.mu.Lock()
+	cache := g.cache
+	g.mu.Unlock()
+	if cache == nil {
+		return
+	}
+	snap, _ := g.store.Snapshot(p)
+	if err := cache.Save(p, snap); err != nil {
+		g.setNotice("Events could not be cached: " + err.Error())
+	}
 }
 
 // NewGlobe builds the use case over its collaborators.
@@ -97,6 +153,7 @@ func (g *Globe) Refresh(ctx context.Context, p ports.Provider) (Outcome, error) 
 	}
 	g.store.Apply(p.Name(), fetched)
 	g.record(p.Name(), attempt{})
+	g.save(p.Name())
 	snap, _ := g.store.Snapshot(p.Name())
 	return Outcome{NotModified: fetched.NotModified, Count: len(snap.Events), Dropped: fetched.Dropped}, nil
 }
@@ -138,6 +195,9 @@ func (g *Globe) View(windowKey string, f Filter) dto.View {
 		view.Events = append(view.Events, toDTO(s, now))
 	}
 	view.Providers = g.statuses(now)
+	g.mu.Lock()
+	view.Notice = g.notice
+	g.mu.Unlock()
 	return view
 }
 

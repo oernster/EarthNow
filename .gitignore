@@ -44,3 +44,7 @@ build/bin/
 frontend/dist/
 frontend/wailsjs/
 
+
+# Session resume snapshot (oxygen protocol), never committed
+.claude/resume.md
+

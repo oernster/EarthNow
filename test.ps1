@@ -66,7 +66,11 @@ try {
 
 # Infrastructure, each package held at the number it actually reaches. httpfetch stops
 # short only at a request-building failure no valid method and context can produce.
+# cache stops short at five faults the OS will not produce on demand (measured): an open
+# failing other than for absence, encoding a type that always encodes, then creating,
+# writing or closing a temporary file in a folder just made.
 $measured = [ordered]@{
+    './internal/infrastructure/cache'             = 84.2
     './internal/infrastructure/geo'               = 100
     './internal/infrastructure/httpfetch'         = 96.6
     './internal/infrastructure/providers/eonet'   = 100
@@ -86,3 +90,4 @@ foreach ($package in $measured.Keys) {
 }
 
 Write-Host 'All green.'
+

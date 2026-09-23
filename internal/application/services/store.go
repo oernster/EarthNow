@@ -11,12 +11,8 @@ import (
 	"github.com/oernster/EarthNow/internal/domain/window"
 )
 
-// Snapshot is one provider's last successful set and when it arrived.
-type Snapshot struct {
-	Events      []event.Event
-	RetrievedAt time.Time
-	Validator   string
-}
+// Snapshot is the port's snapshot, named here for the store's callers.
+type Snapshot = ports.Snapshot
 
 // Shown is an event as displayed: the event plus the observation that places
 // it for the selected window (DATA-003, DATA-004).
