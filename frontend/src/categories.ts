@@ -26,3 +26,18 @@ const OTHER = CATEGORIES[CATEGORIES.length - 1]
 export function categoryOf(key: string): CategoryInfo {
     return CATEGORIES.find(c => c.key === key) ?? OTHER
 }
+
+export interface CategoryCount {
+    category: CategoryInfo
+    count: number
+}
+
+/** categoryCounts counts events by category, the most numerous first. */
+export function categoryCounts(events: readonly {category: string}[]): CategoryCount[] {
+    const counts = new Map<CategoryInfo, number>()
+    events.forEach(e => {
+        const category = categoryOf(e.category)
+        counts.set(category, (counts.get(category) ?? 0) + 1)
+    })
+    return [...counts].map(([category, count]) => ({category, count})).sort((a, b) => b.count - a.count)
+}

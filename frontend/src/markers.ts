@@ -1,7 +1,7 @@
 // Marker sprites: each category's emoji drawn once to a texture and shared
 // (measured in the Phase 0 spike: 2,501 sprites held a 10 ms median frame).
 import * as THREE from 'three'
-import {categoryOf} from './categories'
+import {categoryCounts, categoryOf} from './categories'
 import type {EventDTO} from './types'
 
 const CANVAS_PX = 128
@@ -89,33 +89,57 @@ export function sprite(e: EventDTO, selected: boolean, scale: number): THREE.Spr
     return sized(new THREE.Sprite(made), markerSize(e.band), scale)
 }
 
-// The count sits inside the disc at COUNT_PX, shrunk until it spans no more than
-// COUNT_FILL of the disc's width, so four digits fit as well as two.
-const COUNT_PX = 60
-const COUNT_FILL = 0.7
+// A cluster wears its most numerous category's emoji where a marker's would be.
+// In a mixed cluster the runner-up's sits behind it, STACK_PX up and left. The
+// count goes in a badge over the top right corner.
+const STACK_PX = 16
+const BADGE_RADIUS_PX = 27
+const BADGE_RING_PX = 4
+const BADGE_CENTRE_PX = CANVAS_PX - BADGE_RADIUS_PX - BADGE_RING_PX
+// The count is drawn at COUNT_PX, shrunk until it spans no more than COUNT_FILL
+// of the badge's width, so four digits fit as well as one.
+const COUNT_PX = 34
+const COUNT_FILL = 0.8
 const countFont = (px: number) => `bold ${px}px "Segoe UI", sans-serif`
+// A cluster is drawn no smaller than the largest band, so its badge can be read
+// (at the smallest quake's size it measured about 7 px across).
+const CLUSTER_MIN_SIZE = Math.max(...BAND_SIZES)
 
 // token reads a colour from the page's palette (style.css), its one home.
 function token(name: string): string {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-/** clusterSprite draws FR-MRK-007's cluster marker: a disc reading its count. */
-export function clusterSprite(count: number, size: number, scale: number): THREE.Sprite {
-    const made = cached(`cluster|${count}`, ctx => {
-        ctx.fillStyle = token('--surface-solid')
-        ctx.beginPath()
-        ctx.arc(CANVAS_PX / 2, CANVAS_PX / 2, RING_RADIUS_PX, 0, 2 * Math.PI)
-        ctx.fill()
-        ring(ctx, token('--text'))
-        const text = String(count)
-        ctx.font = countFont(COUNT_PX)
-        const widest = 2 * RING_RADIUS_PX * COUNT_FILL
-        ctx.font = countFont(Math.min(COUNT_PX, COUNT_PX * widest / ctx.measureText(text).width))
-        ctx.fillStyle = token('--text')
-        ctx.fillText(text, CANVAS_PX / 2, CANVAS_PX / 2)
+function badge(ctx: CanvasRenderingContext2D, count: number) {
+    ctx.beginPath()
+    ctx.arc(BADGE_CENTRE_PX, CANVAS_PX - BADGE_CENTRE_PX, BADGE_RADIUS_PX, 0, 2 * Math.PI)
+    ctx.fillStyle = token('--surface-solid')
+    ctx.fill()
+    ctx.strokeStyle = token('--text')
+    ctx.lineWidth = BADGE_RING_PX
+    ctx.stroke()
+    const text = String(count)
+    ctx.font = countFont(COUNT_PX)
+    const widest = 2 * BADGE_RADIUS_PX * COUNT_FILL
+    ctx.font = countFont(Math.min(COUNT_PX, COUNT_PX * widest / ctx.measureText(text).width))
+    ctx.fillStyle = token('--text')
+    ctx.fillText(text, BADGE_CENTRE_PX, CANVAS_PX - BADGE_CENTRE_PX)
+}
+
+/**
+ * clusterSprite draws FR-MRK-007's cluster marker: its leading category's emoji
+ * with the runner-up's behind it where the members are mixed, plus a badge
+ * reading the count.
+ */
+export function clusterSprite(members: readonly EventDTO[], size: number, scale: number): THREE.Sprite {
+    const [lead, next] = categoryCounts(members).map(c => c.category.emoji)
+    const made = cached(`cluster|${lead}|${next ?? ''}|${members.length}`, ctx => {
+        ctx.font = `${EMOJI_PX}px ${EMOJI_FONT}`
+        if (next) ctx.fillText(next, CANVAS_PX / 2 - STACK_PX, CANVAS_PX / 2 - STACK_PX)
+        ctx.fillText(lead, CANVAS_PX / 2, CANVAS_PX / 2)
+        badge(ctx, members.length)
     })
-    return sized(new THREE.Sprite(made), size, scale)
+    return sized(new THREE.Sprite(made), Math.max(size, CLUSTER_MIN_SIZE), scale)
 }
 
 // The globe's radius as a share of the globe area's shorter side (FR-GLB-013;

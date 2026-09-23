@@ -5,7 +5,7 @@ import Globe, {type GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
 import {api} from '../api'
-import {categoryOf} from '../categories'
+import {categoryCounts, categoryOf} from '../categories'
 import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {clusterSprite, fitAltitude, rescale, sprite, viewHalfAngle} from '../markers'
@@ -65,12 +65,7 @@ function eventTitle(e: EventDTO): string {
 
 // clusterTitle counts a cluster's members by category, largest first.
 function clusterTitle(members: readonly EventDTO[]): string {
-    const counts = new Map<string, number>()
-    members.forEach(e => {
-        const emoji = categoryOf(e.category).emoji
-        counts.set(emoji, (counts.get(emoji) ?? 0) + 1)
-    })
-    const parts = [...counts].sort((a, b) => b[1] - a[1]).map(([emoji, n]) => `${emoji} ${n}`)
+    const parts = categoryCounts(members).map(({category, count}) => `${category.emoji} ${count}`)
     return `${members.length} events: ${parts.join('  ')}`
 }
 
@@ -218,7 +213,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             .objectThreeObject((d: object) => {
                 const item = d as MarkerItem
                 const made = item.kind === 'cluster'
-                    ? clusterSprite(item.members.length, item.size, scale.current)
+                    ? clusterSprite(item.members, item.size, scale.current)
                     : sprite(item.event, item.event.id === selected.current, scale.current)
                 sprites.current.push(made)
                 return made
