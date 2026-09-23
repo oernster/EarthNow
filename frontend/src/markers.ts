@@ -41,7 +41,12 @@ function material(emoji: string, selected: boolean): THREE.SpriteMaterial {
             ctx.stroke()
         }
     }
-    const made = new THREE.SpriteMaterial({map: new THREE.CanvasTexture(canvas), depthWrite: false})
+    // The canvas holds sRGB pixels; left unmarked, three reads them as linear and
+    // encodes them again on output, which washed 🔥 from 243,134,60 to 250,190,133
+    // (measured 2026-09-23 against three 0.186).
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    const made = new THREE.SpriteMaterial({map: texture, depthWrite: false})
     materials.set(key, made)
     return made
 }
