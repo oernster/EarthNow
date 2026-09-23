@@ -172,9 +172,13 @@ func mapEvent(w wireEvent) (event.Event, bool) {
 			e.Category = c
 		}
 	}
-	if len(w.Sources) > 0 {
-		e.SourceURL = w.Sources[0].URL
+	// The first source that is a page, since a storm's first source is often a
+	// JTWC data file the browser would download (FR-SEL-009).
+	addresses := make([]string, 0, len(w.Sources))
+	for _, s := range w.Sources {
+		addresses = append(addresses, s.URL)
 	}
+	e.SourceURL = event.FirstPage(addresses)
 	return e, true
 }
 

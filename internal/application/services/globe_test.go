@@ -164,6 +164,8 @@ func TestSafeURL(t *testing.T) {
 	t.Parallel()
 	for raw, want := range map[string]string{
 		"https://x.org/p": "https://x.org/p", "http://x.org": "", "https:///nohost": "", "%zz": "", "": "",
+		// FR-SEL-009: a data file is not handed to the browser as a page.
+		"https://www.metoc.navy.mil/jtwc/products/ep1726.tcw": "",
 	} {
 		if got := SafeURL(raw); got != want {
 			t.Errorf("SafeURL(%q) = %q, want %q", raw, got, want)

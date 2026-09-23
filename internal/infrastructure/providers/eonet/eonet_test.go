@@ -51,8 +51,9 @@ func TestParseCapturedFixture(t *testing.T) {
 	if polo.Category != event.SevereStorm || polo.Extras.SourceCategory != "severeStorms" || polo.Title != "Hurricane Polo" {
 		t.Errorf("Polo = %+v", polo)
 	}
-	if polo.SourceURL != "https://www.metoc.navy.mil/jtwc/products/ep1726.tcw" {
-		t.Errorf("Polo source = %q", polo.SourceURL)
+	// FR-SEL-009: Polo's first source is a JTWC .tcw data file; the NHC page is taken.
+	if polo.SourceURL != "https://www.nhc.noaa.gov/archive/2026/POLO.shtml" {
+		t.Errorf("Polo source = %q, want the NHC page", polo.SourceURL)
 	}
 	first := polo.Observations[0]
 	if first.At.Hour() != 0 || first.Precision != event.Instant {

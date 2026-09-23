@@ -254,10 +254,11 @@ func toDTO(s Shown, now time.Time) dto.Event {
 }
 
 // SafeURL keeps a source link only when it is an absolute https URL with a
-// host (FR-SEL-006); anything else is dropped rather than offered as a link.
+// host (FR-SEL-006) naming a page rather than a data file (FR-SEL-009); anything
+// else is dropped rather than offered as a link, so the page shows it as text.
 func SafeURL(raw string) string {
 	u, err := url.Parse(raw)
-	if err != nil || u.Scheme != secureScheme || u.Host == "" {
+	if err != nil || u.Scheme != secureScheme || u.Host == "" || !event.IsPage(raw) {
 		return ""
 	}
 	return raw
