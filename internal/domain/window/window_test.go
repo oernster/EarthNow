@@ -51,6 +51,9 @@ func TestFRTW002_ContainsOnlyTheSpanEndingNow(t *testing.T) {
 		{"an hour and a half ago", noon.Add(-90 * time.Minute), false},
 		{"exactly one hour ago", noon.Add(-time.Hour), false},
 		{"a minute ahead of this clock", noon.Add(time.Minute), true},
+		{"at the clock skew bound", noon.Add(ClockSkew), true},
+		{"just past the clock skew bound", noon.Add(ClockSkew + time.Second), false},
+		{"eleven days ahead, as a GDACS flood alert", noon.Add(11 * hoursPerDay * time.Hour), false},
 	}
 	for _, c := range cases {
 		if got := OneHour.Contains(c.at, noon); got != c.want {

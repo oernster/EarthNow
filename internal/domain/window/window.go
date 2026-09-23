@@ -44,11 +44,17 @@ func ByKey(key string) (Window, bool) {
 	return Window{}, false
 }
 
-// Contains reports whether an instant falls in the window ending at now. An
-// instant a little ahead of now counts as inside: a provider's clock running
-// ahead of this machine's must not hide the newest events.
+// ClockSkew is how far ahead of this machine's clock an instant may lie and
+// still count as now: a machine clock running slow must not hide the newest
+// events. It is a bound, not an allowance for the future: GDACS published a flood
+// alert dated days ahead (EONET_24511 on 2026-09-23 carried 2026-10-04), which
+// is not an event that has happened.
+const ClockSkew = 15 * time.Minute
+
+// Contains reports whether an instant falls in the window ending at now, now
+// stretched by ClockSkew (FR-TW-002).
 func (w Window) Contains(at, now time.Time) bool {
-	return at.After(now.Add(-w.Length))
+	return at.After(now.Add(-w.Length)) && !at.After(now.Add(ClockSkew))
 }
 
 // Latest answers the event's newest observation inside the window; false when

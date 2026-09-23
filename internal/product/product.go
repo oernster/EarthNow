@@ -48,7 +48,10 @@ func Attributions() []string {
 		"Earth imagery: NASA Earth Observatory (Blue Marble Next Generation).",
 		"Natural events: NASA Earth Observatory Natural Event Tracker (EONET).",
 		"Earthquakes: USGS Earthquake Hazards Program.",
-		"Volcanoes: Smithsonian Global Volcanism Program and USGS Volcano Hazards Program, Weekly Volcanic Activity Report.",
+		// The Smithsonian's minimum citation is this name with its home page
+		// (volcano.si.edu terms of use, read 2026-09-23).
+		"Volcanoes: Global Volcanism Program, Smithsonian Institution (https://volcano.si.edu/) " +
+			"with the USGS Volcano Hazards Program, Weekly Volcanic Activity Report.",
 		"Place names and borders: Natural Earth.",
 		"Neither NASA, the USGS nor the Smithsonian endorses " + Name + ".",
 	}
