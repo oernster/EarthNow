@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 14.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 15.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -20,6 +20,7 @@ edits.
 | 12 | 2026-09-23 | FR-PRV-015 added: a third provider, the Smithsonian / USGS Weekly Volcanic Activity Report (GVP), each volcano dated by the report's issue day at day precision. NFR-PRIV-001 allows its host, `volcano.si.edu`. FR-SEL-009 counts `.cfm` as a page ending. DATA-003 reads a GDACS-sourced EONET polygon latitude first. | EONET tracked no volcano in the 30 days to 2026-09-23 (25 in a year) while that week's report listed 20 erupting volcanoes; the feed carries a georss point per item (measured). The owner accepted the recommendation. All 14 GDACS flood polygons of the week arrived [lat, lng] against GeoJSON order while GDACS points did not: five were dropped as out of range and nine were drawn in the wrong place, Honduras in Antarctica. The Smithsonian feed answers 403 to a request asking only for JSON, so each adapter states what it accepts. |
 | 13 | 2026-09-24 | CON-003 and the architecture read a JSON file per provider, not SQLite. FR-PRV-003 states the 2.5 default of amendment 11. NFR-LEG-001 is verified by the notices generator's check. Scope names the third provider. OQ-011 names the rail. | The code measured against the document during the documentation pass; the owner chose to bring the document to the code. |
 | 14 | 2026-09-24 | FR-DON-010 is verified against the button's font size rather than the line box; it states that the donate button stands taller than a text-only button. Appendix D.1's donate row names the site's copy as written. | Measured on the built site: the mark is 45.9 px on 17 px type, exactly 2.7em, which is 1.69 times the 27.2 px line box at line height 1.6. The 1.8 figure was the step up from the earlier 1.5em mark, not a ratio to the line box. The site now exists, so `docs/donate.png` is written rather than pending (owner). |
+| 15 | 2026-09-24 | FR-MRK-010 added: every marker keeps its fit-altitude size on screen while the camera zooms. FR-FLT-001 offers a toggle for every category, present or not, as the key lists them. Appendix D.1 names the page's mark and the site's icon among the application icon's uses. | Markers were built to hold their launch size on screen, so that two overlapping markers separate as the camera closes in (FR-MRK-008); at a fixed size in globe units they grow with the gap between them. The owner approved writing it down. FR-KEY-001 and FR-FLT-001 described one control two ways; the owner chose the key's reading, which keeps it steady as events come and go. `tools/genicons.py` writes both from one render. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -272,6 +273,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-MRK-007 | Must | Where markers overlap on screen at the current zoom, the globe view shall draw them as one cluster marker showing their count. | Two fixture events 1 km apart at launch altitude draw as one cluster reading 2. | T (clustering) + D |
 | FR-MRK-008 | Must | When a cluster marker is activated, the globe view shall zoom toward the cluster until its members separate or maximum zoom is reached. | D | D |
 | FR-MRK-009 | Must | The globe view shall draw no marker animation other than the selection treatment and hover state. | Inspection: no pulsing, flashing or looping animation on any marker. | I |
+| FR-MRK-010 | Must | While the camera zooms, the globe view shall keep every marker, cluster marker included, at the size on screen it has at the fit altitude (FR-GLB-013): its size in globe units is its fit-altitude size times the camera altitude over the fit altitude. The sizes of FR-MRK-003 and FR-MRK-004 are those fit-altitude sizes. | Vitest: a marker's scale is its fit-altitude size times the altitude ratio at 0.25, 1 and 3. | T |
 
 #### 3.2.3 Providers and refresh
 
@@ -300,7 +302,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-TW-001 | Must | The time window control shall offer 1 h, 6 h, 24 h, 3 d and 7 d. | T | T |
 | FR-TW-002 | Must | While a time window is selected, the event query shall include an event only if its event time falls within that window, ending at the current instant. | Fake clock at 12:00; events at 11:30 and 10:30 with 1 h selected yield only the first. | T |
 | FR-TW-003 | Must | When the application starts with no saved choice, the time window control shall select 24 h. | T | T |
-| FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002 that has at least one event in the store. | Store with only quakes and storms offers exactly those two toggles plus "All events". | T |
+| FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002, in DATA-002 order, whether or not the store holds an event of that category; the key's rows are those toggles (FR-KEY-001). | A store with only quakes and storms still offers all ten toggles, the other eight reading 0 (FR-KEY-004), plus "All events". | T |
 | FR-FLT-002 | Must | When a category toggle is switched off, the globe view shall hide that category's markers. | T | T |
 | FR-FLT-003 | Must | When "All events" is activated, the filter control shall switch every category toggle on. | T | T |
 | FR-FLT-004 | Must | The filter control shall offer one toggle per provider. | Switching off USGS hides every USGS event. | T |
@@ -559,7 +561,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 
 | File | Used for | Notes |
 |---|---|---|
-| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
+| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
 | `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` for the rail and `docs/donate.png` for the site (FR-DON-010). |

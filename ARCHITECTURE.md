@@ -294,7 +294,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | Refresh intervals | USGS 60 s, matching its measured `max-age=60`; EONET 10 min; GVP hourly | One interval for all: the sources change at very different rates. |
 | EONET scope | Every event of the week, open and closed (amendment 11) | Open events only: 17 against 80 that week, dropping most wildfires and floods. |
 | Volcanoes | A third provider, the Weekly Volcanic Activity Report (amendment 12) | EONET alone: it tracked no volcano in the 30 days measured while that week's report listed 20. |
-| GDACS flood polygons | Read latitude first (amendment 12) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. TECH_DEBT.md item 4 keeps it under watch. |
+| GDACS flood polygons | Read latitude first (amendment 12) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. TECH_DEBT.md item 3 keeps it under watch. |
 | The source link | The first source naming a page; a data file is shown as text (FR-SEL-009) | The first source: a storm's first source was a `.tcw` warning file, which downloaded. |
 | The donate address | Held by the Go side, which opens it through the same https allowlist as a source link (FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
 | Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600 the 70% globe area of NFR-UX-001 leaves them 55 px of height, less than one PigeonPost header. |
