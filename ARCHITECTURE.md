@@ -125,8 +125,10 @@ machine.
 - `cache` keeps one JSON file per provider, stamped with a schema version and
   written beside the old one then renamed over it, so an interrupted write
   leaves the previous set whole (NFR-REL-005, CON-003).
-- `geo` loads the embedded Natural Earth places and country outlines and words
-  the nearest place, its distance and its direction (FR-GEO-001 to 005).
+- `geo` loads the embedded Natural Earth places, country outlines and Antarctic
+  ice shelves and words the nearest place, its distance and its direction
+  (FR-GEO-001 to 005). A point on an ice shelf lies in Antarctica, since
+  Natural Earth draws Antarctica only to its grounded coast.
 - `runlog` keeps `Log.txt`, rotating it at 5 MB while running with one
   `Log.previous.txt` beside it. It also points the process's error output at
   the file.
@@ -294,7 +296,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | Refresh intervals | USGS 60 s, matching its measured `max-age=60`; EONET 10 min; GVP hourly | One interval for all: the sources change at very different rates. |
 | EONET scope | Every event of the week, open and closed (amendment 11) | Open events only: 17 against 80 that week, dropping most wildfires and floods. |
 | Volcanoes | A third provider, the Weekly Volcanic Activity Report (amendment 12) | EONET alone: it tracked no volcano in the 30 days measured while that week's report listed 20. |
-| GDACS flood polygons | Read latitude first (amendment 12) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. TECH_DEBT.md item 2 keeps it under watch. |
+| GDACS flood polygons | Read latitude first (amendment 12) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. TECH_DEBT.md item 1 keeps it under watch. |
 | The source link | The first source naming a page; a data file is shown as text (FR-SEL-009) | The first source: a storm's first source was a `.tcw` warning file, which downloaded. |
 | The donate address | Held by the Go side, which opens it through the same https allowlist as a source link (FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
 | Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600 the 70% globe area of NFR-UX-001 leaves them 55 px of height, less than one PigeonPost header. |

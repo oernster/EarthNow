@@ -170,10 +170,13 @@ with `--check` and fails until the file matches.
 
 - `frontend/src/assets/earth.jpg` is the NASA Blue Marble Next Generation
   texture, downloaded and committed.
-- `internal/infrastructure/geo/data` holds the Natural Earth places and
-  borders the application embeds. `tools/geodata.py` is the Phase 0 spike's
-  converter from Natural Earth shapefiles; it writes under `spike/`, which git
-  ignores, not into `internal`.
+- `internal/infrastructure/geo/data` holds the Natural Earth places, borders
+  and Antarctic ice shelves the application embeds. `tools/geodata.py` is the
+  Phase 0 spike's converter from Natural Earth shapefiles. It is given the
+  folder the layers are unpacked into plus an output folder, writes a file
+  only for each layer it finds there, then the result is copied into `data`
+  by hand. Pass only the layer being refreshed: the shapefiles are not kept,
+  so a fresh download of the others might not match what is embedded.
 
 ## Versioning
 

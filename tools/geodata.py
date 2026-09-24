@@ -9,6 +9,7 @@ Writes spike/geo/places.json.gz and spike/geo/countries.json.gz.
 from __future__ import annotations
 
 import gzip
+import itertools
 import json
 import pathlib
 import struct
@@ -57,12 +58,20 @@ def read_shp(path: pathlib.Path) -> list[object]:
             num_parts, num_points = struct.unpack("<ii", body[36:44])
             parts = list(struct.unpack(f"<{num_parts}i", body[44 : 44 + 4 * num_parts]))
             pts_at = 44 + 4 * num_parts
-            pts = struct.unpack(f"<{2 * num_points}d", body[pts_at : pts_at + 16 * num_points])
+            pts = struct.unpack(
+                f"<{2 * num_points}d", body[pts_at : pts_at + 16 * num_points]
+            )
             parts.append(num_points)
             rings = []
-            for a, b in zip(parts, parts[1:]):
+            for a, b in itertools.pairwise(parts):
                 rings.append(
-                    [[round(pts[2 * k], COORD_DECIMALS), round(pts[2 * k + 1], COORD_DECIMALS)] for k in range(a, b)]
+                    [
+                        [
+                            round(pts[2 * k], COORD_DECIMALS),
+                            round(pts[2 * k + 1], COORD_DECIMALS),
+                        ]
+                        for k in range(a, b)
+                    ]
                 )
             shapes.append(rings)
         else:
@@ -70,20 +79,64 @@ def read_shp(path: pathlib.Path) -> list[object]:
     return shapes
 
 
+def layer(src: pathlib.Path, name: str) -> pathlib.Path | None:
+    """The shapefile stem for a Natural Earth layer unpacked under src; None when absent."""
+    stem = src / name / name
+    return stem if stem.with_suffix(".shp").exists() else None
+
+
+def polygons(stem: pathlib.Path, name_field: str) -> list[dict[str, object]]:
+    return [
+        {"n": row[name_field], "r": rings}
+        for row, rings in zip(
+            read_dbf(stem.with_suffix(".dbf")), read_shp(stem.with_suffix(".shp"))
+        )
+        if rings
+    ]
+
+
 def main(src: pathlib.Path, out: pathlib.Path) -> None:
+    """Write each layer whose source is unpacked under src, leaving the others alone.
+
+    The ice shelves (ne_10m_antarctic_ice_shelves_polys) lie outside Antarctica's
+    country polygon, which stops at the grounded coast; the geocoder counts them as
+    Antarctica so a point on the Ross Ice Shelf does not read as sea.
+    """
     out.mkdir(parents=True, exist_ok=True)
-    pp = src / "ne_10m_populated_places_simple" / "ne_10m_populated_places_simple"
-    places = []
-    for row, pt in zip(read_dbf(pp.with_suffix(".dbf")), read_shp(pp.with_suffix(".shp"))):
-        places.append({"n": row["name"], "r": row["adm1name"], "c": row["adm0name"], "lat": round(pt[1], COORD_DECIMALS), "lng": round(pt[0], COORD_DECIMALS)})
-    cc = src / "ne_10m_admin_0_countries" / "ne_10m_admin_0_countries"
-    countries = []
-    for row, rings in zip(read_dbf(cc.with_suffix(".dbf")), read_shp(cc.with_suffix(".shp"))):
-        if rings:
-            countries.append({"n": row["NAME"], "r": rings})
-    for name, value in (("places", places), ("countries", countries)):
+    layers: list[tuple[str, list[object]]] = []
+    pp = layer(src, "ne_10m_populated_places_simple")
+    if pp:
+        places = []
+        for row, pt in zip(
+            read_dbf(pp.with_suffix(".dbf")), read_shp(pp.with_suffix(".shp"))
+        ):
+            places.append(
+                {
+                    "n": row["name"],
+                    "r": row["adm1name"],
+                    "c": row["adm0name"],
+                    "lat": round(pt[1], COORD_DECIMALS),
+                    "lng": round(pt[0], COORD_DECIMALS),
+                }
+            )
+        layers.append(("places", places))
+    cc = layer(src, "ne_10m_admin_0_countries")
+    if cc:
+        layers.append(("countries", polygons(cc, "NAME")))
+    shelves = layer(src, "ne_10m_antarctic_ice_shelves_polys")
+    if shelves:
+        layers.append(("shelves", polygons(shelves, "name")))
+    if not layers:
+        sys.exit(f"no Natural Earth layer unpacked under {src}")
+    for name, value in layers:
         target = out / f"{name}.json.gz"
-        target.write_bytes(gzip.compress(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")))
+        target.write_bytes(
+            gzip.compress(
+                json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+            )
+        )
         print(f"{target.name}: {len(value)} items, {target.stat().st_size} bytes")
 
 
