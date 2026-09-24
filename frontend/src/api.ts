@@ -32,7 +32,7 @@ function bound(): Bound | null {
 async function call<T>(work: (b: Bound) => Promise<T>, onRefused: Refused): Promise<T | null> {
     const b = bound()
     if (!b) {
-        onRefused('The EarthNow backend is not connected.')
+        onRefused('The application backend is not connected.')
         return null
     }
     try {

@@ -6,7 +6,7 @@ import {useCallback, useEffect, useRef} from 'react'
 
 // TEXT_TYPES are the inputs that own their horizontal arrows for the caret, so
 // the ring is left with Tab. The reference exempts every INPUT but a slider;
-// EarthNow's inputs are checkboxes and radios, whose Left and Right would
+// This application's inputs are checkboxes and radios, whose Left and Right would
 // otherwise stay native and never step the ring (keeb: the horizontal arrows
 // step the ring everywhere but a text field).
 const TEXT_TYPES = new Set(['text', 'search', 'email', 'url', 'number', 'password'])

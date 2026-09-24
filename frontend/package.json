@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "lint": "eslint .",
+    "build": "eslint . && tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "globe.gl": "2.46.2",
@@ -16,15 +17,19 @@
     "three": "^0.186.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^22.20.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-istanbul": "^2.1.9",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^25.0.1",
     "typescript": "~5.7.2",
+    "typescript-eslint": "^8.70.1",
     "vite": "^6.0.5",
     "vitest": "^2.1.9"
   }

@@ -15,6 +15,7 @@ import {TimeWindow} from './components/TimeWindow'
 import {settleKeyboard} from '../../installer/frontend/dist/settle-keyboard.js'
 import {donate} from './donate'
 import {icons} from './icons'
+import {ProductName} from './product'
 import {useRing} from './ring'
 import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 
@@ -34,6 +35,7 @@ export default function App() {
     const [view, setView] = useState<ViewDTO>(EMPTY_VIEW)
     const [selected, setSelected] = useState<EventDTO | null>(null)
     const [problem, setProblem] = useState('')
+    const [product, setProduct] = useState('')
     const globe = useRef<GlobeHandle>(null)
     // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
     const shell = useRef<HTMLDivElement>(null)
@@ -74,7 +76,10 @@ export default function App() {
         void api.windows(onProblem).then(w => { if (w) setWindows(w) })
         void api.settings(onProblem).then(s => { if (s) setSettings(s) })
         void api.settingChoices(onProblem).then(c => { if (c) setChoices(c) })
+        // The product's name has its home on the Go side; About carries it.
+        void api.about(onProblem).then(a => { if (a) setProduct(a.name) })
     }, [onProblem])
+    useEffect(() => { document.title = product }, [product])
     const ready = settings !== null
     useEffect(() => {
         if (!ready) return
@@ -89,7 +94,7 @@ export default function App() {
     const shownDetail = current ?? selected
     const speed = choices?.speeds.find(s => s.key === settings?.speed)
 
-    return <div ref={shell} className="app">
+    return <ProductName.Provider value={product}><div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
             onToggleRotate={() => change({autoRotate: !settings?.autoRotate})}
             attention={needsAttention(view.providers, view.notice)}
@@ -115,7 +120,7 @@ export default function App() {
         <aside className="side">
             {/* The mark IS the heading: its artwork carries the product's name
                 (owner), so its alternative text is that name. */}
-            <h1><img className="brand-mark" src={icons.appMark} alt="EarthNow" draggable={false}/></h1>
+            <h1><img className="brand-mark" src={icons.appMark} alt={product} draggable={false}/></h1>
             <Key counts={view.counts} providers={view.providers}
                 hiddenCategories={hiddenCategories} hiddenProviders={hiddenProviders}
                 onToggleCategory={k => change({hiddenCategories: toggled(settings?.hiddenCategories ?? [], k)})}
@@ -126,5 +131,5 @@ export default function App() {
             onChange={change} onClose={() => setSettingsOpen(false)}/>}
         {statusOpen && <StatusPanel providers={view.providers} notice={view.notice} onClose={() => setStatusOpen(false)}/>}
         {help && <HelpDialog kind={help} onClose={() => setHelp(null)} onProblem={onProblem}/>}
-    </div>
+    </div></ProductName.Provider>
 }

@@ -5,7 +5,8 @@
 // the rest are asked of the Go side, which holds the one copy of each.
 import {useEffect, useState} from 'react'
 import {api} from '../api'
-import {GUIDE_SECTIONS} from '../guide'
+import {guideSections} from '../guide'
+import {useProductName} from '../product'
 import type {AboutDTO} from '../types'
 import {Dialog} from './Dialog'
 
@@ -36,8 +37,9 @@ export function HelpDialog({kind, onClose, onProblem}: Props) {
 }
 
 function Guide() {
+    const product = useProductName()
     return <>
-        {GUIDE_SECTIONS.map(s => <section key={s.heading}>
+        {guideSections(product).map(s => <section key={s.heading}>
             <h3>{s.heading}</h3>
             {s.intro && <p>{s.intro}</p>}
             {s.entries?.map(e => <p key={e.name} className="guide-entry">

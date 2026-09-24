@@ -3,7 +3,8 @@
 // (Refresh, provider status), then Settings and Help. The donate button sits at
 // the rail's foot (FR-DON-001). Every name is read from railLabels.
 import {icons} from '../icons'
-import {RAIL_LABELS} from '../railLabels'
+import {useProductName} from '../product'
+import {donateLabel, RAIL_LABELS} from '../railLabels'
 import type {HelpKind} from './HelpDialogs'
 import {HelpMenu} from './HelpMenu'
 import {RailButton} from './RailButton'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function Rail(p: Props) {
+    const product = useProductName()
     // NFR-UX-004: the button shows the state it switches TO. While rotating it
     // shows the crossed icon and offers to stop.
     const rotation = p.autoRotate
@@ -43,6 +45,6 @@ export function Rail(p: Props) {
         {/* FR-DON-001: the donate button is the rail's own button, pinned to its
             foot with no tray of its own. It belongs to nothing on screen, so it
             sits apart, where nothing else is reached by accident. */}
-        <RailButton label={RAIL_LABELS.donate} icon={icons.donate} className="rail-foot" onClick={p.onDonate}/>
+        <RailButton label={donateLabel(product)} icon={icons.donate} className="rail-foot" onClick={p.onDonate}/>
     </nav>
 }

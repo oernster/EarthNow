@@ -42,7 +42,7 @@ html, body, #root {
 }
 
 /* The application's mark is the whole heading (owner): its artwork already reads
-   EarthNow, so no text sits beside it. It is as large as the key column's
+   the product's name, so no text sits beside it. It is as large as the key column's
    height allows: three rail glyphs where there is room, giving way to the key
    (which must never be cut off) down to two at the 600 px minimum window. The
    heading shrinks in the column's flex; the picture fills whatever it is given. */

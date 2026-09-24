@@ -76,7 +76,7 @@ function focusFooter() {
 
 /* ---------------------------------------------------------------- licence */
 
-// licenceFile is EarthNow's own LICENSE, copied in beside this page by build.ps1
+// licenceFile is the application's own LICENSE, copied in beside this page by build.ps1
 // so the text has one home at the repository root.
 const licenceFile = 'LICENSE.txt'
 

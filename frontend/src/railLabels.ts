@@ -12,5 +12,9 @@ export const RAIL_LABELS = {
     statusAttention: 'Provider status: something to report',
     settings: 'Settings',
     help: 'Help',
-    donate: 'Donate to support EarthNow',
 } as const
+
+/** donateLabel is the donate button's name (FR-DON-005), built from the product's. */
+export function donateLabel(product: string): string {
+    return `Donate to support ${product}`
+}

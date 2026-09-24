@@ -9,7 +9,8 @@ import {Dialog} from './components/Dialog'
 import {HelpDialog} from './components/HelpDialogs'
 import {HelpMenu} from './components/HelpMenu'
 import {Rail} from './components/Rail'
-import {RAIL_LABELS} from './railLabels'
+import {ProductName} from './product'
+import {donateLabel} from './railLabels'
 import {donate} from './donate'
 import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {CATEGORIES} from './categories'
@@ -139,7 +140,7 @@ describe('FR-RAIL-002 the rail', () => {
             onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
         const labels = Array.from(document.querySelectorAll('.rail-btn')).map(b => b.getAttribute('aria-label'))
         expect(labels).toEqual(['Start rotating', 'Reset view', 'Zoom in', 'Zoom out', 'Refresh now',
-            'Provider status', 'Settings', 'Help', RAIL_LABELS.donate])
+            'Provider status', 'Settings', 'Help', donateLabel('')])
     })
 
     it('zooms in and out from its buttons', () => {
@@ -238,11 +239,13 @@ describe('FR-DON the donate button', () => {
     it('FR-DON-001 and 005 is a rail button at its foot, named as PigeonPost names it', () => {
         const onDonate = vi.fn()
         const noop = () => undefined
-        render(<Rail autoRotate={false} attention={false} onToggleRotate={noop} onResetView={noop} onZoom={noop}
-            onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={onDonate}/>)
-        const button = screen.getByLabelText('Donate to support EarthNow')
+        // The name arrives from the Go side (internal/product) through the context.
+        render(<ProductName.Provider value="Product"><Rail autoRotate={false} attention={false}
+            onToggleRotate={noop} onResetView={noop} onZoom={noop} onRefresh={noop} onStatus={noop}
+            onSettings={noop} onHelp={noop} onDonate={onDonate}/></ProductName.Provider>)
+        const button = screen.getByLabelText('Donate to support Product')
         expect(button.className).toBe('rail-btn rail-foot')
-        expect(button.getAttribute('data-tip')).toBe('Donate to support EarthNow')
+        expect(button.getAttribute('data-tip')).toBe('Donate to support Product')
         expect(button.closest('.rail-actions')).toBeNull()
         fireEvent.click(button)
         expect(onDonate).toHaveBeenCalledOnce()

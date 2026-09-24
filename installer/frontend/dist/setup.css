@@ -1,5 +1,5 @@
 /*
- * EarthNow's palette, so setup and the thing it installs look like one
+ * The application's palette, so setup and the thing it installs look like one
  * product. Dark takes the application's own tokens (frontend/src/style.css)
  * where it has them; the accent is sampled from the application icon's
  * lettering blue. Light holds its own tokens rather than sharing them: a

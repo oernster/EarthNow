@@ -111,9 +111,14 @@ foreach ($package in $measured.Keys) {
     Write-Host ("  {0,-44} {1,5}%  floor {2}%" -f $package, $reached, $floor)
 }
 
-Write-Host 'Running the frontend suite...'
+Write-Host 'Checking the page: lint, types, then the suite and its coverage floor...'
 Push-Location (Join-Path $root 'frontend')
 try {
+    npm run lint
+    if ($LASTEXITCODE -ne 0) { throw "ESLint failed with exit code $LASTEXITCODE" }
+    npx tsc --noEmit
+    if ($LASTEXITCODE -ne 0) { throw "the type check failed with exit code $LASTEXITCODE" }
+    # The floors live in frontend/vite.config.ts beside the reason for each.
     npm test
     if ($LASTEXITCODE -ne 0) { throw "the frontend suite failed with exit code $LASTEXITCODE" }
 } finally {
