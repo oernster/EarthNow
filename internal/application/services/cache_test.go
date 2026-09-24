@@ -51,7 +51,7 @@ func TestFRSTS004_CachedEventsShowBeforeTheFirstFetch(t *testing.T) {
 	g := NewGlobe(NewStore(clock), clock, []ports.Provider{usgs})
 	g.UseCache(cache)
 	g.RestoreCached()
-	g.RefreshAll(context.Background())
+	refreshEach(g)
 	view := g.View("24h", Filter{})
 	if len(view.Events) != 1 || view.Events[0].Retrieved != "Retrieved 3 h ago" || view.Notice != "" {
 		t.Fatalf("view = %+v", view)

@@ -36,6 +36,14 @@ func quake(id string, mag float64, url string) event.Event {
 	}
 }
 
+// refreshEach fetches every provider in turn through Refresh, the one path the
+// facade's per-provider loops take; each result lands in the store on its own.
+func refreshEach(g *Globe) {
+	for _, p := range g.providers {
+		_, _ = g.Refresh(context.Background(), p)
+	}
+}
+
 func provider(t *testing.T, g *Globe, name string) dto.Provider {
 	t.Helper()
 	for _, p := range g.View("24h", Filter{}).Providers {
@@ -47,7 +55,7 @@ func provider(t *testing.T, g *Globe, name string) dto.Provider {
 	return dto.Provider{}
 }
 
-func TestFRPRV008_RefreshAllIsolatesAFailingProvider(t *testing.T) {
+func TestFRPRV008_AFailingProviderSpoilsNoOther(t *testing.T) {
 	t.Parallel()
 	clock := &fakeClock{noon}
 	usgs := &fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{quake("a", 3.21, "https://earthquake.usgs.gov/a")}, Validator: "v1"}}
@@ -56,7 +64,7 @@ func TestFRPRV008_RefreshAllIsolatesAFailingProvider(t *testing.T) {
 	if p := provider(t, g, "USGS"); !p.Loading {
 		t.Errorf("FR-STS-001 before any fetch = %+v, want loading", p)
 	}
-	g.RefreshAll(context.Background())
+	refreshEach(g)
 	view := g.View("24h", Filter{})
 	if len(view.Events) != 1 || view.CountLine != "1 event in the last 24 h" || view.Counts["EARTHQUAKE"] != 1 {
 		t.Errorf("view = %+v", view)
@@ -67,7 +75,7 @@ func TestFRPRV008_RefreshAllIsolatesAFailingProvider(t *testing.T) {
 	if p := provider(t, g, "USGS"); p.Loading || p.Stale || p.Retrieved != "Retrieved under a minute ago" {
 		t.Errorf("healthy provider = %+v", p)
 	}
-	g.RefreshAll(context.Background())
+	refreshEach(g)
 	if usgs.validator != "v1" {
 		t.Errorf("FR-PRV-004 second fetch sent %q, want v1", usgs.validator)
 	}
@@ -105,7 +113,7 @@ func TestViewWordsEachEvent(t *testing.T) {
 		quake("b", 5.0, "javascript:alert(1)"),
 	}}}
 	g := NewGlobe(NewStore(clock), clock, []ports.Provider{usgs})
-	g.RefreshAll(context.Background())
+	refreshEach(g)
 	byID := map[string]dto.Event{}
 	for _, e := range g.View("nonsense", Filter{}).Events {
 		byID[e.ID] = e
@@ -133,7 +141,7 @@ func TestMeasurementWithoutUnitAndEventWithoutMeasurement(t *testing.T) {
 	none := quake("d", 0, "")
 	none.Observations[0].Measurement = nil
 	g := NewGlobe(NewStore(clock), clock, []ports.Provider{&fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{bare, none}}}})
-	g.RefreshAll(context.Background())
+	refreshEach(g)
 	for _, e := range g.View("24h", Filter{}).Events {
 		if (e.ID == "USGS:c" && e.Measurement != "4") || (e.ID == "USGS:d" && e.Measurement != "") {
 			t.Errorf("%s measurement = %q", e.ID, e.Measurement)

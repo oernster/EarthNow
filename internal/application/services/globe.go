@@ -135,21 +135,6 @@ func (g *Globe) Place(lat, lng float64) string {
 	return geocoder.Describe(lat, lng)
 }
 
-// RefreshAll fetches every provider at once. Each result lands in the store
-// on its own, so one provider failing never holds up or spoils another
-// (FR-PRV-008). It returns once every provider has answered.
-func (g *Globe) RefreshAll(ctx context.Context) {
-	var wg sync.WaitGroup
-	for _, p := range g.providers {
-		wg.Add(1)
-		go func(p ports.Provider) {
-			defer wg.Done()
-			_, _ = g.Refresh(ctx, p)
-		}(p)
-	}
-	wg.Wait()
-}
-
 // Outcome is what one successful fetch did, for the log (NFR-OBS-001).
 type Outcome struct {
 	NotModified bool
