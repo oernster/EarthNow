@@ -1,7 +1,7 @@
 // The one door to the Go side. Every call takes a refusal handler as its last
 // argument and answers null rather than rejecting, so a call without one does
 // not compile and nothing is left for a console nobody opens (NFR-REL-004).
-import type {AboutDTO, ChoiceDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
+import type {AboutDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 
 type Refused = (reason: string) => void
 
@@ -14,6 +14,8 @@ interface Bound {
     Place(lat: number, lng: number): Promise<string>
     OpenSource(link: string): Promise<void>
     RefreshNow(): Promise<number>
+    Clouds(): Promise<CloudsDTO>
+    CloudImage(): Promise<string>
     About(): Promise<AboutDTO>
     Licence(): Promise<string>
     Notices(): Promise<string>
@@ -55,6 +57,10 @@ export const api = {
     openSource: (link: string, onRefused: Refused) => call(b => b.OpenSource(link), onRefused),
     // refreshNow answers when the last manual refresh was made, Unix ms (FR-PRV-010).
     refreshNow: (onRefused: Refused) => call(b => b.RefreshNow(), onRefused),
+    // clouds answers the cloud layer's state (FR-CLD-009); cloudImage the drawn
+    // image as a data URL, empty when none is held.
+    clouds: (onRefused: Refused) => call(b => b.Clouds(), onRefused),
+    cloudImage: (onRefused: Refused) => call(b => b.CloudImage(), onRefused),
     about: (onRefused: Refused) => call(b => b.About(), onRefused),
     licence: (onRefused: Refused) => call(b => b.Licence(), onRefused),
     notices: (onRefused: Refused) => call(b => b.Notices(), onRefused),

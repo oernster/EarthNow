@@ -24,6 +24,7 @@ import (
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/application/services"
 	"github.com/oernster/EarthNow/internal/infrastructure/cache"
+	"github.com/oernster/EarthNow/internal/infrastructure/clouds"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/gvp"
@@ -55,7 +56,7 @@ const (
 	windowWidth  = 1280
 	windowHeight = 800
 	minWidth     = 960
-	minHeight    = 600
+	minHeight    = 640
 )
 
 // responseCap is FR-PRV-011's size cap; the largest measured feed was 1.51 MB.
@@ -112,14 +113,18 @@ func main() {
 	log.SetOutput(keepLog())
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host)
+	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host, clouds.Host)
 	quakes := usgs.New(client, usgs.AllMagnitudes)
 	providers := []ports.Provider{eonet.New(client), quakes, gvp.New(client)}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
 	dir, err := dataDir()
+	// With no data folder the cloud cache has no home; it then holds nothing
+	// and refuses to save, which the cloud status says (FR-CLD-014).
+	cloudDir := ""
 	if err == nil {
 		globe.UseCache(cache.New(filepath.Join(dir, cacheFolder), responseCap))
+		cloudDir = filepath.Join(dir, cacheFolder)
 	} else {
 		log.Printf("no data folder: %v", err)
 		dir = ""
@@ -130,12 +135,18 @@ func main() {
 	prefs.Load()
 	log.Printf("settings: %s; notice %q", settingsStore.Path(), prefs.Notice())
 	globe.RestoreCached()
+	// FR-CLD-005: the cloud service is reached only while the layer is shown;
+	// the use case asks nothing while hidden, so its host being allowed costs
+	// nothing then (NFR-PRIV-001).
+	cloudLayer := services.NewClouds(clock, clouds.New(client, clouds.BaseURL), cache.NewCloud(cloudDir, responseCap))
+	cloudLayer.Restore()
+	cloudLayer.SetShown(prefs.Current().CloudsShown)
 	help := Help{
 		About:   dto.About{Name: product.Name, Version: appVersion, Copyright: product.Copyright, Licence: product.Licence, Attributions: product.Attributions()},
 		Licence: licenceText,
 		Notices: noticesText,
 	}
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, help, providers)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

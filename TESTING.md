@@ -72,7 +72,8 @@ below are the ones written beside each floor in `test.ps1` and
 | `infrastructure/providers/gvp` | 100 | |
 | `infrastructure/settings` | 100 | |
 | `infrastructure/httpfetch` | 97.3 | A request-building failure that no valid method and context can produce. |
-| `infrastructure/cache` | 84.2 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
+| `infrastructure/clouds` | 96.4 | Encoding the drawn image into memory, which cannot fail. |
+| `infrastructure/cache` | 89.8 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
 | `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
 | `infrastructure/setup` | 59.9 | What acts on the machine itself: the uninstall entry's registry writes, creating a shortcut through the Windows Script Host, then finding, ending, launching or scheduling the removal of a process. A test must not change the machine it runs on. |
 
@@ -99,10 +100,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 78.71 |
-| Branches | 73.33 |
-| Functions | 75.55 |
-| Lines | 81.22 |
+| Statements | 79.75 |
+| Branches | 74.48 |
+| Functions | 76.49 |
+| Lines | 82.25 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -127,6 +128,14 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   the stored set, the cache restored before any fetch, the notices when there
   is no cache or no settings file. The https rule for source links is tested
   there as well.
+- **The cloud layer**: the brightness ramp at both thresholds and between them
+  (FR-CLD-006), the veil for a pixel with no data (FR-CLD-007), the status
+  wording and its staleness mark (FR-CLD-009, FR-CLD-010). On a fake clock and
+  fake service: no request while hidden, one check per hour while shown, an
+  image fetched only for a newly listed time, the held image kept through a
+  failure with the backoff, the first failure said, the cached image drawn at
+  start with its age (FR-CLD-003 to FR-CLD-005, FR-CLD-011, FR-CLD-013,
+  FR-CLD-014, FR-CLD-016).
 
 ### The adapters
 
@@ -136,9 +145,15 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   GDACS polygon read in the order its own coordinates prove (else the order the
   feed's proven polygons show) and the volcano report's Latin-1 decoded. Which
   source link counts as a page is tested in the domain.
+- **The cloud adapter** reads the layer's capabilities document captured from
+  EUMETSAT (in its `testdata`) and draws images made in the test: the newest
+  valid time, the GetMap query, the drawn pixels against the domain's ramp and
+  the refusal of an XML exception served with 200, a PNG of another size and a
+  PNG cut short (FR-CLD-012).
 - **`httpfetch`** against a local test server: the host allowlist, a redirect
   held to the allowed hosts, the size cap, the status check, `If-Modified-Since` and a 304.
-- **The cache and the settings** in temporary folders: round trips, another
+- **The cache and the settings** in temporary folders: round trips (the cloud
+  image with its valid time among them), another
   schema version read as absent, a damaged file, an oversized file and a save
   that cannot be written.
 - **The log**: rotation at start and while running with one previous file
@@ -172,7 +187,10 @@ the keyboard repair shared with the setup page, the keyboard ring (with the
 page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
 the Help surfaces with the rail's order. The refresh indicator is covered too:
 the status line's wording, the turning Refresh button held for one turn and
-the last refresh time. The noborderfocus rule has two guards,
+the last refresh time. So is the cloud layer: the button's name and artwork in
+each state, the press, the cloud line shown, marked or absent; also the sphere
+sitting between the texture and the markers, drawn only while it has an image.
+The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
 ## What the tests never do
@@ -184,7 +202,7 @@ each proved by planting the defect back.
   `APPDATA` into temporary folders and fail if the redirection did not take.
 - **Launch, find or end EarthNow.** No test calls the process functions in
   setup; the root package that runs the application has no tests.
-- **Reach a provider.** The adapters read captured fixtures through fakes;
+- **Reach a provider or EUMETSAT.** The adapters read captured fixtures through fakes;
   `httpfetch` talks to a server on this machine.
 - **Read or write the real settings, cache or log.** Every such test works in
   `t.TempDir()`.
@@ -253,7 +271,7 @@ recorded there, in section 3.1.
 | Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look. |
 | A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |
 | Activating a marker opens its detail (FR-SEL-001) | Click one. |
-| The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 600 (NFR-UX-002). |
+| The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 640 (NFR-UX-002). |
 | The keyboard works with no click at start (NFR-KBD-003) | Launch, press Tab; the log records each focus attempt. |
 | The guide names every button and category (FR-HLP-004); categories differ by emoji alone (NFR-A11Y-001) | Read the guide. |
 | Credits and notices (NFR-LEG-002, FR-GEO-008) | Read About and `THIRD_PARTY_NOTICES`. |
@@ -262,6 +280,7 @@ recorded there, in section 3.1.
 | A panic leaves a record; a panic on a goroutine the application starts is recovered, logged and shown (NFR-REL-002, NFR-REL-003) | A planted panic in a debug build, on the main path and on each goroutine; read the log and the status popover. |
 | A failure found at startup reaches the window rather than ending the run (NFR-REL-001) | Launch with the data folder unwritable; the window opens and says so. |
 | Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log and the frame-time log on the reference machine. |
+| The cloud layer draws over the texture, turns with it and stays beneath every marker; the veil reads as unseen rather than as cloud; frame time holds with the layer shown (FR-CLD-008, FR-CLD-015, NFR-PERF-005) | Show the clouds, leave the globe turning with 2,500 markers, read the frame-time log over 60 s; look at the poles. The spike's measured thresholds are in section 3.2.10 of REQUIREMENTS.md. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 
 ## See also

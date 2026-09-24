@@ -62,9 +62,10 @@ main.go, app.go          composition root and the Wails facade the page calls
 frontend/src             the page: React, TypeScript, globe.gl
 internal/application/
     ports                what the application needs from outside
-    services             the use cases: globe, store, scheduler, preferences
+    services             the use cases: globe, store, scheduler, preferences, clouds
     dto                  the shapes that cross to the page
 internal/domain/
+    cloud                the cloud layer's opacity ramp, veil and wording
     event                the provider-neutral event, magnitude bands, links
     freshness            age wording and staleness
     window               the time windows and what falls inside one
@@ -73,7 +74,8 @@ internal/infrastructure/
     providers/eonet      NASA EONET v3
     providers/usgs       USGS earthquake GeoJSON feeds
     providers/gvp        the Weekly Volcanic Activity Report
-    cache                each provider's last good set on disk
+    clouds               EUMETSAT's world cloud map, drawn for the globe
+    cache                each provider's last good set and the cloud image on disk
     settings             settings.json
     geo                  nearest place and country, from embedded data
     runlog               the log, plus crash output pointed at it
@@ -90,6 +92,10 @@ docs                     the GitHub Pages site
 
 Pure Go over values handed in; no clock, no disk, no network.
 
+- `cloud`: the brightness-to-opacity ramp between the thresholds the cloud
+  spike measured, 65 and 90 of 255 (FR-CLD-006); the grey veil for a pixel
+  with no data (FR-CLD-007); the status wording and the image's staleness
+  after three image intervals (FR-CLD-009, FR-CLD-010).
 - `event`: `Event` and its observations, the provider and category
   vocabularies (DATA-001, DATA-002), the earthquake size bands of FR-MRK-003
   and the rule that a source link is a page rather than a data file (FR-SEL-009).
@@ -102,7 +108,7 @@ Pure Go over values handed in; no clock, no disk, no network.
 
 The use cases, behind the ports in
 [`ports.go`](internal/application/ports/ports.go): `Clock`, `SnapshotCache`,
-`SettingsStore`, `Geocoder` and `Provider`.
+`SettingsStore`, `Geocoder`, `Provider`, `CloudSource` and `CloudCache`.
 
 - `Globe` refreshes one provider at a time and answers the view for a window
   and a filter: the events shown, the count per category, each provider's
@@ -119,6 +125,14 @@ The use cases, behind the ports in
 - `Preferences` loads, normalises and saves the settings, telling the USGS
   adapter its minimum magnitude and saying in a notice when the settings file
   was missing or unreadable (FR-SET-004).
+- `Clouds` runs the cloud layer. Like the scheduler it holds no timer: the
+  facade asks whether a check is due, which is never while the layer is
+  hidden (FR-CLD-005). A check reads the newest listed valid time once an
+  hour and fetches an image only when that time is new (FR-CLD-004,
+  FR-CLD-016). A failure keeps the held image and retries on the scheduler's
+  own backoff, one shared function (FR-CLD-011). It answers the status line
+  and the EUMETSAT entry for the status popover, which travels apart from the
+  event providers since the key filters those.
 
 ### Infrastructure
 
@@ -131,9 +145,17 @@ machine.
 - The three providers each own their source's schema; nothing outside the
   package knows it. Each names its one host and its refresh interval: USGS
   every minute, EONET every ten minutes, the volcano report every hour.
+- `clouds` reads the layer's own capabilities document (6.4 KB, against 282 KB
+  for the whole service) for the newest valid time, then fetches that time's
+  2048 by 1024 PNG. It refuses anything that is not a PNG of that size, since
+  the service reports errors as XML with status 200 (FR-CLD-012), then draws
+  every pixel by the domain's ramp and veil. Measured on the real image: 238 ms,
+  1.6 MB in and 652 KB out, once per new image.
 - `cache` keeps one JSON file per provider, stamped with a schema version and
   written beside the old one then renamed over it, so an interrupted write
-  leaves the previous set whole (NFR-REL-005, CON-003).
+  leaves the previous set whole (NFR-REL-005, CON-003). The cloud image and its
+  valid time are kept the same way in `cloud.json`, through the same reader and
+  writer (FR-CLD-014).
 - `geo` loads the embedded Natural Earth places, country outlines and Antarctic
   ice shelves and words the nearest place, its distance and its direction
   (FR-GEO-001 to 005). A point on an ice shelf lies in Antarctica, since
@@ -180,7 +202,8 @@ tests read, so it belongs to no layer.
             +------------+       |
             +--------------------+------------------+
             |            infrastructure             |
-            | httpfetch, providers, cache, settings,|
+            | httpfetch, providers, clouds, cache,  |
+            | settings,                             |
             | geo, runlog, window, setup            |
             +---------------------------------------+
 ```
@@ -197,17 +220,20 @@ tests read, so it belongs to no layer.
    standard error, so a build never writes to the user's log.
 2. **The client and the providers.** One `httpfetch` client with a 30-second
    timeout and the 16 MB response cap of FR-PRV-011, allowed the three
-   providers' hosts and no others; then the EONET, USGS and GVP adapters over it.
+   providers' hosts plus EUMETSAT's and no others; then the EONET, USGS and GVP
+   adapters over it.
 3. **The globe and the cache.** `Globe` over a `Store` and the system clock,
    with the cache under `%LOCALAPPDATA%\EarthNow\cache`. With no data folder
    the run carries on in memory and says so (FR-STS-005).
 4. **The settings,** loaded before the first fetch so USGS is asked at the
    saved minimum.
 5. **The cached sets,** put back before any fetch so the globe opens on the
-   last known events marked with their age (FR-STS-004).
+   last known events marked with their age (FR-STS-004). Then the cloud layer:
+   its held image restored and its shown setting applied, so a hidden layer
+   asks nothing (FR-CLD-005, FR-CLD-014).
 6. **The help texts:** the About details from `internal/product`, plus
    `LICENSE` and `THIRD_PARTY_NOTICES` embedded from the repository root.
-7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 600, a
+7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 640, a
    black background and WebView2's data kept in
    `%LOCALAPPDATA%\EarthNow\webview`. On Linux the web view's GPU policy is set
    to Always, since Wails otherwise turns acceleration off and the globe would
@@ -215,13 +241,15 @@ tests read, so it belongs to no layer.
 
 When Wails starts, the facade starts two goroutines, each with a recover at
 its top that logs the stack and tells the page (NFR-REL-003): one loads the
-gazetteer; the other drives the scheduler. The driver starts every provider
-that is due, each fetch in a guarded goroutine of its own, emits
+gazetteer; the other drives the scheduler and the cloud layer. The driver
+starts every provider that is due, each fetch in a guarded goroutine of its own, emits
 `events-changed` so the page can show them refreshing (FR-STS-007), then sleeps
 until the next provider falls due, a fetch finishes or a manual refresh
 arrives. Each fetch logs its start and its outcome, with the status, the event
 count and the dropped count (NFR-OBS-001), then emits `events-changed` again;
-the page answers each by asking for the view.
+the page answers each by asking for the view. A cloud check runs the same
+way and emits `clouds-changed`; the page then asks for the cloud state; it asks
+for the image only when the valid time has changed.
 
 When the page's DOM is ready, the facade focuses the WebView2 child directly,
 falling back to asking Wails to show the window. The page calls
@@ -232,7 +260,7 @@ falling back to asking Wails to show the window. The page calls
 | What | Where |
 |---|---|
 | Settings | `%LOCALAPPDATA%\EarthNow\settings.json` |
-| Cache | `%LOCALAPPDATA%\EarthNow\cache`, one `<provider>.json` per provider |
+| Cache | `%LOCALAPPDATA%\EarthNow\cache`, one `<provider>.json` per provider plus `cloud.json` |
 | Log | `%LOCALAPPDATA%\EarthNow\Log.txt`, rotating at 5 MB to `Log.previous.txt` |
 | The window's WebView2 data | `%LOCALAPPDATA%\EarthNow\webview` |
 | Installed files | `%LOCALAPPDATA%\Programs\EarthNow`, with `uninstall.exe` beside the application |
@@ -305,6 +333,8 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The page's composition root | `App.tsx` and `main.tsx` excluded from the coverage floors, checked by eye | Counting them: they wire the parts together, as `main.go` does on the Go side. |
 | Future-dated events | Shown only up to `window.ClockSkew` (15 minutes) ahead of the clock, so a slow machine clock hides nothing new | Showing any future date: GDACS published a flood alert dated days ahead, which is not an event that has happened (TECH_DEBT.md). |
 | Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
+| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`cloudLayer.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
+| Cloud times | The layer's own capabilities document, its time dimension's default | The whole service's document: 282 KB against 6.4 KB (measured). |
 | The network | One client with a host allowlist and a size cap; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). |
 | What each source is asked for | Each adapter states the media types it accepts | One `Accept` for all: the Smithsonian feed answers 403 to a request asking only for JSON (measured). |
 | Refresh intervals | USGS 60 s, matching its measured `max-age=60`; EONET 10 min; GVP hourly | One interval for all: the sources change at very different rates. |

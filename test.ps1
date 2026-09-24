@@ -67,7 +67,8 @@ try {
 
 # Infrastructure, each package held at the number it actually reaches. httpfetch stops
 # short only at a request-building failure no valid method and context can produce.
-# cache stops short at five faults the OS will not produce on demand (measured): an open
+# cache (the providers' files and the cloud image share one reader and one writer)
+# stops short at five faults the OS will not produce on demand (measured): an open
 # failing other than for absence, encoding a type that always encodes, then creating,
 # writing or closing a temporary file in a folder just made.
 # setup stops short at what acts on the machine itself (measured): the registry writes
@@ -82,8 +83,10 @@ try {
 # not collected (sending the error output to the log; its crash tests prove it lands),
 # then at faults the OS will not produce on demand: the log failing to open, to report
 # its size or to close; the runtime refusing a crash file.
+# clouds stops short only at encoding the drawn image into memory, which cannot fail.
 $measured = [ordered]@{
-    './internal/infrastructure/cache'             = 84.2
+    './internal/infrastructure/cache'             = 89.8
+    './internal/infrastructure/clouds'            = 96.4
     './internal/infrastructure/geo'               = 100
     './internal/infrastructure/httpfetch'         = 97.3
     './internal/infrastructure/providers/eonet'   = 100

@@ -126,6 +126,7 @@ func (p *Preferences) Update(chosen dto.Settings) (dto.Settings, []event.Provide
 		Window:           chosen.WindowKey,
 		HiddenCategories: chosen.HiddenCategories,
 		HiddenProviders:  chosen.HiddenProviders,
+		CloudsShown:      chosen.CloudsShown,
 	})
 	err := p.store.Save(next)
 	p.mu.Lock()
@@ -197,5 +198,6 @@ func toSettingsDTO(s ports.Settings) dto.Settings {
 		WindowKey:        s.Window,
 		HiddenCategories: nonNil(s.HiddenCategories),
 		HiddenProviders:  nonNil(s.HiddenProviders),
+		CloudsShown:      s.CloudsShown,
 	}
 }

@@ -39,6 +39,8 @@ type Settings struct {
 	Window           string
 	HiddenCategories []string
 	HiddenProviders  []string
+	// CloudsShown is whether the cloud layer is drawn (FR-CLD-003).
+	CloudsShown bool
 }
 
 // SettingsStore keeps the settings between runs (FR-SET-004). Load starts from
@@ -67,6 +69,29 @@ type Fetched struct {
 	Validator string
 	// Dropped counts items the adapter refused as malformed (FR-PRV-013).
 	Dropped int
+}
+
+// CloudImage is one cloud image ready to draw (FR-CLD-006, FR-CLD-007) and
+// the valid time it shows.
+type CloudImage struct {
+	ValidTime time.Time
+	PNG       []byte
+}
+
+// CloudSource is the cloud service behind its adapter (FR-CLD-004,
+// FR-CLD-016). Image answers the image already drawn, so the page is handed
+// pixels and fetches nothing (NFR-SEC-002); an answer that is not the image
+// asked for is an error (FR-CLD-012).
+type CloudSource interface {
+	Latest(ctx context.Context) (time.Time, error)
+	Image(ctx context.Context, validTime time.Time) ([]byte, error)
+}
+
+// CloudCache keeps the last good cloud image across runs (FR-CLD-014). Load
+// answers false with no error when nothing is held.
+type CloudCache interface {
+	Load() (CloudImage, bool, error)
+	Save(CloudImage) error
 }
 
 // Provider is one public source behind an adapter.

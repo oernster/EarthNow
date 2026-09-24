@@ -49,7 +49,7 @@ const IDLE_MS = 10_000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} onSelect={noop} onProblem={noop}/>)
+        secondsPerRevolution={60} cloudImage="" onSelect={noop} onProblem={noop}/>)
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
 }
 
@@ -102,7 +102,7 @@ describe('the globe', () => {
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
         view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" onSelect={noop} onProblem={noop}/>)
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 

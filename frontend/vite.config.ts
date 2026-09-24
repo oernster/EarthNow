@@ -14,7 +14,7 @@ export default defineConfig({
         // istanbul rather than v8: v8 reported GlobeView.tsx at 100% with no
         // test importing it, then istanbul read it at 0% (measured 2026-09-24).
         // The floors are the measured figures, not targets (measured again on
-        // 2026-09-24, after the refresh indicator's tests): the drawing itself
+        // 2026-09-24, after the cloud layer's tests): the drawing itself
         // is exercised by eye, as TESTING.md says.
         // A floor above what is measured only teaches lowering it.
         coverage: {
@@ -24,7 +24,7 @@ export default defineConfig({
             // the Go side's: they wire the parts together and are checked by eye.
             exclude: ['src/**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/main.tsx', 'src/App.tsx'],
             reporter: ['text-summary'],
-            thresholds: {statements: 78.71, branches: 73.33, functions: 75.55, lines: 81.22},
+            thresholds: {statements: 79.75, branches: 74.48, functions: 76.49, lines: 82.25},
         },
     },
 })

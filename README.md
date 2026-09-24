@@ -31,8 +31,9 @@ it and how old that report is.
   forecast; it shows what the sources have already published.
 - Anyone who wants history. The widest time window is seven days; there is no
   archive and no playback.
-- Anyone after a GIS tool. There are no layers, measurements or projections,
-  no satellite imagery and no weather.
+- Anyone after a GIS tool or a weather service. There are no measurements or
+  projections. The one layer is the clouds, which show where cloud lay when the
+  image was made; there is no rain, wind, temperature or forecast.
 - Anyone on Linux or macOS. EarthNow is built for Windows.
 
 ## What it does
@@ -42,6 +43,11 @@ it and how old that report is.
   seconds without input. A button or the settings stop it; the settings also
   offer three speeds. The wheel, the zoom buttons and the plus and minus keys
   zoom; Reset view brings the whole globe back.
+- **Shows the clouds** when asked, from EUMETSAT's world cloud map: a mosaic of
+  weather satellites' infrared images made every three hours, laid over the
+  globe beneath the markers. The line beneath the globe gives the image's time
+  in UTC with its age. A grey veil marks where no satellite sees. The layer
+  starts hidden and is fetched only while it is shown.
 - **Places every event** with its category's emoji: earthquake, volcano,
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
@@ -79,9 +85,10 @@ it and how old that report is.
 
 ## What it does not do
 
-- **No account and no telemetry.** EarthNow's own code contacts three hosts
-  and no others: `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov` and
-  `volcano.si.edu`. The HTTP client refuses any other host. What the WebView2
+- **No account and no telemetry.** EarthNow's own code contacts three hosts:
+  `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov` and `volcano.si.edu`. While
+  the clouds are shown it also contacts `view.eumetsat.int`; it contacts no
+  others. The HTTP client refuses any other host. What the WebView2
   runtime itself contacts is Microsoft's.
 - **No request from the page.** Every fetch is made by the Go side; the page's
   Content-Security-Policy allows it no other origin.
@@ -120,7 +127,7 @@ Uninstall open the same program.
 |---|---|
 | The program | `%LOCALAPPDATA%\Programs\EarthNow` |
 | Settings | `%LOCALAPPDATA%\EarthNow\settings.json` |
-| Each source's last good set | `%LOCALAPPDATA%\EarthNow\cache` |
+| Each source's last good set and the last cloud image | `%LOCALAPPDATA%\EarthNow\cache` |
 | The log | `%LOCALAPPDATA%\EarthNow\Log.txt`, with one previous file kept |
 | The window's web view data | `%LOCALAPPDATA%\EarthNow\webview` |
 | The setup log | `%TEMP%\EarthNowSetup.log` |
@@ -173,7 +180,8 @@ The About dialog carries these credits:
   (https://volcano.si.edu/) with the USGS Volcano Hazards Program, Weekly
   Volcanic Activity Report.
 - Place names and borders: Natural Earth.
-- Neither NASA, the USGS nor the Smithsonian endorses EarthNow.
+- Cloud images: EUMETSAT, world cloud map (EUMETView).
+- Neither NASA, the USGS, the Smithsonian nor EUMETSAT endorses EarthNow.
 
 ## Licence
 

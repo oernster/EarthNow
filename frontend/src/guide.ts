@@ -51,6 +51,7 @@ export function guideSections(product: string): readonly GuideSection[] {
             intro: 'Hover any of them or reach it with Tab to see its name.',
             entries: [
                 {icon: icons.rotate, name: RAIL_LABELS.startRotating, text: 'turns the globe slowly while you are not using it. While it turns, the button shows a cross and stops it.'},
+                {icon: icons.cloudCover, name: RAIL_LABELS.showClouds, text: 'lays the clouds over the globe as weather satellites last saw them. While they show, the button shows a cross and hides them.'},
                 {icon: icons.resetView, name: RAIL_LABELS.resetView, text: 'brings the whole globe back into view.'},
                 {icon: icons.zoomIn, name: RAIL_LABELS.zoomIn, text: 'moves the camera closer; the mouse wheel does the same.'},
                 {icon: icons.zoomOut, name: RAIL_LABELS.zoomOut, text: 'moves the camera further away.'},
@@ -80,6 +81,15 @@ export function guideSections(product: string): readonly GuideSection[] {
                 'A volcano\'s report covers the week before it is issued, so it reads as reported for that day.',
                 'Separately, each source shows when it was last retrieved, for example "retrieved 3 min ago". The detail panel gives every time three ways: in words, in UTC and in your own time zone.',
                 'Nothing is shown as happening this instant. Each source publishes with its own delay and is fetched on a schedule, so what you see is what the sources had said by the time shown.',
+            ],
+        },
+        {
+            heading: 'The clouds',
+            paragraphs: [
+                'The clouds come from EUMETSAT\'s world cloud map, a mosaic of weather satellites\' infrared images made every three hours. The line beneath the globe gives the time the image shows in UTC with how long ago that was.',
+                'An infrared image sees temperature, not colour: the colder a surface, the whiter the cloud drawn. Snow, ice and cold high ground can therefore read as cloud.',
+                'A grey veil marks where no satellite sees, mostly near the poles, so an unseen region never reads as a clear sky.',
+                'The clouds are fetched only while they are shown. The last image is kept, so they still show without a connection, marked with their age.',
             ],
         },
         {

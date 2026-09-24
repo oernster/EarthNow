@@ -73,6 +73,24 @@ type Settings struct {
 	WindowKey        string   `json:"windowKey"`
 	HiddenCategories []string `json:"hiddenCategories"`
 	HiddenProviders  []string `json:"hiddenProviders"`
+	CloudsShown      bool     `json:"cloudsShown"`
+}
+
+// Clouds is the cloud layer's state (FR-CLD-009, FR-CLD-013). The image
+// itself is asked for apart, since it is large; ValidTime tells the page when
+// the one it holds has been replaced.
+type Clouds struct {
+	Shown bool `json:"shown"`
+	// Line is the status line; empty while the layer is hidden.
+	Line string `json:"line"`
+	// ValidTime is the held image's valid time, RFC 3339; empty when none.
+	ValidTime string `json:"validTime"`
+	// Notice is a cache problem the reader should know about; empty when none.
+	Notice string `json:"notice"`
+	// Provider is the cloud service's entry for the provider status popover
+	// (FR-CLD-011), filled only while the layer is shown. It travels here, not
+	// in View.Providers, since those are the event sources the key filters.
+	Provider Provider `json:"provider"`
 }
 
 // About is what the About dialog shows (FR-HLP-001).

@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import {categoryCounts, categoryOf} from './categories'
 import type {EventDTO} from './types'
 
+// The height the markers stand above the globe, as a share of its radius.
+export const MARKER_ALTITUDE = 0.01
 const CANVAS_PX = 128
 const EMOJI_PX = 84
 const RING_WIDTH_PX = 8

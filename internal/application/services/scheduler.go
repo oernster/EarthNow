@@ -120,19 +120,24 @@ func (s *Scheduler) Failed(p event.Provider) time.Duration {
 	st := s.states[p]
 	st.running = false
 	st.failures++
-	delay := st.interval
-	for i := 1; i < st.failures && delay < BackoffCeiling; i++ {
-		delay *= 2
-	}
-	if delay > BackoffCeiling {
-		delay = BackoffCeiling
-	}
+	delay := Backoff(st.interval, st.failures)
 	st.nextDue = s.clock.Now().Add(delay)
 	if st.expedited {
 		s.honourExpedite(st)
 		return 0
 	}
 	return delay
+}
+
+// Backoff is FR-PRV-006's wait after the given count of consecutive failures:
+// the interval, doubled with each failure after the first, capped at
+// BackoffCeiling.
+func Backoff(interval time.Duration, failures int) time.Duration {
+	delay := interval
+	for i := 1; i < failures && delay < BackoffCeiling; i++ {
+		delay *= 2
+	}
+	return min(delay, BackoffCeiling)
 }
 
 // NextAttempt answers when a provider is next fetched (FR-STS-003).

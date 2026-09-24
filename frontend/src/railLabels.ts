@@ -4,6 +4,8 @@
 export const RAIL_LABELS = {
     startRotating: 'Start rotating',
     stopRotating: 'Stop rotating',
+    showClouds: 'Show clouds',
+    hideClouds: 'Hide clouds',
     resetView: 'Reset view',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',

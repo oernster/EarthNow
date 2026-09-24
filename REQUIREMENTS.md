@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 23.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 24.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -29,6 +29,7 @@ edits.
 | 21 | 2026-09-24 | FR-STS-007 added: while a provider with events held is fetching, the status area says it is refreshing and the Refresh button's icon turns for at least one turn. | The owner pressed Refresh and saw nothing happen. The page learned of a fetch only when it finished, while the status line read "retrieved under a minute ago" before and after, so a refresh that worked looked like one that did nothing. |
 | 22 | 2026-09-24 | FR-PRV-010: after every press of Refresh the status area states the local time of the last manual refresh made, in place of when the next becomes available. | The owner read "Refresh available now" after a refused press and could not tell what it meant. The wait was worded in whole minutes, so every wait inside the 30 s cooldown read "now"; the line also stayed up after the cooldown ended. The owner asked for the time of the last refresh instead. |
 | 23 | 2026-09-24 | CON-003 limits "no CGO" to the Windows build. FR-GLB-002 rotates from launch, resuming after the idle delay. FR-MRK-005's tooltip holds the category's emoji, the title and the place line. DATA-004 names GVP's event time. Appendix D.1 says how the release 2 icons are made; D.4 says the space behind the globe is plain black. | The code measured against the document in the final documentation pass: the Linux and macOS builds need cgo; rotation starts at launch; the tooltip carries the emoji rather than the category's name; no starfield is drawn. No behaviour changes. |
+| 24 | 2026-09-24 | The cloud layer (3.2.10, FR-CLD-001 to 016): a rail button showing or hiding EUMETSAT's world cloud map over the globe, its infrared brightness mapped to opacity, a veil where no satellite sees, the image's valid time and age in the status area. It is fetched only while shown and cached for offline use. NFR-UX-002's minimum window rises to 960 by 640. NFR-PRIV-001 allows `view.eumetsat.int`; NFR-LEG-002 credits EUMETSAT; NFR-PERF-005, ASM-007, ASM-008 and RSK-006 added. Scope drops satellite cloud imagery from the out-of-scope list; weather stays out. | Owner request: toggle global cloud cover as satellite imagery shows it, from a free keyless source. Measured: NASA GIBS carries no Meteosat, so Europe and Africa would show none; EUMETSAT's layer covers the whole ring. At the old minimum the rail held 33 px spare against the 62 a ninth button needs; the owner chose the larger window over tighter gaps or a button off the rail, a veil over unseen regions and the layer hidden on a first run. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -60,7 +61,7 @@ The product sentence, which settles any unclear choice:
 ### 1.3 Scope
 
 **In scope for V1 (Windows release):** the globe, the three providers (NASA EONET,
-USGS earthquakes, the Smithsonian / USGS weekly volcano report), the provider-neutral event model, refresh with local caching,
+USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
 help surfaces, the Windows build script and the bespoke setup program.
@@ -72,7 +73,7 @@ help surfaces, the Windows build script and the bespoke setup program.
 - push or desktop notifications;
 - a historical archive beyond the 7-day window, timeline playback;
 - NASA FIRMS hotspots, storm tracks drawn as lines, event polygons drawn as areas;
-- weather, satellite imagery layers, the day and night terminator, aurora;
+- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, the day and night terminator, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
 - the Linux Flatpak, its cleanup script and the macOS DMG (release 2; see 3.5);
@@ -96,6 +97,9 @@ One term, one meaning, throughout.
 | **Ring** | The keyboard focus cycle of the house keeb model. |
 | **Stop** | One position on the ring. |
 | **Reference machine** | Oliver's Windows 11 desktop, on which every performance figure is measured. |
+| **Cloud image** | One image of EUMETSAT's world cloud map: the 10.8 µm infrared brightness of the whole geostationary ring at one valid time, in plate carrée. |
+| **Valid time** | The instant a cloud image shows, as the service lists it (a new one every 3 h). |
+| **Cloud layer** | The cloud image drawn over the globe texture, its brightness mapped to opacity (FR-CLD-006). |
 | **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
 
 ### 1.5 References
@@ -119,13 +123,14 @@ One term, one meaning, throughout.
 ### 2.1 Product perspective
 
 A new, standalone desktop build. No existing system is replaced. EarthNow talks
-to exactly three external systems in V1, all public and keyless; it talks to
-nothing else.
+to exactly four external systems in V1, all public and keyless; it talks to
+nothing else. The fourth, EUMETSAT, is asked only while the cloud layer is shown.
 
 ```
    NASA EONET v3 ──┐                         ┌── Globe (WebGL, React)
-   USGS feeds ─────┼── Go backend ── bound ──┤
-   Smithsonian GVP ┘   (providers,  methods  └── Controls, detail panel
+   USGS feeds ─────┤                         │
+   Smithsonian GVP ┼── Go backend ── bound ──┤
+   EUMETSAT WMS ───┘   (providers,  methods  └── Controls, detail panel
                         store, cache)
                           │
                     JSON files in %LOCALAPPDATA%
@@ -207,6 +212,8 @@ Every assumption has an owner and a confirm-by point.
 | ASM-004 | NASA Blue Marble imagery may ship inside the installer with a credit line, under the NASA media terms (R5). GPL compatibility of bundling public-domain-like imagery is an inference, unconfirmed. | Oliver | Before first public release |
 | ASM-005 | WebView2 on the reference machine provides WebGL2. | Implementer | Phase 0 exit (measured, FR-SPK-002) |
 | ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Phase 4 |
+| ASM-007 | EUMETSAT's terms allow a free application to fetch and display the world cloud map with a credit line. EUMETView's capabilities state no fees and no access constraints (read 2026-09-24); the licence page carries no readable terms without a script, so the credit wording and any condition are unconfirmed. | Oliver | Before the release carrying the cloud layer |
+| ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
 
 ---
 
@@ -319,7 +326,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-KEY-002 | Must | The key shall read its emoji and names from the category table (Appendix D.3), the same single home the markers read. | Structural test: no emoji literal outside the category table. | T |
 | FR-KEY-003 | Must | The key shall never overlap the globe: the globe area ends at the key's left edge (FR-GLB-013). | D at the minimum window size. | D |
 | FR-RAIL-001 | Must | The main window shall carry an action rail down its left side, 68 px wide, holding the action buttons one above another, each drawing its artwork at the rail's glyph size of 48 px (`--rail-glyph-size`); the globe area begins at the rail's right edge. | T (render) + D at the minimum window size. | T + D |
-| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), Reset view (FR-GLB-008), zoom in and zoom out (FR-GLB-006), Refresh (FR-PRV-009), provider status (FR-STS-003), Settings (FR-SET), then Help, a menu opening the guide, About, the licence and the third-party notices (FR-HLP). | Vitest reads the rail's accessible names in that order. | T |
+| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), clouds (FR-CLD-001), Reset view (FR-GLB-008), zoom in and zoom out (FR-GLB-006), Refresh (FR-PRV-009), provider status (FR-STS-003), Settings (FR-SET), then Help, a menu opening the guide, About, the licence and the third-party notices (FR-HLP). | Vitest reads the rail's accessible names in that order. | T |
 | FR-RAIL-003 | Must | Every rail button's tooltip shall open to the right of the button, so it is not clipped at the window's left edge. | D at the minimum window size. | D |
 | FR-KEY-004 | Should | Each key row shall show the count of that category's displayed events. | 3 displayed quakes read "〰️ Earthquake 3". | T |
 | FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
@@ -374,7 +381,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-HLP-001 | Must | The About dialog shall show the product name, version from `VERSION`, the copyright notice "© Oliver Ernster 2026", the licence and the data attributions of NFR-LEG-002. | T | T |
 | FR-HLP-002 | Must | The licence dialog shall show the full GPL-3.0 text. | T | T |
 | FR-HLP-003 | Must | The third-party notices dialog shall show each bundled dependency and data asset with its licence or terms. | Every entry in `THIRD_PARTY_NOTICES` renders. | T |
-| FR-HLP-004 | Should | The guide dialog shall name every rail button and every category, each entry led by the control's own picture (the rail icon, the category emoji), then explain the time window, freshness wording and staleness. | I | I |
+| FR-HLP-004 | Should | The guide dialog shall name every rail button and every category, each entry led by the control's own picture (the rail icon, the category emoji), then explain the time window, freshness wording and staleness, plus what the cloud layer shows, its veil and that cold ground reads as cloud. | I | I |
 | FR-HLP-005 | Must | While the About, licence, notices or guide dialog overflows, its reading body shall read itself using the house auto-scroll cycle (CON-007). | Tick-driven Vitest over the ported state machine; hook test under jsdom. | T |
 | FR-HLP-006 | Must | While the detail panel's body overflows, the detail panel shall read itself using the same cycle. | T | T |
 
@@ -393,6 +400,54 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-DON-009 | Must | The application shall fetch nothing from the donate address itself; no feature shall depend on a donation. | I | I |
 | FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | The mark's computed height measured at 2.7 times the button's computed font size, at desktop width and at 375 px. The button is taller than a text-only button beside it by design. | D |
 
+#### 3.2.10 Cloud layer (amendment 24)
+
+The source is EUMETSAT's world cloud map, measured on 2026-09-24: WMS layer
+`mumi:worldcloudmap_ir108` at `https://view.eumetsat.int/geoserver/wms`, a
+global mosaic of the geostationary ring's 10.8 µm infrared channel, extent
+-180 to 180 by -90 to 90, a new valid time every 3 h (the newest was 15:00 UTC
+at 18:09 UTC). A 2048 x 1024 PNG was 1.6 MB and arrived in 1.1 s. The service
+sends no `Last-Modified`; it answers an error with HTTP 200 and an XML
+exception report. Warm ground is opaque dark grey in the image, cold cloud
+tops white; pixels the satellites do not see are transparent (beyond about 70
+to 80 degrees of latitude and a sliver at 180 degrees).
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-CLD-001 | Must | While the cloud layer is hidden, the cloud button shall show the `cloud-cover` artwork alone with the tooltip and accessible name "Show clouds"; while it is shown, the `cloud-cover` artwork with the `negative` overlay and "Hide clouds" (NFR-UX-004). | Given the layer hidden, the button reads "Show clouds"; one press shows the layer and the button reads "Hide clouds". | T |
+| FR-CLD-002 | Must | When the cloud button is activated, the globe view shall switch the cloud layer between shown and hidden. | T | T |
+| FR-CLD-003 | Must | The settings store shall persist whether the cloud layer is shown; when no saved choice exists, the cloud layer shall start hidden. | A first run starts hidden; showing it, closing and reopening starts shown. | T |
+| FR-CLD-004 | Must | While the cloud layer is shown, the cloud provider shall read the newest valid time the service lists for the layer once per cloud interval (60 min). | Fake clock over two intervals with the layer shown: two capabilities requests. | T |
+| FR-CLD-016 | Must | When the newest listed valid time differs from the held image's, the cloud provider shall retrieve that time's image as a 2048 x 1024 PNG over (-180, -90, 180, 90) in CRS:84. | Fake fetcher: the GetMap URL carries `time=` the listed default; a check listing the held time fetches no image. | T |
+| FR-CLD-005 | Must | While the cloud layer is hidden, the cloud provider shall make no request. | Fake clock over two intervals with the layer hidden: zero requests. | T |
+| FR-CLD-006 | Must | The application shall draw each cloud image pixel as white whose opacity follows its infrared brightness: none at or below the clear threshold (65 of 255), full at or above the cloud threshold (90), linear between; both measured by the cloud spike (FR-CLD-015). | Brightness 65 maps to opacity 0, 90 to 1, 77.5 to 0.5. | T |
+| FR-CLD-007 | Must | Where the cloud image holds no data (a transparent source pixel), the application shall draw the no-data veil: grey at 20% opacity (a target the spike confirms by eye), so an unseen region never reads as a clear sky. | A transparent source pixel maps to the veil colour and opacity. | T |
+| FR-CLD-008 | Must | The globe view shall draw the cloud layer over the globe texture, turning with it, beneath every marker. | Inspection with the layer shown: markers and clusters stay above the cloud. | D |
+| FR-CLD-009 | Must | While the cloud layer is shown, the status area shall state the cloud image's valid time in UTC and its age, worded "Clouds: image of 15:00 UTC, 3 h ago" (NFR-FRESH-002), never "live" (FR-STS-006). | Fake clock three hours after a 15:00 image reads exactly that. | T |
+| FR-CLD-010 | Should | While the held cloud image's valid time is older than three image intervals (9 h), the status area shall mark it stale. | Fake clock 9 h 1 min after the valid time appends "(stale)". | T |
+| FR-CLD-011 | Must | If a cloud fetch fails, then the cloud provider shall keep drawing the held image, retry with FR-PRV-006's backoff and state the reason in the provider status popover under "EUMETSAT". | Fake fetcher failing: the held image stays; the popover names the reason and the next attempt. | T |
+| FR-CLD-012 | Must | If the service answers with anything other than a PNG of the requested size (its errors arrive as HTTP 200 carrying XML), then the cloud provider shall treat the answer as a failed fetch (FR-CLD-011). | An XML exception report served with status 200 is refused and the held image kept. | T |
+| FR-CLD-013 | Must | If the cloud layer is shown with no image held and the first fetch fails, then the status area shall say the cloud image could not be retrieved, with the reason in the provider status popover. | Fake fetcher failing on a first run: the status line says so; the globe draws no veil and no cloud. | T |
+| FR-CLD-014 | Must | The cache shall keep the last good cloud image with its valid time, so the cloud layer draws offline at start, marked with its age (FR-STS-004). | Start offline with a held image: the layer draws and the status line gives its age. | T |
+| FR-CLD-015 | Must | Before the cloud layer is built, a cloud spike shall measure, on the reference machine: the two opacity thresholds over the images of one week, chosen so land at night and warm ocean read clear; the veil by eye; the frame time of NFR-PERF-005. | Its measured results recorded in this section, as Phase 0's are in 3.1. | D |
+
+**Cloud spike, thresholds (measured 2026-09-24).** Reference: EUMETSAT's
+Meteosat cloud mask (`msg_fes:clm`: cloud, clear land, clear sea), fetched with
+the world cloud map for 21 valid times across 17 to 24 September at 8 h steps,
+over (-70, -70, 70, 70) at 560 x 560; 3,788,580 cleanly labelled pixels, 68.0%
+cloud. The share the mask calls cloud rises from 0.6% at brightness 40 to 49,
+through 14.4% at 50 to 59 and 33.4% at 70 to 79, to 95.5% at 100 to 109. The
+drafted targets 90 and 200 agreed with the mask on 45.3% of pixels. The pair 65
+and 90 agreed on 87.5%, with the drawn opacity a mean 0.052 from the mask's
+cloud share at each brightness, the closest of the pairs tried (61/78, 55/95,
+55/105, 60/100, 50/110). The reference covers Meteosat's disk alone, in one
+September week; the other satellites of the mosaic are assumed to be calibrated
+alike (ASM-008). The veil and NFR-PERF-005 remain for the real window.
+
+The infrared channel cannot tell cold ground from cloud: Antarctica,
+Greenland and high mountains in winter read as cloud. The guide says so
+(FR-HLP-004); no requirement here claims otherwise.
+
 ### 3.3 Non-functional requirements
 
 Every performance figure is measured on the reference machine.
@@ -403,10 +458,11 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-002 | Must | While idle-rotating with 2,500 markers, the globe view shall hold a median frame time of 16.7 ms or less and a 99th percentile of 33 ms or less (a target; Phase 0 measures it). 2,500 is the measured USGS all-magnitude week (2,126 on 2026-09-23) plus EONET plus headroom. | Frame-time log over 60 s. |
 | NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target; measured before release). | Process working set sampled hourly. |
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
+| NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
 | NFR-UX-001 | Must | The globe area (FR-GLB-013) shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
-| NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 600 pixels. | I |
+| NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 640 pixels, the height that holds the action rail's nine buttons and the donate button (measured at 600: eight buttons of 54 px with 8 px gaps left 33 px above the donate button; a ninth needs 62). | I; the rail's buttons all visible at the minimum size (D). |
 | NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
 | NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
 | NFR-UX-005 | Must | The main window shall use one dark palette; it shall offer no light theme in V1. The setup program keeps the house light and dark toggle. | I |
@@ -425,7 +481,7 @@ Every performance figure is measured on the reference machine.
 | NFR-SEC-001 | Must | The frontend shall render provider text as text only. | Structural test: `dangerouslySetInnerHTML` and `innerHTML` appear nowhere in `frontend/src`. |
 | NFR-SEC-002 | Must | The page's Content-Security-Policy shall let no fetch directive reach a network origin: `default-src` and `connect-src` are `'self'`, no directive names a network scheme or a wildcard. Images may also come from `data:` and `blob:`, which fetch nothing. | T reading the meta tag in `index.html`. |
 | NFR-SEC-003 | Must | The backend shall validate every coordinate (latitude in [-90, 90], longitude in [-180, 180], finite) before an event is stored. | T with out-of-range fixtures. |
-| NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the three provider hosts (EONET, USGS, GVP). (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
+| NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the three provider hosts (EONET, USGS, GVP), plus `view.eumetsat.int` while the cloud layer is shown (FR-CLD-005). (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
 | NFR-PRIV-002 | Must | The application shall store settings, cache and log under `%LOCALAPPDATA%\EarthNow` only. | T on the path helper. |
 | NFR-REL-001 | Must | The application shall not end the run before its window opens for any runtime failure; a failure found at startup is carried into the window as a stated problem. | T on startup paths with injected failures. |
 | NFR-REL-002 | Must | The application shall point the standard error handle at the log file as the first act of `main`, so a panic leaves a record. | I + D (planted panic in a debug build). |
@@ -439,7 +495,7 @@ Every performance figure is measured on the reference machine.
 | NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
 | NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
 | NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence and the licence text in full. | `tools/notices.py --check` in `test.ps1`: the file must equal what the shipped Go modules (`go list -deps`) and page packages (`npm ls --omit=dev`) call for. |
-| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, without implying endorsement and without the NASA insignia. | I against R5. |
+| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images (in the wording ASM-007 confirms), without implying endorsement and without the NASA insignia. | I against R5. |
 
 ### 3.4 Data requirements
 
@@ -508,6 +564,7 @@ disproportionate. The risks that could stop delivery:
 | RSK-002 | WebGL2 missing or disabled under Wails on Linux. | Release 2 Flatpak shows no globe. | Measure on real hardware before promising DEL-005; FR-GLB-009 guarantees a stated failure rather than a blank window. |
 | RSK-003 | EONET rate limit window unknown. | Throttled refreshes. | ASM-002; the 10 min interval keeps scheduled use at 6 requests per hour. A manual refresh asks every provider and is allowed every 30 s (FR-PRV-010), so a user pressing it at every chance reaches 120 per hour; accepted by the owner. |
 | RSK-004 | EONET `Content-Type` mislabels JSON. | A strict parser rejects valid data. | FR-PRV-002. |
+| RSK-006 | The infrared cloud image reads cold ground as cloud and holds no data at the poles. | A reader takes snow for cloud or a pole for clear sky. | FR-CLD-007's veil marks the unseen; the guide states the limit (FR-HLP-004); the spike's thresholds (FR-CLD-015) are chosen against a week of images. |
 | RSK-005 | Imagery terms change or GPL bundling is challenged. | Re-cut release. | ASM-004; imagery ships as a separate asset with its own notice so it can be swapped. |
 
 ---
@@ -591,6 +648,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `settings.png` | Settings |
 | `help-info.png` | About, guide, licences |
 | `zoom-in.png`, `zoom-out.png` | Zoom buttons (FR-RAIL-002) |
+| `cloud-cover.png` | Cloud button (FR-CLD-001), supplied by the owner: shown alone while the layer is hidden, the default. `tools/genicons.py` composites `negative.png` over it to make `cloud-cover-hide.png`, shown while the layer is shown, as it does for rotation. |
 
 ### D.3 Category markers: emoji, not artwork (decided by the owner 2026-09-23)
 

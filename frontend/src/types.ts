@@ -59,6 +59,19 @@ export interface SettingsDTO {
     windowKey: string
     hiddenCategories: string[]
     hiddenProviders: string[]
+    cloudsShown: boolean
+}
+
+// The cloud layer's state (FR-CLD-009, FR-CLD-013). The image is asked for
+// apart; validTime changes when the held image is replaced.
+export interface CloudsDTO {
+    shown: boolean
+    line: string
+    validTime: string
+    notice: string
+    // The cloud service's popover entry, filled only while shown. It is kept
+    // out of ViewDTO.providers, which are the event sources the key filters.
+    provider: ProviderDTO
 }
 
 export interface AboutDTO {

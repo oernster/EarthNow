@@ -17,7 +17,7 @@ import {donate} from './donate'
 import {icons} from './icons'
 import {ProductName} from './product'
 import {useRing} from './ring'
-import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
+import type {ChoiceDTO, CloudsDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 import {REFRESH_TURN_MS, useHeld} from './useHeld'
 
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
@@ -37,6 +37,8 @@ export default function App() {
     const [selected, setSelected] = useState<EventDTO | null>(null)
     const [problem, setProblem] = useState('')
     const [product, setProduct] = useState('')
+    const [clouds, setClouds] = useState<CloudsDTO | null>(null)
+    const [cloudImage, setCloudImage] = useState('')
     const globe = useRef<GlobeHandle>(null)
     // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
     const shell = useRef<HTMLDivElement>(null)
@@ -51,6 +53,19 @@ export default function App() {
     const load = useCallback(() => {
         void api.view(windowKey, [...hiddenCategories], [...hiddenProviders], onProblem).then(v => { if (v) setView(v) })
     }, [windowKey, hiddenCategories, hiddenProviders, onProblem])
+
+    // loadClouds reads the cloud layer's state and asks for the image only when
+    // the held one has been replaced, since it is large (FR-CLD-016).
+    const cloudTime = useRef('')
+    const loadClouds = useCallback(() => {
+        void api.clouds(onProblem).then(c => {
+            if (!c) return
+            setClouds(c)
+            if (c.validTime === cloudTime.current) return
+            cloudTime.current = c.validTime
+            void api.cloudImage(onProblem).then(url => { if (url !== null) setCloudImage(url) })
+        })
+    }, [onProblem])
 
     // change applies a setting at once and saves it (FR-FLT-005, FR-GLB-011);
     // the answer is the settings as held, which the view then follows.
@@ -88,21 +103,29 @@ export default function App() {
     useEffect(() => {
         if (!ready) return
         load()
+        loadClouds()
         const offChanged = on('events-changed', load)
+        // The cloud line's age is re-read whenever the events are, so it keeps up.
+        const offAged = on('events-changed', loadClouds)
+        const offClouds = on('clouds-changed', loadClouds)
         const offProblem = on('problem', (reason) => onProblem(String(reason)))
-        return () => { offChanged(); offProblem() }
-    }, [load, onProblem, ready])
+        return () => { offChanged(); offAged(); offClouds(); offProblem() }
+    }, [load, loadClouds, onProblem, ready])
 
     // FR-SEL-008: a selected event that leaves the view keeps its panel, marked.
     const current = selected ? view.events.find(e => e.id === selected.id) : undefined
     const shownDetail = current ?? selected
     const speed = choices?.speeds.find(s => s.key === settings?.speed)
     const refreshing = useHeld(view.providers.some(p => p.refreshing), REFRESH_TURN_MS)
+    // FR-CLD-011: the cloud service joins the popover while the layer is shown.
+    const statusProviders = clouds?.shown ? [...view.providers, clouds.provider] : view.providers
 
     return <ProductName.Provider value={product}><div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
             onToggleRotate={() => change({autoRotate: !settings?.autoRotate})}
-            attention={needsAttention(view.providers, view.notice)}
+            cloudsShown={settings?.cloudsShown ?? false}
+            onToggleClouds={() => change({cloudsShown: !settings?.cloudsShown})}
+            attention={needsAttention(statusProviders, view.notice)}
             onResetView={() => globe.current?.resetView()}
             onZoom={zoomIn => globe.current?.zoom(zoomIn)}
             onRefresh={refresh}
@@ -119,9 +142,10 @@ export default function App() {
             </div>
             {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
+                cloudImage={settings.cloudsShown ? cloudImage : ''}
                 onSelect={setSelected} onProblem={onProblem}/>}
             <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}
-                note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)}/>
+                note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
@@ -136,7 +160,7 @@ export default function App() {
         </aside>
         {settingsOpen && settings && choices && <SettingsDialog settings={settings} choices={choices}
             onChange={change} onClose={() => setSettingsOpen(false)}/>}
-        {statusOpen && <StatusPanel providers={view.providers} notice={view.notice} onClose={() => setStatusOpen(false)}/>}
+        {statusOpen && <StatusPanel providers={statusProviders} notice={view.notice} onClose={() => setStatusOpen(false)}/>}
         {help && <HelpDialog kind={help} onClose={() => setHelp(null)} onProblem={onProblem}/>}
     </div></ProductName.Provider>
 }

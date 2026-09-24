@@ -43,7 +43,7 @@ func TestFRSET004_NoFileIsAbsenceNotAFault(t *testing.T) {
 func TestChoicesSurviveASave(t *testing.T) {
 	t.Parallel()
 	store := storeIn(t)
-	want := ports.Settings{AutoRotate: false, Magnitude: "4.5", Speed: "fast", Window: "7d", HiddenCategories: []string{"ICE"}, HiddenProviders: []string{"EONET"}}
+	want := ports.Settings{AutoRotate: false, Magnitude: "4.5", Speed: "fast", Window: "7d", HiddenCategories: []string{"ICE"}, HiddenProviders: []string{"EONET"}, CloudsShown: true}
 	if err := store.Save(want); err != nil {
 		t.Fatal(err)
 	}

@@ -33,6 +33,7 @@ var wireContract = filepath.Join("frontend", "src", "types.ts")
 var wireShapes = map[string]string{
 	"About":          "AboutDTO",
 	"Choice":         "ChoiceDTO",
+	"Clouds":         "CloudsDTO",
 	"Event":          "EventDTO",
 	"Provider":       "ProviderDTO",
 	"SettingChoices": "SettingChoicesDTO",

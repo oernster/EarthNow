@@ -1,5 +1,5 @@
-// The globe (FR-GLB, FR-MRK): texture, fitted camera, idle rotation, emoji
-// markers, hover place lines and selection with a camera focus.
+// The globe (FR-GLB, FR-MRK, FR-CLD-008): texture, cloud layer, fitted camera,
+// idle rotation, emoji markers, hover place lines and selection with a camera focus.
 import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react'
 import Globe, {type GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
@@ -8,11 +8,11 @@ import {api} from '../api'
 import {categoryCounts, categoryOf} from '../categories'
 import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
-import {clusterSprite, fitAltitude, rescale, sprite, viewHalfAngle} from '../markers'
+import {clusterSprite, fitAltitude, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
+import {makeCloudSphere, showCloudImage} from '../cloudLayer'
 import {noClickFocus} from '../ring'
 import type {EventDTO} from '../types'
 
-const MARKER_ALTITUDE = 0.01
 // NFR-UX-003: the camera focus animation, used by Reset view as well.
 const FOCUS_MS = 1000
 // One plus or minus press animates over this long.
@@ -43,6 +43,8 @@ interface Props {
     selectedId: string | null
     autoRotate: boolean
     secondsPerRevolution: number
+    // cloudImage is the drawn cloud image as a data URL; empty draws none.
+    cloudImage: string
     onSelect: (e: EventDTO) => void
     onProblem: (reason: string) => void
 }
@@ -77,7 +79,7 @@ function clusterTitle(members: readonly EventDTO[]): string {
 }
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
-    {events, selectedId, autoRotate, secondsPerRevolution, onSelect, onProblem}, ref) {
+    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
@@ -91,6 +93,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     // The setting as last rendered, read when the idle delay runs out.
     const rotationWanted = useRef(autoRotate)
     const idleTimer = useRef<number | null>(null)
+    const clouds = useRef<THREE.Mesh | null>(null)
 
     // pause stops rotation for input and restarts it after the idle delay.
     const pause = useRef(() => {
@@ -255,6 +258,8 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
                 relayout.current(false)
             })
         globe.current = g
+        clouds.current = makeCloudSphere(g.getGlobeRadius())
+        g.scene().add(clouds.current)
         const controls = g.controls()
         controls.autoRotate = rotationWanted.current
         // FR-GLB-006: the wheel zooms between the altitude limits. OrbitControls
@@ -294,6 +299,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
             g._destructor()
             globe.current = null
+            clouds.current = null
         }
     }, [webgl2])
 
@@ -308,6 +314,10 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         if (!autoRotate) controls.autoRotate = false
         else if (idleTimer.current === null) controls.autoRotate = true
     }, [autoRotate, secondsPerRevolution])
+
+    useEffect(() => {
+        if (clouds.current) showCloudImage(clouds.current, cloudImage)
+    }, [cloudImage])
 
     // New events or a new selection draw afresh; the sprites carry both.
     useEffect(() => relayout.current(true), [events, selectedId])

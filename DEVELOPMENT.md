@@ -246,9 +246,9 @@ bash build_flatpak.sh
 | `main.go` | the composition root |
 | `app.go` | the Wails facade the page calls |
 | `binding_pass.go`, `binding_pass_off.go` | the switch that keeps the build's bindings pass out of the user's log |
-| `internal/domain` | `event`, `freshness`, `window`: no I/O |
+| `internal/domain` | `cloud`, `event`, `freshness`, `window`: no I/O |
 | `internal/application` | `ports`, `services` and the `dto` wire shapes |
-| `internal/infrastructure` | `cache`, `geo`, `httpfetch`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
+| `internal/infrastructure` | `cache`, `clouds`, `geo`, `httpfetch`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
 | `internal/product` | the name, slug, licence line, copyright, donate address and credits |
 | `frontend/src` | the page |
 | `installer/` | the setup program, a Wails application of its own |

@@ -45,6 +45,7 @@ type stored struct {
 	Window           string   `json:"window"`
 	HiddenCategories []string `json:"hiddenCategories"`
 	HiddenProviders  []string `json:"hiddenProviders"`
+	CloudsShown      bool     `json:"cloudsShown"`
 }
 
 // File reads and writes the settings file.
@@ -101,6 +102,7 @@ func (f *File) Load(defaults ports.Settings) (ports.Settings, bool, error) {
 		Window:           held.Window,
 		HiddenCategories: held.HiddenCategories,
 		HiddenProviders:  held.HiddenProviders,
+		CloudsShown:      held.CloudsShown,
 	}, true, nil
 }
 
@@ -138,5 +140,6 @@ func toStored(s ports.Settings) stored {
 		Window:           s.Window,
 		HiddenCategories: s.HiddenCategories,
 		HiddenProviders:  s.HiddenProviders,
+		CloudsShown:      s.CloudsShown,
 	}
 }
