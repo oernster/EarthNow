@@ -10,9 +10,10 @@ import (
 // mapGeometry turns one EONET geometry into an observation; false when its
 // date, type or coordinates are unusable. A polygon is placed at the mean of
 // its outer ring's vertices (DATA-003); its shape is out of V1's scope.
-// latFirst reads a polygon's vertices as [lat, lng], as its source sends them
-// (latFirstPolygonSource); points are never affected.
-func mapGeometry(g wireGeometry, latFirst bool) (event.Observation, bool) {
+// order says whether a polygon's vertices are read as [lat, lng], as its
+// source sends them (latFirstPolygonSource). It also says whether a ring that
+// proves its own order is read by it. Points are never affected.
+func mapGeometry(g wireGeometry, order polygonOrder) (event.Observation, bool) {
 	at, err := time.Parse(time.RFC3339, g.Date)
 	if err != nil {
 		return event.Observation{}, false
@@ -33,6 +34,10 @@ func mapGeometry(g wireGeometry, latFirst bool) (event.Observation, bool) {
 			return event.Observation{}, false
 		}
 		ring := rings[0]
+		latFirst := order.latFirst
+		if proven, ok := ringOrder(ring); ok && order.proven {
+			latFirst = proven
+		}
 		if latFirst {
 			ring = swapped(ring)
 		}

@@ -119,8 +119,9 @@ func Parse(body []byte) ([]event.Event, int, error) {
 	}
 	var out []event.Event
 	dropped := 0
+	gdacs := feedOrder(*doc.Events)
 	for _, w := range *doc.Events {
-		e, ok := mapEvent(w)
+		e, ok := mapEvent(w, gdacs)
 		if !ok {
 			dropped++
 			continue
@@ -130,15 +131,20 @@ func Parse(body []byte) ([]event.Event, int, error) {
 	return out, dropped, nil
 }
 
-func mapEvent(w wireEvent) (event.Event, bool) {
+// mapEvent maps one event; gdacs is the feed's reading for a
+// latFirstPolygonSource polygon, while any other source's is GeoJSON's.
+func mapEvent(w wireEvent, gdacs polygonOrder) (event.Event, bool) {
 	if w.ID == "" || w.Title == "" {
 		return event.Event{}, false
 	}
 	var obs []event.Observation
 	allMidnight := true
-	latFirst := sourcedBy(w, latFirstPolygonSource)
+	order := polygonOrder{}
+	if sourcedBy(w, latFirstPolygonSource) {
+		order = gdacs
+	}
 	for _, g := range w.Geometry {
-		o, ok := mapGeometry(g, latFirst)
+		o, ok := mapGeometry(g, order)
 		if !ok {
 			continue
 		}
@@ -191,7 +197,8 @@ func mapEvent(w wireEvent) (event.Event, bool) {
 // GDACS flood polygons of the week were [lat, lng] (Thailand's first vertex
 // [17.79, 97.74]) while GDACS points were [lng, lat]. Read as GeoJSON, five
 // were dropped as out of range and nine were drawn in the wrong place (Honduras
-// in Antarctica).
+// in Antarctica). feedOrder follows the order the feed's own rings prove, so
+// the rule does not outlive a correction upstream.
 const latFirstPolygonSource = "GDACS"
 
 // sourcedBy reports whether any of an event's sources has the id.

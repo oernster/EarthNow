@@ -4,13 +4,7 @@ A standing reference to what is still open, what is deliberately left and what o
 
 ---
 
-## 1. The GDACS latitude-first rule rests on one week's polygons
-
-EONET passes GDACS flood polygons on with each vertex as [lat, lng], against GeoJSON's [lng, lat], while GDACS points arrive in GeoJSON order (all 14 GDACS polygons of the week to 2026-09-23, measured; REQUIREMENTS amendment 12). `internal/infrastructure/providers/eonet/eonet.go` reads every GDACS polygon latitude first on that evidence.
-
-**Blocked on time.** This is a verification gap rather than a known defect. If EONET or GDACS corrects the order, every GDACS polygon will be drawn swapped, flood markers moving to impossible places (the week that found the rule put Honduras in Antarctica). The item closes when a later week's GDACS polygons are measured again and still arrive latitude first. Replacing the rule with one that decides per polygon would close it too.
-
-## 2. Appendix C's traceability test does not exist yet
+## 1. Appendix C's traceability test does not exist yet
 
 REQUIREMENTS.md Appendix C promises a structural test that lists every Must and fails when no test names it. Measured on 2026-09-24: 64 of the 134 Musts are named by no test; 31 of those are marked T, the rest D, I or a timing measurement. The count is a little high, since a test named "FR-DON-001 and 005" covers 005 without spelling the full ID.
 
