@@ -36,6 +36,15 @@ Run it when a master changes:
 
 It is not part of the build. The output is committed, so a clone needs neither
 Python nor Pillow to build the application.
+
+The one exception is the Linux Flatpak (DEL-005): its icon theme wants the
+application icon at each hicolor size, which build_flatpak.sh asks for into its
+own gitignored folder on every build:
+
+    python3 tools/genicons.py --hicolor build/linux/icons
+
+That writes earthnow_<size>.png for each of HICOLOR_SIZES and nothing else. The
+script installs whatever it finds there, so the sizes live here alone.
 """
 
 from __future__ import annotations
@@ -123,6 +132,12 @@ SITE_EARTH = SITE / "earth.jpg"
 SITE_ORB_PX = 380
 SITE_EARTH_HEIGHT = 2 * SITE_ORB_PX
 SITE_EARTH_QUALITY = 85
+
+# HICOLOR_SIZES are the freedesktop icon theme's sizes for the Flatpak (DEL-005,
+# Appendix D.1), up to the largest a desktop draws an application icon at.
+HICOLOR_SIZES = (16, 24, 32, 48, 64, 128, 256, 512)
+HICOLOR_FLAG = "--hicolor"
+HICOLOR_NAME = "earthnow_{size}.png"
 
 # SETUP_ICONS are the theme toggle's pair; each shows the mode it switches TO
 # (NFR-UX-004), so the sun shows while the page is dark.
@@ -261,7 +276,28 @@ def render_site_earth() -> None:
     print(f"{EARTH_TEXTURE.name:<22} {source:>9,} -> {size:>7,} bytes  ({drawn}, site)")
 
 
+def render_hicolor(folder: pathlib.Path) -> int:
+    """Write the application icon at every hicolor size into folder (DEL-005)."""
+    app = MASTERS / APP_MASTER
+    if not app.exists():
+        sys.exit(f"no application icon at {app}")
+    square = squared(trimmed(app))
+    folder.mkdir(parents=True, exist_ok=True)
+    for size in HICOLOR_SIZES:
+        target = folder / HICOLOR_NAME.format(size=size)
+        square.resize((size, size), Image.LANCZOS).save(target, "PNG", optimize=True)
+        print(f"{APP_MASTER:<22} -> {target.stat().st_size:>7,} bytes  ({target.name})")
+    return 0
+
+
 def main() -> int:
+    args = sys.argv[1:]
+    if args[:1] == [HICOLOR_FLAG]:
+        if len(args) != 2:
+            sys.exit(f"usage: python tools/genicons.py {HICOLOR_FLAG} <folder>")
+        return render_hicolor(pathlib.Path(args[1]))
+    if args:
+        sys.exit(f"unknown arguments {args}; run with none, else {HICOLOR_FLAG} <folder>")
     masters = sorted(p for p in MASTERS.glob("*.png") if p.name not in NOT_RAIL)
     if not masters:
         sys.exit(f"no master artwork found in {MASTERS}")

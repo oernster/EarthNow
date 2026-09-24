@@ -1,0 +1,6 @@
+# Shell scripts run on macOS and Linux. This repository is configured with
+# core.autocrlf=true, so without this rule a Windows checkout writes them with
+# CRLF, the first line becomes `#!/usr/bin/env bash\r` and Linux looks for an
+# interpreter whose name ends in a carriage return (measured in SymDiary). The
+# Flatpak and DMG builders would then fail on the platforms they exist for.
+*.sh text eol=lf

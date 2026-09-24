@@ -17,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"github.com/oernster/EarthNow/internal/application/dto"
@@ -143,8 +144,14 @@ func main() {
 		windowsOptions.WebviewUserDataPath = filepath.Join(dir, webviewFolder)
 	}
 
+	// DEL-005, RSK-002: left nil, Wails v2.12.0 sets webkit2gtk's GPU policy to
+	// Never on Linux (internal/frontend/desktop/linux/window.go, read), which
+	// leaves the globe no WebGL. Stated here rather than left to the zero value.
+	linuxOptions := &linux.Options{WebviewGpuPolicy: linux.WebviewGpuPolicyAlways}
+
 	err = wails.Run(&options.App{
 		Windows:          windowsOptions,
+		Linux:            linuxOptions,
 		Title:            product.Name,
 		Width:            windowWidth,
 		Height:           windowHeight,

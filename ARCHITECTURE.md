@@ -207,7 +207,9 @@ tests read, so it belongs to no layer.
    `LICENSE` and `THIRD_PARTY_NOTICES` embedded from the repository root.
 7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 600, a
    black background and WebView2's data kept in
-   `%LOCALAPPDATA%\EarthNow\webview`.
+   `%LOCALAPPDATA%\EarthNow\webview`. On Linux the web view's GPU policy is set
+   to Always, since Wails otherwise turns acceleration off and the globe would
+   have no WebGL (RSK-002).
 
 When Wails starts, the facade starts two goroutines, each with a recover at
 its top that logs the stack and tells the page (NFR-REL-003): one loads the

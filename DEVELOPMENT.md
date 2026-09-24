@@ -153,7 +153,10 @@ python tools/genicons.py
 ```
 
 Run it when a master changes, then commit the results. A clone builds without
-Python or Pillow for this.
+Python or Pillow for this. The one exception is the Linux icon theme:
+`build_flatpak.sh` runs `python3 tools/genicons.py --hicolor build/linux/icons`
+on every build, which writes the application icon at each hicolor size into
+that gitignored folder and nothing else.
 
 ### The third-party notices
 
@@ -202,6 +205,39 @@ how the next setup program decides between update, go back and repair.
 The README's install instructions point at the Releases page, so step 4 is
 what users see.
 
+## Linux and macOS builds (release 2, not yet verified)
+
+Three bash scripts, ported from PigeonPost with SymDiary's hardening, build
+EarthNow for the other two platforms (DEL-005 to DEL-007). None has been run on
+its own platform yet. Each was syntax-checked; the Flatpak manifest was
+generated and parsed with the flatpak tools stubbed out, all on Windows. Until
+a build has run and the globe has drawn, neither platform is supported and the
+README says so.
+
+| Script | Runs on | What it makes |
+|---|---|---|
+| `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow`, on the GNOME 50 runtime with webkit2gtk-4.1 |
+| `cleanup_flatpak.sh` | Linux | uninstalls it and removes only the flatpak artefacts; the user's settings and cache stay |
+| `builddmg.sh` | an Apple Silicon Mac | `EarthNow.dmg`, signed and notarised; `ALLOW_UNNOTARIZED=1` for a local test build only |
+
+```bash
+bash build_flatpak.sh
+```
+
+- **The globe needs WebGL.** Wails v2 turns webkit2gtk's GPU acceleration off
+  unless told otherwise, so `main.go` passes `options.Linux` with the policy
+  set to Always (RSK-002). Whether a given machine then offers WebGL2 is
+  measured on that machine.
+- **The Flatpak keeps the network** for the three sources and asks for no
+  filesystem access: its settings, cache and log live in the sandbox's own
+  cache folder.
+- **The DMG** copies `assets/application-icon.png` to `build/appicon.png`, as
+  `build.ps1` does; Wails makes the bundle's icon from it. Notarisation
+  needs a keychain profile named `EarthNow` (the script prints how to make one)
+  or `APPLE_ID` and `APPLE_APP_PASSWORD`.
+- `.gitattributes` holds the three scripts at LF endings, since a Windows
+  checkout would otherwise give them a shebang ending in a carriage return.
+
 ## Where things live
 
 | Path | What it holds |
@@ -218,6 +254,7 @@ what users see.
 | `tests/structural` | the tests that hold the architecture in place |
 | `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
 | `stamp_version.py` | stamps `VERSION` into the site's version pill; `build.ps1` runs it first |
+| `build_flatpak.sh`, `cleanup_flatpak.sh`, `builddmg.sh` | the Linux and macOS builds, release 2 |
 | `assets/` | the master artwork |
 | `docs/` | the GitHub Pages site: one hand-written page, no build step |
 
