@@ -1,9 +1,11 @@
-"""Phase 0 spike: convert Natural Earth shapefiles to the compact form the
-spike embeds. Throwaway; the product will carry its own generator.
+"""Convert Natural Earth shapefiles to the compact form that
+internal/infrastructure/geo embeds. First written for the Phase 0 spike.
 
 Reads the ESRI shapefile (.shp, polygon and point records) and its dBase
 table (.dbf) directly from their published layouts, so no package is needed.
-Writes spike/geo/places.json.gz and spike/geo/countries.json.gz.
+Run as `python tools/geodata.py <unpacked layers> <output folder>`: it writes
+places.json.gz, countries.json.gz and shelves.json.gz for whichever of those
+layers it finds unpacked, leaving the rest alone.
 """
 
 from __future__ import annotations

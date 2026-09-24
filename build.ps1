@@ -24,6 +24,13 @@ $version = (Get-Content (Join-Path $root 'VERSION')).Trim()
 $ldflags = "-X main.appVersion=$version"
 Write-Host "Building EarthNow $version"
 
+# The site cannot read VERSION, so its version tokens are stamped from it before
+# anything is built. A site showing an older number than the setup program it
+# offers is a quiet error nobody catches by eye. Ported from WhatDay's build.
+Write-Host 'Stamping the version into the site...'
+python (Join-Path $root 'stamp_version.py')
+if ($LASTEXITCODE -ne 0) { throw "stamp_version.py failed with exit code $LASTEXITCODE" }
+
 # Cgo is pinned off rather than left to whatever the machine happens to default to.
 # Nothing here wants a C toolchain, so there is nothing to lose by disabling it. Off
 # is already the default on a machine with no C compiler, which is precisely why

@@ -63,3 +63,6 @@ installer/frontend/dist/LICENSE.txt
 # Local Claude session files (resume snapshot, preview config), never committed
 .claude/
 
+
+# Release notes for the pending version; drafted each docs pass, never committed.
+NOTES.md

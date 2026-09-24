@@ -61,7 +61,7 @@ func NewPreferences(store ports.SettingsStore, applyMinimum func(float64)) *Pref
 }
 
 // Defaults are the settings of a first run: rotating at the normal speed,
-// minimum 3.0, the 24 h window and nothing filtered out.
+// minimum 2.5, the 24 h window and nothing filtered out.
 func Defaults() ports.Settings {
 	return ports.Settings{
 		AutoRotate: true,

@@ -21,7 +21,8 @@ staticcheck is not installed: `test.ps1` runs it at a pinned version through
 The first run on a machine fetches it, so that run needs the network.
 
 cgo is not used. `build.ps1` pins `CGO_ENABLED=0` for the gate and the build,
-so no C compiler is needed.
+so no C compiler is needed. `./test.ps1` run on its own does not set it, so on a
+machine with a C compiler the gate runs as you run it with the Go default.
 
 `wails.exe` lands in `%USERPROFILE%\go\bin`. If this is not found, that folder
 is not on the path:
@@ -53,26 +54,29 @@ without `frontend/node_modules`.
 In order, it:
 
 1. Reads `VERSION` and makes `-ldflags "-X main.appVersion=<version>"` from it.
-2. Sets `CGO_ENABLED=0` for everything that follows.
-3. Runs [`test.ps1`](TESTING.md). A failure stops the build; there is no switch
+2. Runs `stamp_version.py`, which writes that version into every
+   `<!--VERSION-->` token of the site under `docs/`, so the site never offers an
+   older number than the setup program. It touches nothing already current.
+3. Sets `CGO_ENABLED=0` for everything that follows.
+4. Runs [`test.ps1`](TESTING.md). A failure stops the build; there is no switch
    to skip it.
-4. Refuses to go on without `assets/application-icon.png` and
+5. Refuses to go on without `assets/application-icon.png` and
    `assets/application-icon.ico`, then copies both into `build/` and
    `installer/build/` as `appicon.png` and `windows/icon.ico`.
-5. Runs `wails build` for the application. That runs the page's
+6. Runs `wails build` for the application. That runs the page's
    `npm run build`, which is ESLint, `tsc` and `vite build`, then writes
    `build/bin/EarthNow.exe`.
-6. With `-SkipInstaller`, stops here.
-7. Zips `build/bin` into `installer/payload.zip`.
-8. Copies `LICENSE` to `installer/frontend/dist/LICENSE.txt`, since the setup
+7. With `-SkipInstaller`, stops here.
+8. Zips `build/bin` into `installer/payload.zip`.
+9. Copies `LICENSE` to `installer/frontend/dist/LICENSE.txt`, since the setup
    page has no build step to read it from the root.
-9. Runs `wails build` in `installer/`, with the same `-ldflags`.
-10. Copies `installer/build/bin/EarthNowSetup.exe` to
+10. Runs `wails build` in `installer/`, with the same `-ldflags`.
+11. Copies `installer/build/bin/EarthNowSetup.exe` to
     `dist-installer/EarthNowSetup.exe`, the one file that ships.
-11. Writes the 22-byte empty zip back over `installer/payload.zip`, so
+12. Writes the 22-byte empty zip back over `installer/payload.zip`, so
     `go build ./...` and the tests keep working without a full build.
 
-Step 11 runs only when the steps before it succeed. If the setup program fails
+Step 12 runs only when the steps before it succeed. If the setup program fails
 to build, `installer/payload.zip` still holds the full payload: run
 `./build.ps1` again rather than committing it.
 
@@ -91,8 +95,8 @@ changed:
 Everything generated is ignored by git: `build/`, `frontend/dist/`,
 `frontend/wailsjs/`, `dist-installer/`, `installer/build/bin/`, the icon and
 manifest copies under `installer/build/`, `installer/frontend/wailsjs/` and
-`installer/frontend/dist/LICENSE.txt`. `installer/payload.zip` is tracked only
-as the empty archive.
+`installer/frontend/dist/LICENSE.txt`, plus Wails' `frontend/package.json.md5`.
+`installer/payload.zip` is tracked only as the empty archive.
 
 ## Running from source
 
@@ -171,8 +175,8 @@ with `--check` and fails until the file matches.
 - `frontend/src/assets/earth.jpg` is the NASA Blue Marble Next Generation
   texture, downloaded and committed.
 - `internal/infrastructure/geo/data` holds the Natural Earth places, borders
-  and Antarctic ice shelves the application embeds. `tools/geodata.py` is the
-  Phase 0 spike's converter from Natural Earth shapefiles. It is given the
+  and Antarctic ice shelves the application embeds. `tools/geodata.py`, first
+  written for the Phase 0 spike, converts Natural Earth shapefiles. It is given the
   folder the layers are unpacked into plus an output folder, writes a file
   only for each layer it finds there, then the result is copied into `data`
   by hand. Pass only the layer being refreshed: the shapefiles are not kept,
@@ -212,7 +216,8 @@ what users see.
 | `frontend/src` | the page |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
-| `tools/` | `genicons.py`, `notices.py` and the spike's `geodata.py` |
+| `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
+| `stamp_version.py` | stamps `VERSION` into the site's version pill; `build.ps1` runs it first |
 | `assets/` | the master artwork |
 | `docs/` | the GitHub Pages site: one hand-written page, no build step |
 
@@ -221,8 +226,8 @@ what users see.
 - **No magic numbers.** A literal that needs a comment to say what it
   represents is a named constant or comes from data.
 - **The product is named once,** in `internal/product/product.go`. A structural
-  test fails when a Go string literal, a page source file, `frontend/index.html`
-  or a setup page file spells it. The Wails configuration files and the build
+  test fails when a Go string literal outside a test, a page source file,
+  `frontend/index.html` or a setup page file spells it. The Wails configuration files and the build
   scripts sit outside that test and still carry it.
 - **The donate address lives once,** beside the name; a structural test holds
   it there.

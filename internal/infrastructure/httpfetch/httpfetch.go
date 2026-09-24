@@ -33,13 +33,30 @@ type Client struct {
 	maxBytes int64
 }
 
+// maxRedirects is the standard library's own limit, kept when the redirect
+// check below replaces its default.
+const maxRedirects = 10
+
 // New builds a client that reaches only hosts and refuses bodies over maxBytes.
+// It works on its own copy of httpClient, whose redirects are held to the same
+// hosts: without that, an allowed host answering 302 would hand the request to
+// any host at all (NFR-PRIV-001, reproduced 2026-09-24).
 func New(httpClient *http.Client, maxBytes int64, hosts ...string) *Client {
 	allowed := make(map[string]bool, len(hosts))
 	for _, h := range hosts {
 		allowed[h] = true
 	}
-	return &Client{http: httpClient, allowed: allowed, maxBytes: maxBytes}
+	held := *httpClient
+	held.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if !allowed[req.URL.Host] {
+			return fmt.Errorf("%w: %s", ErrHostNotAllowed, req.URL.Host)
+		}
+		if len(via) >= maxRedirects {
+			return fmt.Errorf("stopped after %d redirects", maxRedirects)
+		}
+		return nil
+	}
+	return &Client{http: &held, allowed: allowed, maxBytes: maxBytes}
 }
 
 // Accept values an adapter may ask for. JSON is what EONET and USGS serve;

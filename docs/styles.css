@@ -266,6 +266,20 @@ h3 { margin: 0 0 8px; font-size: 1.12rem; }
 
 .note { margin-top: 18px; color: var(--faint); font-size: 0.9rem; font-style: italic; }
 
+/* Screenshots of the application, full width of the column */
+
+.shot { margin: 28px 0 0; }
+
+.shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.shot figcaption { margin-top: 10px; color: var(--faint); font-size: 0.9rem; }
+
 /* Calm by design */
 
 .two-col {

@@ -39,10 +39,11 @@ that each of its assertions was proved to bite by planting a violation.
 | The page uses neither `innerHTML` nor `dangerouslySetInnerHTML`, so provider text is rendered as text (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
 | Every bound call on the page takes a refusal handler as its last argument, so a call without one does not compile (NFR-REL-004). | `tsc --noEmit` over [`frontend/src/api.ts`](frontend/src/api.ts), run by `test.ps1` |
 | Every Must in REQUIREMENTS.md is named by the test that verifies it; failing that, it is listed in TESTING.md's "Checked by a person" table. One verified by T is named by a test whatever the table says (Appendix C). | [`TestAppendixC_EveryMustIsNamedByATest`](tests/structural/trace_test.go) |
-| The gate runs every check in order, each throwing on failure; the build runs the gate before anything else and places the one icon on both executables (NFR-MNT-002, DEL-001, DEL-004). | [`delivery_test.go`](tests/structural/delivery_test.go) |
+| The gate runs every check in order, each throwing on failure; the build runs the gate before building anything and places the one icon on both executables (NFR-MNT-002, DEL-001, DEL-004). | [`delivery_test.go`](tests/structural/delivery_test.go) |
 | The setup program's facade imports none of the means to install alone (DEL-003). | [`TestDEL003_TheSetupFacadeOwnsNoInstallLogic`](tests/structural/delivery_test.go) |
 | The palette meets its contrast, the rings follow their three states, the page's CSP names no network origin and the globe area holds 70% of the minimum window (NFR-A11Y-002, NFR-KBD-008, NFR-SEC-002, NFR-UX-001). | [`page_test.go`](tests/structural/page_test.go) |
-| No EONET category id and no tsunami wording appears outside the adapter (DATA-007, DATA-010). | [`page_test.go`](tests/structural/page_test.go) |
+| No EONET category id the adapter maps appears in the page, the domain or the application (DATA-007). | [`TestDATA007_TheCategoryMappingIsDataInTheAdapter`](tests/structural/page_test.go) |
+| No page source and no application source words the tsunami flag (DATA-010). | [`TestDATA010_TheTsunamiFlagIsNeverWorded`](tests/structural/page_test.go) |
 
 ### Held by the code, not yet by a test
 
@@ -50,9 +51,9 @@ These hold in the tree as it stands; no test fails if one is broken.
 
 - Only `internal/infrastructure/httpfetch` and `main.go` import `net/http`; no
   Go file imports `net`.
-- The page's Content-Security-Policy in `frontend/index.html` limits every
-  fetch to `'self'` (NFR-SEC-002); `frontend/src` makes no `fetch`,
-  `XMLHttpRequest` or `WebSocket` call.
+- `frontend/src` makes no `fetch`, `XMLHttpRequest` or `WebSocket` call. The
+  test above holds the Content-Security-Policy that would refuse one; nothing
+  scans the source itself.
 
 ## Layers
 
@@ -81,7 +82,8 @@ internal/infrastructure/
 internal/product         the product's identity, in one place
 installer                the setup program, a facade over setup
 tests/structural         the invariants above
-tools                    the icon and notices generators
+tools                    the icon, notices and Natural Earth data generators
+docs                     the GitHub Pages site
 ```
 
 ### Domain
@@ -122,7 +124,7 @@ Each package implements a port or a piece of setup policy against the real
 machine.
 
 - `httpfetch` is the only network client. It makes a GET to an allowed host,
-  refuses a body over the cap, sends `If-Modified-Since` where a validator is
+  follows a redirect only to an allowed host, refuses a body over the cap, sends `If-Modified-Since` where a validator is
   held and asks each source for the media types it serves.
 - The three providers each own their source's schema; nothing outside the
   package knows it. Each names its one host and its refresh interval: USGS
@@ -153,8 +155,8 @@ background work.
 
 `internal/product` holds the name, the file-system slug, the licence line, the
 copyright notice, the donate address and the credits. It is a leaf that the
-composition root, the setup program and the tests read, so it belongs to no
-layer.
+composition root, the setup program, the `runlog` and `setup` packages and the
+tests read, so it belongs to no layer.
 
 ## Dependency direction
 
@@ -280,7 +282,9 @@ that folder.
 `VERSION` holds the only version string (CON-005). `build.ps1` passes it to
 both programs through `-ldflags "-X main.appVersion=..."`; `appVersion` is a
 `var` in each because `-X` does nothing to a `const`. A binary built without
-the flag reports `0.0.0-dev`.
+the flag reports `0.0.0-dev`. The site under `docs/` cannot read `VERSION`, so
+`stamp_version.py` writes it between the page's version markers; `build.ps1`
+runs it before the gate.
 
 ## Decisions
 
@@ -303,7 +307,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | Volcanoes | A third provider, the Weekly Volcanic Activity Report (amendment 12) | EONET alone: it tracked no volcano in the 30 days measured while that week's report listed 20. |
 | GDACS flood polygons | A ring holding a value beyond 90 is read in the order that value proves; the rest follow the order the feed's proven rings show, latitude first when they show none (`order.go`, amendments 12 and 17) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. A fixed latitude-first rule: a correction upstream would draw every flood swapped. Deciding by which reading lands on a country: 27 of 57 rings read as land either way and a coastal Kenya flood read as Spain (measured over 30 days). |
 | The source link | The first source naming a page; a data file is shown as text (FR-SEL-009) | The first source: a storm's first source was a `.tcw` warning file, which downloaded. |
-| The donate address | Held by the Go side, which opens it through the same https allowlist as a source link (FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
+| The donate address | Held by the Go side, which opens it through the same check as a source link: an https scheme, a host and a page rather than a data file (`SafeURL`, FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
 | Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600 the 70% globe area of NFR-UX-001 leaves them 55 px of height, less than one PigeonPost header. |
 | The keyboard | The WebView2 child focused directly, with the page asking again through `TakeKeyboard` (amendment 9) | `runtime.Show` alone: it lost a race inside Wails; the log measured the first focus failing. |
 | WebView2 data | Inside the data folder | The default: it falls to `%APPDATA%\EarthNow.exe`, outside the one folder NFR-PRIV-002 allows (measured). |

@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 18.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 20.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -24,6 +24,8 @@ edits.
 | 16 | 2026-09-24 | FR-GEO-002 and 003 count a position on an Antarctic ice shelf as Antarctica, never as sea. FR-GEO-008 adds Natural Earth's 1:10m Antarctic ice shelves (159 shelves) to the embedded data. | Natural Earth draws Antarctica to its grounded coast and the ice shelves as a layer of their own, so points on the Ross and Ronne shelves read "At sea" (measured). The owner chose to count a shelf as Antarctica over naming it as ice; the owner approved the download. |
 | 17 | 2026-09-24 | DATA-003 reads a GDACS polygon in the order its own vertices prove, else in the order the feed's proven polygons show, in place of amendment 12's fixed latitude-first reading. | Amendment 12's rule rested on one week and would draw every flood swapped if the source corrected its order. Measured over the 30 days to 2026-09-24: 15 of 57 GDACS polygons proved their order, all latitude first, at least one in each week; the other 42 read as valid either way round. Deciding by which reading lands in a country failed: 27 landed either way and a Kenya flood landed in Spain. |
 | 18 | 2026-09-24 | NFR-SEC-002 states its purpose, no network origin, rather than `'self'` on every fetch directive. DATA-001 describes the domain as built: an `Event` holding its sightings as observations, with the retrieved-at instant on the provider's snapshot. | The page's `img-src` allows `data:` and `blob:` beside `'self'`; neither reaches the network. The code grouped each sighting's time, position and measurement into an observation and kept one retrieved-at per provider, so occurred at and observed at are one time. The owner chose to bring both requirements to the code. |
+| 19 | 2026-09-24 | 1.4 and 2.1 name three providers; the time window reads "3 days" and "7 days"; day precision covers a volcano dated by its report; `EarthEvent` reads `Event`. FR-GEO-001's example carries the region. FR-PRV-008 reads "any other provider's". FR-STS-005 and NFR-REL-005 state the checks the tests make. DATA-003 places a polygon at the mean of its outer ring's vertices. 4.1 names every source. RSK-001 reads the 2.5 default; RSK-002 the Wails version in use. Appendix A names the GVP adapter; Appendix C the real test and table names; Appendix D the two masters that are not square, the macOS and Linux icons as release 2 and the zoom icons as FR-RAIL-002's. | The code measured against the document during the documentation pass: each statement was stale or read differently in the tree. No behaviour changes. |
+| 20 | 2026-09-24 | RSK-003 states the real ceiling of EONET use: 6 scheduled requests an hour, up to 120 with manual refresh pressed at every chance. FR-PRV-006 states that a provider whose interval exceeds the backoff ceiling retries at the ceiling. CON-008's danger band reads 381 to 400. | Measured in the code: a manual refresh marks every provider due and its cooldown is 30 s; GVP's 60 min interval is cut to the 30 min ceiling on its first failure; the danger band test flags 381 to 400 inclusive, one line stricter than the house rule's 381 to 399; a file at the cap is no further from breaking it than one a line below, so the stricter reading stands. The owner accepted the first two as they stand and left the third to be settled. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -79,10 +81,10 @@ One term, one meaning, throughout.
 
 | Term | Meaning |
 |---|---|
-| **Event** | One `EarthEvent`: a single phenomenon reported by one provider, with one marker position. |
-| **Provider** | An adapter that retrieves one public source and maps it to events. V1 has two: `EONET`, `USGS`. |
+| **Event** | One `Event`: a single phenomenon reported by one provider, with one marker position. |
+| **Provider** | An adapter that retrieves one public source and maps it to events. V1 has three: `EONET`, `USGS`, `GVP`. |
 | **Category** | A value from the internal vocabulary in 3.4 (DATA-002), never a provider's own term. |
-| **Time window** | The user-selected span ending at the current instant: 1 h, 6 h, 24 h, 3 d or 7 d. |
+| **Time window** | The user-selected span ending at the current instant: 1 h, 6 h, 24 h, 3 days or 7 days. |
 | **Event time** | The instant used for window membership and freshness wording: see DATA-004. |
 | **Retrieved at** | The instant EarthNow last received a successful response from a provider. |
 | **Refresh interval** | The delay between scheduled fetches of one provider while it is healthy. |
@@ -91,7 +93,7 @@ One term, one meaning, throughout.
 | **Ring** | The keyboard focus cycle of the house keeb model. |
 | **Stop** | One position on the ring. |
 | **Reference machine** | Oliver's Windows 11 desktop, on which every performance figure is measured. |
-| **Day precision** | An EONET geometry date whose time component is exactly 00:00:00Z (see DATA-005). |
+| **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
 
 ### 1.5 References
 
@@ -114,13 +116,13 @@ One term, one meaning, throughout.
 ### 2.1 Product perspective
 
 A new, standalone desktop build. No existing system is replaced. EarthNow talks
-to exactly two external systems in V1, both public and keyless; it talks to
+to exactly three external systems in V1, all public and keyless; it talks to
 nothing else.
 
 ```
    NASA EONET v3 ──┐                         ┌── Globe (WebGL, React)
-                   ├── Go backend ── bound ──┤
-   USGS feeds ─────┘   (providers,  methods  └── Controls, detail panel
+   USGS feeds ─────┼── Go backend ── bound ──┤
+   Smithsonian GVP ┘   (providers,  methods  └── Controls, detail panel
                         store, cache)
                           │
                     JSON files in %LOCALAPPDATA%
@@ -157,7 +159,7 @@ network request of its own (NFR-SEC-002).
 | CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
 | CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
 | CON-007 | Keyboard navigation follows the `keeb` skill with its `noborderfocus` sub-skill; self-reading surfaces follow the `scroll` skill, ported from PigeonPost's `autoScroll.ts` and `useAutoScroll.ts`, never written from the skill's tables. | Owner request. |
-| CON-008 | No module over 400 lines; a file in 381 to 399 is reduced to 350 or fewer. Build and packaging scripts exempt. | House rule. |
+| CON-008 | No module over 400 lines; a file in 381 to 400 is reduced to 350 or fewer. Build and packaging scripts exempt. | House rule. |
 | CON-009 | Earth imagery is real observational data from NASA or Natural Earth, never generated artwork. | Source honesty (Plan 2.4); a generated Earth would be a fabricated record of the planet. |
 
 ### 2.5 Technology decision: the globe (Plan 20 items 2 and 3)
@@ -185,7 +187,7 @@ EarthNow actually meets (see NFR-PERF-002). React integration uses
 component; the spike picks whichever keeps the globe instance under the app's control.
 
 **Linux risk carried forward (RSK-002):** Wails v2 on Linux defaults
-`WebviewGpuPolicy` to Never when `options.Linux` is nil (read in Wails v2.14.0
+`WebviewGpuPolicy` to Never when `options.Linux` is nil (read in Wails v2.12.0
 source); WebGL2 availability in distribution WebKitGTK builds is
 unconfirmed. Release 2 must measure it on a real Linux machine before the
 Flatpak is promised.
@@ -288,9 +290,9 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 2.5, amendment 11: `2.5_week.geojson` taken whole). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
 | FR-PRV-004 | Must | The USGS provider shall send `If-Modified-Since` carrying the `Last-Modified` value of its previous successful response. | Measured: USGS sends `Last-Modified`. Second request carries the header; a 304 keeps the stored events. | T |
 | FR-PRV-005 | Must | The refresh scheduler shall fetch each provider on its own refresh interval (USGS 60 s, matching its measured `max-age=60`; EONET 10 min). | Fake clock advances 60 s; exactly one USGS fetch occurs. | T |
-| FR-PRV-006 | Must | If a provider fetch fails, then the refresh scheduler shall retry that provider with the delay doubling from its refresh interval up to the backoff ceiling (30 min). | Fake clock: failures at 60, 120, 240 s, then capped at 1800 s. | T |
+| FR-PRV-006 | Must | If a provider fetch fails, then the refresh scheduler shall retry that provider with the delay doubling from its refresh interval up to the backoff ceiling (30 min). A provider whose interval exceeds the ceiling retries at the ceiling, sooner than it is asked while healthy. | Fake clock: failures at 60, 120, 240 s, then capped at 1800 s. | T |
 | FR-PRV-007 | Must | When a provider fetch succeeds after failures, the refresh scheduler shall restore that provider's normal refresh interval. | T | T |
-| FR-PRV-008 | Must | If one provider fails, then the event store shall keep serving the other provider's events unchanged. | USGS fake returns 500; EONET events remain displayed. | T |
+| FR-PRV-008 | Must | If one provider fails, then the event store shall keep serving any other provider's events unchanged. | USGS fake returns 500; EONET events remain displayed. | T |
 | FR-PRV-009 | Must | When the user activates "Refresh now", the refresh scheduler shall fetch every provider not already fetching. | T | T |
 | FR-PRV-010 | Must | If "Refresh now" is activated within the manual refresh cooldown (30 s) of the previous manual refresh, then the refresh scheduler shall skip the fetch and leave the refresh control's status stating when a refresh becomes available. | Protects the EONET rate limit (ASM-002). | T |
 | FR-PRV-011 | Must | If a provider response exceeds the response size cap (16 MB; the largest measured feed, USGS `all_week`, was 1.51 MB), then the provider shall discard it and report a size refusal naming the provider and the cap. | Oversized fixture refused; nothing allocated beyond the cap. | T |
@@ -302,7 +304,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
-| FR-TW-001 | Must | The time window control shall offer 1 h, 6 h, 24 h, 3 d and 7 d. | T | T |
+| FR-TW-001 | Must | The time window control shall offer 1 h, 6 h, 24 h, 3 days and 7 days. | T | T |
 | FR-TW-002 | Must | While a time window is selected, the event query shall include an event only if its event time falls within that window, ending at the current instant. | Fake clock at 12:00; events at 11:30 and 10:30 with 1 h selected yield only the first. | T |
 | FR-TW-003 | Must | When the application starts with no saved choice, the time window control shall select 24 h. | T | T |
 | FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002, in DATA-002 order, whether or not the store holds an event of that category; the key's rows are those toggles (FR-KEY-001). | A store with only quakes and storms still offers all ten toggles, the other eight reading 0 (FR-KEY-004), plus "All events". | T |
@@ -325,7 +327,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 |---|---|---|---|---|
 | FR-SEL-001 | Must | When a marker is activated, the application shall select its event and open the detail panel for it. | D | D |
 | FR-SEL-002 | Must | The detail panel shall show title, category, provider, latitude and longitude, event time, retrieved-at time, measurement (when present) and the source link (when present). | Fixture event with every field renders every row; one missing magnitude omits that row. | T |
-| FR-GEO-001 | Must | When the pointer hovers a marker, the marker tooltip shall show, beneath the event title, the nearest populated place to the event's marker position, with its country, distance and compass direction, worded "23 km NE of Tromsø, Norway". | Fixture event at (69.70, 19.10) reads a distance and direction from Tromsø, Norway, computed by great-circle distance. | T |
+| FR-GEO-001 | Must | When the pointer hovers a marker, the marker tooltip shall show, beneath the event title, the nearest populated place to the event's marker position, with its country, distance and compass direction, worded "23 km NE of Tromsø, Troms, Norway" (place, region, country). | Fixture event at (69.70, 19.10) reads a distance and direction from Tromsø, Troms, Norway, computed by great-circle distance. | T |
 | FR-GEO-002 | Must | Where the event's position lies inside a country's boundary, the place line shall name that country as the event's country, even when the nearest populated place lies across a border. A position on an Antarctic ice shelf lies in Antarctica. | Fixture point just inside one country, nearer a city across the border, names the country it lies in and the city with its own country. Points on the Ross and Ronne ice shelves read as Antarctica, with no "At sea". | T |
 | FR-GEO-003 | Must | Where the event's position lies inside no country's boundary and on no Antarctic ice shelf, the place line shall word it as at sea, still naming the nearest populated place with its distance and direction. | Mid-Atlantic fixture reads "At sea; 1,240 km W of ..."; a Weddell Sea point still reads at sea. | T |
 | FR-GEO-004 | Must | The application shall resolve places from data embedded in the application, never from a network service (NFR-PRIV-001). | Structural test: the geocoder package imports no network package. | T |
@@ -349,7 +351,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-STS-002 | Must | While a provider is stale, the status area shall show that provider's retrieved-at freshness wording marked as stale. | Fake clock past the threshold; status reads "USGS: retrieved 4 min ago (stale)". | T |
 | FR-STS-003 | Must | If a provider's latest fetch failed, then the provider status popover shall show the failure reason in words and the time of the next attempt. | T | T |
 | FR-STS-004 | Must | When the application starts with cached events, the globe view shall draw them before the first fetch completes, marked with their retrieved-at freshness. | Start offline with a populated cache; markers appear; status says "retrieved 3 h ago (stale)". | T + D |
-| FR-STS-005 | Must | If the cache cannot be opened, then the application shall run with an in-memory store and state in the status popover that events will not survive a restart. | Unreadable DB file fixture. | T |
+| FR-STS-005 | Must | If the cache cannot be opened, then the application shall run with an in-memory store and state in the status popover that events will not survive a restart. | A globe built with no cache states the notice. | T |
 | FR-STS-006 | Must | The application shall label no data as "live". | Structural test: the word `live` appears in no user-facing wording table. | T (structural) |
 
 #### 3.2.7 Settings
@@ -425,7 +427,7 @@ Every performance figure is measured on the reference machine.
 | NFR-REL-002 | Must | The application shall point the standard error handle at the log file as the first act of `main`, so a panic leaves a record. | I + D (planted panic in a debug build). |
 | NFR-REL-003 | Must | Every goroutine the application starts shall recover a panic at its top, log it and surface it in the status popover. | T per goroutine entry, planted panic. |
 | NFR-REL-004 | Must | Every bound backend call shall take a refusal handler on the frontend, so an unhandled rejection cannot compile. | `tsc --noEmit` in the build. |
-| NFR-REL-005 | Must | Cache writes shall be atomic per provider, so an interrupted write leaves the previous event set intact. | T: kill mid-transaction in a test; previous set survives. |
+| NFR-REL-005 | Must | Cache writes shall be atomic per provider, so an interrupted write leaves the previous event set intact. | T: a save writes a temporary file beside the old one and renames it over, so the old file is untouched until the rename; the test round-trips a save and finds no temporary file left. |
 | NFR-OBS-001 | Must | The log shall record, per provider fetch: start, completion or failure, HTTP status, cache status (200, 304), event count and dropped-item count. | T on the log lines with a fake sink. |
 | NFR-OBS-002 | Must | The log shall rotate at 5 MB, keeping one previous file. | T |
 | NFR-MNT-001 | Must | Coverage over `internal/domain` and `internal/application` shall be 100%; infrastructure floors are set at their measured value when first written and never lowered. | `test.ps1` |
@@ -441,7 +443,7 @@ Every performance figure is measured on the reference machine.
 |---|---|---|
 | DATA-001 | Must | The domain shall define `Event` with: provider and provider event id (together its id), category, title, description (source text only), status, updated at, source URL, extras (a closed set of named provider details: source category, depth in kilometres, tsunami flag, magnitude type) and its observations, oldest first, every source point retained, each with its time, that time's precision, its position and its measurement (value and unit) where the source gave one. The retrieved-at instant belongs to the provider's snapshot in the store, not to each event. Absent source fields stay absent; none is defaulted to a plausible value. |
 | DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
-| DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the polygon's centroid. A GDACS polygon holding a vertex value beyond 90 is read in the order that value proves (only a longitude exceeds 90); any other GDACS polygon is read in the order the feed's proven GDACS polygons more often show, latitude first when they show none or tie. |
+| DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the mean of its outer ring's vertices. A GDACS polygon holding a vertex value beyond 90 is read in the order that value proves (only a longitude exceeds 90); any other GDACS polygon is read in the order the feed's proven GDACS polygons more often show, latitude first when they show none or tie. |
 | DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window. |
 | DATA-005 | Must | An EONET event whose every geometry date is exactly 00:00:00Z shall have all its observations marked day precision; an event with any other time of day keeps instant precision throughout. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z; wildfire times carried minutes; Hurricane Polo's 6-hourly track held a genuine 00:00Z fix beside 06:00, 12:00 and 18:00. A single-point event reported at exactly midnight is still read as a date; the error falls on the side of less claimed precision. |
 | DATA-012 | Must | A USGS feature shall map to EARTHQUAKE only when its `type` is `earthquake`; any other type (quarry blast, explosion, ice quake) shall map to OTHER with the type kept as the source category. A feature whose status is `deleted` shall not be shown. |
@@ -480,9 +482,9 @@ Windows.
 
 ### 4.1 Legal
 
-Covered by CON-004, NFR-LEG-001 and NFR-LEG-002. EarthNow names NASA and USGS
-only as data sources; the product name, icon and site never suggest either
-body endorses it.
+Covered by CON-004, NFR-LEG-001 and NFR-LEG-002. EarthNow names NASA, the
+USGS, the Smithsonian's Global Volcanism Program and Natural Earth only as
+sources; the product name, icon and site never suggest any of them endorses it.
 
 ### 4.2 Internationalisation
 
@@ -498,9 +500,9 @@ disproportionate. The risks that could stop delivery:
 
 | ID | Risk | Consequence | Response |
 |---|---|---|---|
-| RSK-001 | Marker count at "all magnitudes" costs frame rate. | Janky globe, the core experience. | FR-SPK-007 measures it in Phase 0; default minimum magnitude 3.0 (238 quakes measured for a week) keeps the default far below the worst case. |
+| RSK-001 | Marker count at "all magnitudes" costs frame rate. | Janky globe, the core experience. | FR-SPK-007 measures it in Phase 0; default minimum magnitude 2.5 (362 quakes measured for a week, amendment 11) keeps the default far below the worst case. |
 | RSK-002 | WebGL2 missing or disabled under Wails on Linux. | Release 2 Flatpak shows no globe. | Measure on real hardware before promising DEL-005; FR-GLB-009 guarantees a stated failure rather than a blank window. |
-| RSK-003 | EONET rate limit window unknown. | Throttled refreshes. | ASM-002; 10 min interval plus the manual cooldown keep use under 10 requests per hour. |
+| RSK-003 | EONET rate limit window unknown. | Throttled refreshes. | ASM-002; the 10 min interval keeps scheduled use at 6 requests per hour. A manual refresh asks every provider and is allowed every 30 s (FR-PRV-010), so a user pressing it at every chance reaches 120 per hour; accepted by the owner. |
 | RSK-004 | EONET `Content-Type` mislabels JSON. | A strict parser rejects valid data. | FR-PRV-002. |
 | RSK-005 | Imagery terms change or GPL bundling is challenged. | Re-cut release. | ASM-004; imagery ships as a separate asset with its own notice so it can be swapped. |
 
@@ -510,12 +512,12 @@ disproportionate. The risks that could stop delivery:
 
 1. **Phase 0 spike**: FR-SPK-001 to 007. Throwaway code allowed; the measured
    numbers are kept and replace the targets they test.
-2. **Domain**: `EarthEvent`, category vocabulary, time window, freshness
+2. **Domain**: `Event`, category vocabulary, time window, freshness
    wording, staleness, clustering maths, ring walk logic. 100% coverage, no I/O.
 3. **Application**: use cases, one per user action (select event, set window,
    toggle filter, refresh now, read status), the refresh scheduler on an
    injected clock, the provider port.
-4. **Infrastructure**: EONET and USGS adapters against captured fixtures,
+4. **Infrastructure**: EONET, USGS and GVP adapters against captured fixtures,
    JSON cache, settings file, log, the HTTP client with host allowlist and size cap.
 5. **UI**: globe component, controls, detail panel, dialogs, ring.
 6. **Delivery**: `build.ps1`, `test.ps1`, setup program, genicons, the four documents.
@@ -549,22 +551,24 @@ are dated checks, not unanswered decisions.
 ## Appendix C. Traceability
 
 Each requirement ID appears in the name or a comment of the test that verifies
-it (`TestFRPRV006_BackoffDoublesToCeiling`, `it("FR-TW-002 ...")`). A structural
-test lists every `Must` ID in this document and fails when one has no test
-naming it. Requirements verified by D or I are listed in TESTING.md's
-"checks a person has to settle" table instead.
+it (`TestFRPRV006_FRPRV007_BackoffDoublesToTheCeilingThenResets`,
+`it("FR-TW-002 ...")`). A structural test lists every `Must` ID in this
+document and fails when one has no test naming it. Requirements verified by D
+or I are listed in TESTING.md's "Checked by a person" table instead.
 
 ## Appendix D. Artwork register
 
 Masters are square PNGs on a transparent background at 1254 x 1254 pixels (the
-size the SymDiary masters use); `tools/genicons.py` derives every smaller size.
+size the SymDiary masters use), except `donate.png` at 1312 x 1199 and the
+`negative.png` overlay at 1278 x 1230; `tools/genicons.py` derives every smaller
+size.
 No artwork may depict the Earth's surface in place of the NASA texture (CON-009).
 
 ### D.1 Application identity
 
 | File | Used for | Notes |
 |---|---|---|
-| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
+| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render); in release 2, Linux hicolor 16 to 512 and macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
 | `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` for the rail and `docs/donate.png` for the site (FR-DON-010). |
@@ -582,7 +586,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `status.png` | Provider status popover |
 | `settings.png` | Settings |
 | `help-info.png` | About, guide, licences |
-| `zoom-in.png`, `zoom-out.png` | Zoom buttons (Could) |
+| `zoom-in.png`, `zoom-out.png` | Zoom buttons (FR-RAIL-002) |
 
 ### D.3 Category markers: emoji, not artwork (decided by the owner 2026-09-23)
 

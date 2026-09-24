@@ -2,12 +2,19 @@
 
 Open a globe and see what is happening on Earth right now.
 
+> **Commercial licences available.** EarthNow is free and open source under the
+> GNU General Public License, version 3. If those terms do not suit what you are
+> building, such as a closed-source product, a commercial licence can be bought
+> from me separately. It covers my own code; third-party libraries and data keep
+> their own licences. See
+> [commercial licensing](https://ernster.dev/commercial-licensing.html).
+
 EarthNow is a Windows desktop application. It shows a slowly turning globe
 carrying the natural events of the past week at the places they happened:
 earthquakes from the USGS, natural events tracked by NASA EONET (wildfires,
 storms, floods, sea ice and more) and the volcanoes named in the Smithsonian and
-USGS Weekly Volcanic Activity Report. Every marker says which source reported it
-and how old that report is.
+USGS Weekly Volcanic Activity Report. Every event names the source that reported
+it and how old that report is.
 
 ## Who it is for
 
@@ -31,8 +38,10 @@ and how old that report is.
 ## What it does
 
 - **Draws the globe** with NASA's Blue Marble imagery on a black background. It
-  starts turning after ten seconds without input; a button or the settings stop
-  it. The wheel, the zoom buttons and the plus and minus keys zoom.
+  turns slowly from launch, pauses while you use it and turns again after ten
+  seconds without input. A button or the settings stop it; the settings also
+  offer three speeds. The wheel, the zoom buttons and the plus and minus keys zoom; Reset
+  view brings the whole globe back.
 - **Places every event** with its category's emoji: earthquake, volcano,
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
@@ -42,11 +51,18 @@ and how old that report is.
   populated place, its country, the distance and the compass direction, worked
   out on your own machine from embedded Natural Earth data.
 - **Opens the detail** of an event: title, category, provider, position, the
-  event time and the retrieval time (each as an age, in UTC and in local time),
-  any measurement and a link to the source page, which opens in your browser.
+  event time and the retrieval time (each as an age, in UTC and in local time;
+  an event its source dates by day alone has no local time), any measurement
+  and a link to the source page, which opens in your browser. An event its
+  source has closed is marked as ended.
+- **Walks the events from the keyboard:** Up and Down move between them, Enter
+  opens one.
 - **Filters** by category and by provider from the key down the right side,
   which also counts the events shown in each category. The time window picks
-  1 h, 6 h, 24 h, 3 days or 7 days.
+  1 h, 6 h, 24 h, 3 days or 7 days. An event dated more than 15 minutes ahead
+  of your clock waits until its time arrives.
+- **Remembers your choices:** the time window, the filters, rotation and the
+  smallest earthquake shown: every one, else 1.0, 2.5, 3.0 or 4.5 and above.
 - **Keeps itself fresh.** USGS is asked every minute, EONET every ten minutes
   and the volcano report every hour. A source that fails is retried with a
   growing delay while the others carry on. Refresh asks again at once, no more
@@ -54,7 +70,10 @@ and how old that report is.
 - **Survives being offline.** Each source's last good set is kept on disk, so
   the globe opens on it and says how old it is.
 - **Is honest about age.** Nothing is labelled live. A source that has not
-  answered for three of its intervals is marked stale.
+  answered for three of its intervals is marked stale. The provider status
+  panel gives each source's state and the reason for any failed fetch.
+- **Explains itself.** Help opens a guide to every control, the About details,
+  the licence and the third-party notices.
 
 ## What it does not do
 
@@ -139,6 +158,8 @@ EarthNow is free and stays free. A donation supports its maintenance and
 continued development. Nothing is held back without one: there is no paid
 tier, no licence key and no feature a donation unlocks.
 
+<a href="https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE"><img src="docs/donate.png" alt="Donate to EarthNow" width="120"></a>
+
 ## Data sources and credits
 
 The About dialog carries these credits:
@@ -159,3 +180,6 @@ version 3; see [LICENSE](LICENSE). The components and data it ships, each
 under its own licence or terms, are listed with their full licence texts in
 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES). The application shows both under
 Help.
+
+A commercial licence for EarthNow's own code is available: see
+[commercial licensing](https://ernster.dev/commercial-licensing.html).

@@ -87,10 +87,14 @@ handling) and `installer` (the setup program's Wails facade over acts that
 change the machine). Neither has anything a test can reach without the platform
 behind it, so a floor over either would be a floor at zero. The root package
 (`main.go`, `app.go`) has no tests: it is the composition root and the Wails
-facade. Running it would be running the application.
+facade. Running it would be running the application. `internal/product` holds
+constants and its tests pin their values, so it carries no floor either;
+`tests/structural` is tests and nothing else. `gofmt -l` reads `internal`,
+`tests` and `installer`, so the root package's formatting is not checked.
 
-The page is measured with istanbul over `src/**`, leaving out the tests,
-`test-setup.ts` and the page's composition root, `main.tsx` and `App.tsx`,
+The page is measured with istanbul over `src/**`, leaving out the test files
+(the shared helper `testLayout.ts` is measured), `test-setup.ts` and the page's
+composition root, `main.tsx` and `App.tsx`,
 which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
@@ -127,8 +131,9 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 
 - **Each provider** parses a feed captured from the real source (in its
   `testdata`), through a fake fetcher: the request URL, the categories mapped,
-  malformed items dropped and counted, withdrawn earthquakes left out, GDACS
-  polygons read latitude first and the volcano report's Latin-1 decoded. Which
+  malformed items dropped and counted, withdrawn earthquakes left out, each
+  GDACS polygon read in the order its own coordinates prove (else the order the
+  feed's proven polygons show) and the volcano report's Latin-1 decoded. Which
   source link counts as a page is tested in the domain.
 - **`httpfetch`** against a local test server: the host allowlist, the size
   cap, the status check, `If-Modified-Since` and a 304.
@@ -143,15 +148,18 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 
 ### The structure
 
-`tests/structural` parses the repository and fails on a layer violation, an
-impure domain, a second composition root, a provider named outside its own
-package, a file over 400 lines or in the danger band, an undocumented exported
-type, the product's name or the donate address written outside
-`internal/product` and a wire shape that differs between the Go DTOs and
-`frontend/src/types.ts`. It also holds the traceability test: every Must in
-REQUIREMENTS.md is named by a test; failing that, it is listed in the table
-under "Checked by a person" below, where each ID is spelt in full. [ARCHITECTURE.md](ARCHITECTURE.md)
-lists each test beside the invariant it guards.
+`tests/structural` reads the repository rather than running it. It holds the
+architecture (layers, a pure domain, one composition root, providers named only
+there, the 400-line limit and its danger band, documented exported types), the
+single homes (the product's name, the donate address, the category emoji and
+the EONET category ids), the page's rules read from its source (the CSP, the
+palette's contrast, the ring states, the rail's glyph box, the globe area's
+share of the minimum window, the heading), the wire between the Go DTOs and
+`frontend/src/types.ts`, what the gate and the build scripts run and in what
+order, plus the traceability test: every Must in REQUIREMENTS.md is named by a
+test; failing that, it is listed in the table under "Checked by a person"
+below, where each ID is spelt in full. [ARCHITECTURE.md](ARCHITECTURE.md) lists
+each rule beside the test or test file that enforces it.
 
 ### The page
 
