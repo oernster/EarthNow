@@ -200,21 +200,22 @@ how the next setup program decides between update, go back and repair.
 
 1. Set `VERSION`.
 2. Run `./build.ps1`. It will not build from a tree that fails the gate.
-3. Commit, tag the commit with the version and push.
-4. Create a GitHub release for the tag on `oernster/EarthNow` and attach
-   `dist-installer/EarthNowSetup.exe`.
+3. On an Apple Silicon Mac run `bash builddmg.sh`; on Linux run
+   `bash build_flatpak.sh`.
+4. Commit, tag the commit with the version and push.
+5. Create a GitHub release for the tag on `oernster/EarthNow` and attach
+   `dist-installer/EarthNowSetup.exe`, `EarthNow.dmg` and `earthnow.flatpak`.
 
-The README's install instructions point at the Releases page, so step 4 is
+The README's install instructions point at the Releases page, so step 5 is
 what users see.
 
-## Linux and macOS builds (release 2, not yet verified)
+## Linux and macOS builds
 
 Three bash scripts, ported from PigeonPost with SymDiary's hardening, build
-EarthNow for the other two platforms (DEL-005 to DEL-007). None has been run on
-its own platform yet. Each was syntax-checked; the Flatpak manifest was
-generated and parsed with the flatpak tools stubbed out, all on Windows. Until
-a build has run and the globe has drawn, neither platform is supported and the
-README says so.
+EarthNow for the other two platforms (DEL-005 to DEL-007). Each has run on its
+own platform: the Flatpak on the latest Ubuntu LTS, the notarised DMG on an
+Apple Silicon Mac, with the globe drawing on both. The release carries both
+files beside the Windows setup program.
 
 | Script | Runs on | What it makes |
 |---|---|---|
@@ -228,12 +229,11 @@ bash build_flatpak.sh
 
 - **The globe needs WebGL.** Wails v2 turns webkit2gtk's GPU acceleration off
   unless told otherwise, so `main.go` passes `options.Linux` with the policy
-  set to Always (RSK-002). Whether a given machine then offers WebGL2 is
-  measured on that machine.
+  set to Always (RSK-002). With it, the globe draws on the latest Ubuntu LTS;
+  a machine whose driver offers no WebGL2 gets FR-GLB-009's message instead.
 - **The Flatpak keeps the network** for the three sources and the cloud
-  image; it asks for no
-  filesystem access: its settings, cache and log live in the sandbox's own
-  cache folder.
+  image. It asks for no filesystem access: its settings, cache and log live in
+  the sandbox's own cache folder.
 - **The DMG** copies `assets/application-icon.png` to `build/appicon.png`, as
   `build.ps1` does; Wails makes the bundle's icon from it. Notarisation
   needs a keychain profile named `EarthNow` (the script prints how to make one)
@@ -257,7 +257,7 @@ bash build_flatpak.sh
 | `tests/structural` | the tests that hold the architecture in place |
 | `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
 | `stamp_version.py` | stamps `VERSION` into the site's version pill; `build.ps1` runs it first |
-| `build_flatpak.sh`, `cleanup_flatpak.sh`, `builddmg.sh` | the Linux and macOS builds, release 2 |
+| `build_flatpak.sh`, `cleanup_flatpak.sh`, `builddmg.sh` | the Linux and macOS builds |
 | `assets/` | the master artwork |
 | `docs/` | the GitHub Pages site: one hand-written page, no build step |
 

@@ -271,7 +271,10 @@ falling back to asking Wails to show the window. The page calls
 | Setup's WebView2 data | `%TEMP%\EarthNowSetup` |
 
 The data folder is `os.UserCacheDir()` joined with the product's slug, which on
-Windows is `%LOCALAPPDATA%\EarthNow` (NFR-PRIV-002).
+Windows is `%LOCALAPPDATA%\EarthNow` (NFR-PRIV-002). On macOS it is
+`~/Library/Caches/EarthNow`; inside the Flatpak it is
+`~/.var/app/uk.codecrafter.EarthNow/cache/EarthNow`, since Flatpak points
+`XDG_CACHE_HOME` into the sandbox.
 
 ## The setup program
 

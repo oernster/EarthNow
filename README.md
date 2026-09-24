@@ -9,12 +9,12 @@ Open a globe and see what is happening on Earth right now.
 > their own licences. See
 > [commercial licensing](https://ernster.dev/commercial-licensing.html).
 
-EarthNow is a Windows desktop application. It shows a slowly turning globe
-carrying the natural events of the past week at the places they happened:
-earthquakes from the USGS, natural events tracked by NASA EONET (wildfires,
-storms, floods, sea ice and more) and the volcanoes named in the Smithsonian and
-USGS Weekly Volcanic Activity Report. Every event names the source that reported
-it and how old that report is.
+EarthNow is a desktop application for Windows, macOS and Linux. It shows a
+slowly turning globe carrying the natural events of the past week at the places
+they happened: earthquakes from the USGS, natural events tracked by NASA EONET
+(wildfires, storms, floods, sea ice and more) and the volcanoes named in the
+Smithsonian and USGS Weekly Volcanic Activity Report. Every event names the
+source that reported it and how old that report is.
 
 ## Who it is for
 
@@ -34,7 +34,6 @@ it and how old that report is.
 - Anyone after a GIS tool or a weather service. There are no measurements or
   projections. The one layer is the clouds, which show where cloud lay when the
   image was made; there is no rain, wind, temperature or forecast.
-- Anyone on Linux or macOS. EarthNow is built for Windows.
 
 ## What it does
 
@@ -88,33 +87,39 @@ it and how old that report is.
 - **No account and no telemetry.** EarthNow's own code contacts three hosts:
   `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov` and `volcano.si.edu`. While
   the clouds are shown it also contacts `view.eumetsat.int`; it contacts no
-  others. The HTTP client refuses any other host. What the WebView2
-  runtime itself contacts is Microsoft's.
+  others. The HTTP client refuses any other host. What the platform's web
+  view itself contacts (WebView2, WebKitGTK or WKWebView) is its maker's.
 - **No request from the page.** Every fetch is made by the Go side; the page's
   Content-Security-Policy allows it no other origin.
 - **No update check, no tray icon, no start with Windows.**
-- **No administrator rights.** Setup installs for your account only.
+- **No administrator rights.** On Windows, setup installs for your account
+  only; on Linux the Flatpak is a user install.
 
 ## Built with
 
 | Part | Choice |
 |---|---|
 | Backend | Go |
-| Desktop shell | Wails v2 over WebView2 |
+| Desktop shell | Wails v2 over WebView2 (Windows), WKWebView (macOS) and WebKitGTK (Linux) |
 | Front end | React and TypeScript, built with Vite |
 | Globe | globe.gl on three.js |
 | Place names | Natural Earth data, embedded |
 | Setup program | a second Wails application with a hand-written page |
-| Build and gate | PowerShell: `build.ps1` and `test.ps1` |
+| Build and gate | PowerShell: `build.ps1` and `test.ps1`; bash for the DMG and the Flatpak |
 
 ## Install and run
 
-EarthNow targets Windows 10 and 11 on x64. It needs the WebView2 runtime and a
+Every build is on the
+[Releases page](https://github.com/oernster/EarthNow/releases). Each needs a
 graphics driver offering WebGL2.
 
-1. Download `EarthNowSetup.exe` from the
-   [Releases page](https://github.com/oernster/EarthNow/releases).
-2. Run it and choose Install.
+| Platform | Download | Install |
+|---|---|---|
+| Windows 10 and 11, x64 | `EarthNowSetup.exe` | Run it and choose Install. It needs the WebView2 runtime. |
+| macOS on Apple Silicon | `EarthNow.dmg` | Open it and drag EarthNow to Applications. The DMG is signed and notarised. |
+| Linux (tested on the latest Ubuntu LTS) | `earthnow.flatpak` | `flatpak install --user earthnow.flatpak`, which fetches the GNOME runtime from Flathub. |
+
+### Windows
 
 Setup puts EarthNow in `%LOCALAPPDATA%\Programs\EarthNow` and offers a Start
 Menu entry and a Desktop shortcut. Running it again reads the version already
@@ -136,6 +141,14 @@ Uninstall removes the program, the shortcuts and the Apps list entry. Ticking
 **Also forget my settings and cached events** removes `%LOCALAPPDATA%\EarthNow`
 as well.
 
+### macOS and Linux
+
+On macOS the settings, cache and log live in `~/Library/Caches/EarthNow`;
+removing EarthNow is dragging it out of Applications. On Linux they live in
+`~/.var/app/uk.codecrafter.EarthNow/cache/EarthNow`;
+`flatpak uninstall --user uk.codecrafter.EarthNow` removes the application and
+leaves that folder, which `--delete-data` removes as well.
+
 ## Build and test
 
 ```powershell
@@ -143,7 +156,9 @@ as well.
 ```
 
 That runs the whole gate, then writes `build/bin/EarthNow.exe` and
-`dist-installer/EarthNowSetup.exe`. The gate alone is `./test.ps1`.
+`dist-installer/EarthNowSetup.exe`. The gate alone is `./test.ps1`. The macOS
+and Linux builds are `builddmg.sh` and `build_flatpak.sh`, run on those
+platforms; [DEVELOPMENT.md](DEVELOPMENT.md) covers them.
 
 ## Documents
 

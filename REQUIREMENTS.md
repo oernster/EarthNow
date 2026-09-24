@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 27.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 28.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -33,6 +33,7 @@ edits.
 | 25 | 2026-09-24 | 4.1 names EUMETSAT among the sources that never suggest an endorsement. NFR-UX-004 names the cloud button among the toggles it covers. | The code measured against the document in the documentation pass: About credits EUMETSAT and says it does not endorse EarthNow; the cloud button shows the state it switches to, as FR-CLD-001 requires. No behaviour changes. |
 | 26 | 2026-09-24 | ASM-007 is confirmed: the owner accepts the credit "Cloud images: EUMETSAT, world cloud map (EUMETView)." with EUMETSAT named in the non-endorsement line. NFR-LEG-002 states that wording. | The owner's ruling; the wording was provisional until then. No behaviour changes. |
 | 27 | 2026-09-24 | The release obligations left open are closed by the owner's acceptance. ASM-001, ASM-003 and ASM-006 are confirmed by the shipped application; ASM-002 and ASM-004 are accepted as they stand. NFR-PERF-001 takes Phase 0's three starts as its result; NFR-PERF-003 is accepted unmeasured. | The owner judged the application fine as built and asked the document to match it. Nothing here is a new measurement: the 20-start sample and the 24 h working set were never taken, the EONET rate-limit window is still unknown and the NASA imagery terms were not re-read. No behaviour changes. |
+| 28 | 2026-09-24 | The Linux Flatpak, its cleanup script and the macOS DMG move from release 2 into the released product: 1.3 takes them out of scope's exclusions, 2.3 lists the three platforms side by side, DEL-005 to DEL-007 read release 1, CON-003 and D.1 drop "release 2" and RSK-002 is closed. | The owner released v1.0.0 with `EarthNowSetup.exe`, `EarthNow.dmg` and `earthnow.flatpak` (the release's assets, read) and tested the notarised Apple Silicon DMG and the Flatpak on the latest Ubuntu LTS, where the globe drew with WebGL2. Emoji coverage under Linux and macOS fonts stays unmeasured (D.3). No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -63,11 +64,12 @@ The product sentence, which settles any unclear choice:
 
 ### 1.3 Scope
 
-**In scope for V1 (Windows release):** the globe, the three providers (NASA EONET,
+**In scope for V1 (Windows, macOS and Linux):** the globe, the three providers (NASA EONET,
 USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
-help surfaces, the Windows build script and the bespoke setup program.
+help surfaces, the Windows build script and the bespoke setup program, the
+Linux Flatpak with its cleanup script and the macOS DMG (3.5).
 
 **Out of scope for V1 (decided; each is a Won't in 3.6):**
 
@@ -79,7 +81,6 @@ help surfaces, the Windows build script and the bespoke setup program.
 - weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, the day and night terminator, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
-- the Linux Flatpak, its cleanup script and the macOS DMG (release 2; see 3.5);
 - an update check, a system tray icon, start with Windows.
 
 ### 1.4 Definitions
@@ -151,11 +152,11 @@ network request of its own (NFR-SEC-002).
 
 ### 2.3 Operating environment
 
-| Item | V1 | Release 2 |
+| Item | Windows | Linux and macOS |
 |---|---|---|
-| OS | Windows 10 and 11, x64 | plus Linux (Flatpak, GNOME runtime) and macOS arm64 |
+| OS | Windows 10 and 11, x64 | Linux (Flatpak, GNOME runtime; tested on the latest Ubuntu LTS) and macOS arm64 |
 | Web runtime | WebView2 (Evergreen) | WebKitGTK 4.1; WKWebView |
-| GPU | WebGL2 required | WebGL2 required (see risk RSK-002) |
+| GPU | WebGL2 required | WebGL2 required (RSK-002, closed) |
 | Network | intermittent is normal; offline must be survivable | same |
 | Install | per user, no administrator rights | Flatpak user install; DMG drag-install |
 
@@ -165,7 +166,7 @@ network request of its own (NFR-SEC-002).
 |---|---|---|
 | CON-001 | Backend in Go; desktop shell Wails v2; frontend React with TypeScript built by Vite. | Owner decision. |
 | CON-002 | Architecture `UI → Application → Domain ← Infrastructure` under `internal/`, enforced by `tests/structural`. | House invariant. |
-| CON-003 | No CGO in the Windows build; the release 2 builds need it, since Wails renders there through a C web view. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
+| CON-003 | No CGO in the Windows build; the Linux and macOS builds need it, since Wails renders there through a C web view. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
 | CON-004 | Licence GPL-3.0 for EarthNow's own code (the `LICENSE` already committed). Every bundled dependency and data asset must carry a licence compatible with shipping inside a GPL-3.0 application, recorded in a third-party notices file. | Owner's committed licence. |
 | CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
 | CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
@@ -201,7 +202,8 @@ component; the spike picks whichever keeps the globe instance under the app's co
 `WebviewGpuPolicy` to Never when `options.Linux` is nil (read in Wails v2.12.0
 source); WebGL2 availability in distribution WebKitGTK builds is
 unconfirmed. Release 2 must measure it on a real Linux machine before the
-Flatpak is promised.
+Flatpak is promised. Measured at release: with the policy set to Always the
+globe drew on the latest Ubuntu LTS (amendment 28).
 
 ### 2.6 Assumptions and dependencies
 
@@ -533,9 +535,9 @@ Every performance figure is measured on the reference machine.
 | DEL-002 | Must | 1 | The setup program shall follow the `installer` skill: screen stack (route, uninstall, running, progress, verdict), footer rebuilt per screen, route read once (install, update, downgrade, manage), 126 px mark with no version in the header, three-state ring, per-user install under `%LOCALAPPDATA%\Programs\EarthNow` and `HKCU`, running-app check before any file is touched, fenced extraction, a step log, a verdict at the end of every path. |
 | DEL-003 | Must | 1 | The install policy shall live in `internal/infrastructure/setup`; `installer/app.go` shall be a facade owning no install logic. |
 | DEL-004 | Must | 1 | One committed `.ico`, generated from the master by `tools/genicons.py`, shall be placed on both executables. |
-| DEL-005 | Should | 2 | `build_flatpak.sh` shall build a user Flatpak with application id `uk.codecrafter.EarthNow` on the GNOME runtime (webkit2gtk-4.1), passing `options.Linux` with a GPU policy that enables WebGL (RSK-002), ported from PigeonPost or SymDiary. |
-| DEL-006 | Should | 2 | `cleanup_flatpak.sh` shall uninstall the user Flatpak and remove only flatpak artefacts, in the house shape (bash, `set -euo pipefail`, `APP_ID`, `section()` helper, header stating it touches no other build outputs), ported from PigeonPost. |
-| DEL-007 | Should | 2 | `builddmg.sh` shall build a signed, notarised arm64 DMG stamped from `VERSION`, ported from SymDiary's port of PigeonPost's `builddmg.sh`; `ALLOW_UNNOTARIZED=1` for local builds only. |
+| DEL-005 | Should | 1 | `build_flatpak.sh` shall build a user Flatpak with application id `uk.codecrafter.EarthNow` on the GNOME runtime (webkit2gtk-4.1), passing `options.Linux` with a GPU policy that enables WebGL (RSK-002), ported from PigeonPost or SymDiary. |
+| DEL-006 | Should | 1 | `cleanup_flatpak.sh` shall uninstall the user Flatpak and remove only flatpak artefacts, in the house shape (bash, `set -euo pipefail`, `APP_ID`, `section()` helper, header stating it touches no other build outputs), ported from PigeonPost. |
+| DEL-007 | Should | 1 | `builddmg.sh` shall build a signed, notarised arm64 DMG stamped from `VERSION`, ported from SymDiary's port of PigeonPost's `builddmg.sh`; `ALLOW_UNNOTARIZED=1` for local builds only. |
 
 ### 3.6 Won't this time (recorded so they are not re-proposed)
 
@@ -572,7 +574,7 @@ disproportionate. The risks that could stop delivery:
 | ID | Risk | Consequence | Response |
 |---|---|---|---|
 | RSK-001 | Marker count at "all magnitudes" costs frame rate. | Janky globe, the core experience. | FR-SPK-007 measures it in Phase 0; default minimum magnitude 2.5 (362 quakes measured for a week, amendment 11) keeps the default far below the worst case. |
-| RSK-002 | WebGL2 missing or disabled under Wails on Linux. | Release 2 Flatpak shows no globe. | Measure on real hardware before promising DEL-005; FR-GLB-009 guarantees a stated failure rather than a blank window. |
+| RSK-002 | WebGL2 missing or disabled under Wails on Linux. | The Flatpak shows no globe. | Closed (amendment 28): the globe drew on the latest Ubuntu LTS. As written before release: measure on real hardware before promising DEL-005; FR-GLB-009 guarantees a stated failure rather than a blank window. |
 | RSK-003 | EONET rate limit window unknown. | Throttled refreshes. | ASM-002; the 10 min interval keeps scheduled use at 6 requests per hour. A manual refresh asks every provider and is allowed every 30 s (FR-PRV-010), so a user pressing it at every chance reaches 120 per hour; accepted by the owner. |
 | RSK-004 | EONET `Content-Type` mislabels JSON. | A strict parser rejects valid data. | FR-PRV-002. |
 | RSK-006 | The infrared cloud image reads cold ground as cloud and holds no data at the poles. | A reader takes snow for cloud or a pole for clear sky. | FR-CLD-007's veil marks the unseen; the guide states the limit (FR-HLP-004); the spike's thresholds (FR-CLD-015) are chosen against a week of images. |
@@ -640,7 +642,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 
 | File | Used for | Notes |
 |---|---|---|
-| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render); in release 2, Linux hicolor 16 to 512 (`genicons.py --hicolor`) and the macOS `.icns`, which Wails makes from the master copied to `build/appicon.png` | Must read at 16 px. |
+| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render); Linux hicolor 16 to 512 (`genicons.py --hicolor`) and the macOS `.icns`, which Wails makes from the master copied to `build/appicon.png` | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
 | `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` for the rail and `docs/donate.png` for the site (FR-DON-010). |

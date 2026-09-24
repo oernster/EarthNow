@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EarthNow: see what the Earth is doing right now</title>
-    <meta name="description" content="EarthNow puts the past week's earthquakes, volcanoes, wildfires, storms and floods on a turning globe, each one traced to the public source that reported it, with the clouds as satellites last saw them. Free for Windows.">
+    <meta name="description" content="EarthNow puts the past week's earthquakes, volcanoes, wildfires, storms and floods on a turning globe, each one traced to the public source that reported it, with the clouds as satellites last saw them. Free for Windows, macOS and Linux.">
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <meta property="og:type" content="website">
     <meta property="og:title" content="EarthNow: see what the Earth is doing right now">
-    <meta property="og:description" content="The planet's week on a globe: earthquakes, volcanoes, wildfires, storms and floods, straight from USGS, NASA and the Smithsonian, with EUMETSAT's clouds on top. Free for Windows.">
+    <meta property="og:description" content="The planet's week on a globe: earthquakes, volcanoes, wildfires, storms and floods, straight from USGS, NASA and the Smithsonian, with EUMETSAT's clouds on top. Free for Windows, macOS and Linux.">
     <meta property="og:image" content="https://earthnow.world/icon.png">
     <meta property="og:url" content="https://earthnow.world/">
     <link rel="stylesheet" href="styles.css">
@@ -20,7 +20,7 @@
         "@type": "SoftwareApplication",
         "name": "EarthNow",
         "applicationCategory": "EducationalApplication",
-        "operatingSystem": "Windows",
+        "operatingSystem": "Windows, macOS, Linux",
         "description": "A globe showing the natural events of the past week, each traced to the public source that reported it.",
         "author": {"@type": "Person", "name": "Oliver Ernster", "url": "https://ernster.dev"},
         "license": "https://www.gnu.org/licenses/gpl-3.0.html",
@@ -46,7 +46,7 @@
         <div>
             <p class="eyebrow">
                 <span class="pill">v<!--VERSION-->1.0.0<!--/VERSION--></span>
-                <span class="pill">Windows</span>
+                <span class="pill">Windows, macOS, Linux</span>
                 <span class="pill">Free and open source</span>
                 <span class="pill">No account</span>
             </p>
@@ -56,7 +56,7 @@
                 it happened. <strong>Spin it, zoom in, hover and you know what, where and
                 how long ago.</strong></p>
             <div class="cta">
-                <a class="btn btn-primary" href="https://github.com/oernster/EarthNow/releases/latest">Download for Windows</a>
+                <a class="btn btn-primary" href="#install">Download</a>
                 <a class="btn" href="#see">Take a look</a>
             </div>
         </div>
@@ -215,7 +215,6 @@
                     <li><strong>A weather service.</strong> The clouds show where cloud
                         lay; there is no rain, wind, temperature or forecast.</li>
                     <li><strong>A mapping tool.</strong> No measurements, no projections.</li>
-                    <li><strong>Everywhere.</strong> Windows only.</li>
                 </ul>
             </div>
         </div>
@@ -223,20 +222,44 @@
 
     <section class="wrap" id="install">
         <p class="kicker">Install</p>
-        <h2>Three steps to the whole world.</h2>
-        <ol class="steps">
-            <li><strong>Download</strong> <code>EarthNowSetup.exe</code> from the
-                <a href="https://github.com/oernster/EarthNow/releases/latest">latest
-                release</a>.</li>
-            <li><strong>Run it</strong> and choose Install. It installs for your account
-                only, so Windows never asks for administrator rights.</li>
-            <li><strong>Open EarthNow</strong> from the Start Menu and watch the planet
-                turn.</li>
-        </ol>
+        <h2>The whole world, on your desktop.</h2>
+        <div class="platforms">
+            <div class="card">
+                <h3>Windows</h3>
+                <ul>
+                    <li>Download <code>EarthNowSetup.exe</code>, run it and choose
+                        Install.</li>
+                    <li>It installs for your account only, so Windows never asks for
+                        administrator rights.</li>
+                    <li>For Windows 10 and 11. To remove it, uninstall from Settings, then
+                        Apps.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>macOS</h3>
+                <ul>
+                    <li>Download <code>EarthNow.dmg</code>, open it and drag EarthNow to
+                        Applications.</li>
+                    <li>Signed and notarised by Apple, so it opens like any other app.</li>
+                    <li>For Macs with Apple silicon.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Linux</h3>
+                <ul>
+                    <li>Download <code>earthnow.flatpak</code> and install it with
+                        <code>flatpak install --user earthnow.flatpak</code>.</li>
+                    <li>Flatpak fetches what it needs from Flathub by itself.</li>
+                    <li>Tested on the latest Ubuntu LTS.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="cta after-steps">
+            <a class="btn btn-primary" href="https://github.com/oernster/EarthNow/releases/latest">Get the latest release</a>
+        </div>
         <div class="prose after-steps">
-            <p>For Windows 10 and 11. It needs a graphics driver able to draw in 3D; on
-                a machine without one, EarthNow says so rather than showing an empty
-                window. To remove it, uninstall from Settings, then Apps.</p>
+            <p>It needs a graphics driver able to draw in 3D; on a machine without one,
+                EarthNow says so rather than showing an empty window.</p>
         </div>
     </section>
 
