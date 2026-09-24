@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 12.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 14.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -19,6 +19,7 @@ edits.
 | 11 | 2026-09-23 | FR-PRV-001 now retrieves every EONET event of the week, open and closed, a closed one marked as ended in its detail panel. FR-SET-002 and OQ-003 lower the default USGS minimum magnitude to 2.5. | The owner doubted how little the globe showed. Measured that day: EONET held 80 events for the week while the open-only request returned 17, dropping most wildfires and floods though each happened inside the window; USGS held 362 earthquakes at 2.5 and above against 243 at 3.0 (owner's choice). |
 | 12 | 2026-09-23 | FR-PRV-015 added: a third provider, the Smithsonian / USGS Weekly Volcanic Activity Report (GVP), each volcano dated by the report's issue day at day precision. NFR-PRIV-001 allows its host, `volcano.si.edu`. FR-SEL-009 counts `.cfm` as a page ending. DATA-003 reads a GDACS-sourced EONET polygon latitude first. | EONET tracked no volcano in the 30 days to 2026-09-23 (25 in a year) while that week's report listed 20 erupting volcanoes; the feed carries a georss point per item (measured). The owner accepted the recommendation. All 14 GDACS flood polygons of the week arrived [lat, lng] against GeoJSON order while GDACS points did not: five were dropped as out of range and nine were drawn in the wrong place, Honduras in Antarctica. The Smithsonian feed answers 403 to a request asking only for JSON, so each adapter states what it accepts. |
 | 13 | 2026-09-24 | CON-003 and the architecture read a JSON file per provider, not SQLite. FR-PRV-003 states the 2.5 default of amendment 11. NFR-LEG-001 is verified by the notices generator's check. Scope names the third provider. OQ-011 names the rail. | The code measured against the document during the documentation pass; the owner chose to bring the document to the code. |
+| 14 | 2026-09-24 | FR-DON-010 is verified against the button's font size rather than the line box; it states that the donate button stands taller than a text-only button. Appendix D.1's donate row names the site's copy as written. | Measured on the built site: the mark is 45.9 px on 17 px type, exactly 2.7em, which is 1.69 times the 27.2 px line box at line height 1.6. The 1.8 figure was the step up from the earlier 1.5em mark, not a ratio to the line box. The site now exists, so `docs/donate.png` is written rather than pending (owner). |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -379,7 +380,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-DON-007 | Must | The donate tooltip shall open to the right of the button and upwards, so it is clipped neither at the window's left edge nor at its foot. | D at the minimum window size. | D |
 | FR-DON-008 | Must | The donate button shall be the rail's last stop, reached after Help. | Vitest reads it last among the rail's buttons. | T |
 | FR-DON-009 | Must | The application shall fetch nothing from the donate address itself; no feature shall depend on a donation. | I | I |
-| FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | Computed height measured at 1.8 times the line box. | D |
+| FR-DON-010 | Should | When the GitHub Pages site is built, its home page shall end with a "Supporting EarthNow" section after the download call to action, with a donate button whose mark is 2.7em high. | The mark's computed height measured at 2.7 times the button's computed font size, at desktop width and at 375 px. The button is taller than a text-only button beside it by design. | D |
 
 ### 3.3 Non-functional requirements
 
@@ -561,7 +562,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), Linux hicolor 16 to 512, macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
-| `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` now, `docs/donate.png` joining when the site is built (FR-DON-010). |
+| `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` for the rail and `docs/donate.png` for the site (FR-DON-010). |
 
 ### D.2 Action icons (generated to 208 px, house nav-band style)
 
