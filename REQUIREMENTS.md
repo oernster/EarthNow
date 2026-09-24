@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 26.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 27.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -32,6 +32,7 @@ edits.
 | 24 | 2026-09-24 | The cloud layer (3.2.10, FR-CLD-001 to 016): a rail button showing or hiding EUMETSAT's world cloud map over the globe, its infrared brightness mapped to opacity, a veil where no satellite sees, the image's valid time and age in the status area. It is fetched only while shown and cached for offline use. NFR-UX-002's minimum window rises to 960 by 640. NFR-PRIV-001 allows `view.eumetsat.int`; NFR-LEG-002 credits EUMETSAT; NFR-PERF-005, ASM-007, ASM-008 and RSK-006 added. Scope drops satellite cloud imagery from the out-of-scope list; weather stays out. | Owner request: toggle global cloud cover as satellite imagery shows it, from a free keyless source. Measured: NASA GIBS carries no Meteosat, so Europe and Africa would show none; EUMETSAT's layer covers the whole ring. At the old minimum the rail held 33 px spare against the 62 a ninth button needs; the owner chose the larger window over tighter gaps or a button off the rail, a veil over unseen regions and the layer hidden on a first run. |
 | 25 | 2026-09-24 | 4.1 names EUMETSAT among the sources that never suggest an endorsement. NFR-UX-004 names the cloud button among the toggles it covers. | The code measured against the document in the documentation pass: About credits EUMETSAT and says it does not endorse EarthNow; the cloud button shows the state it switches to, as FR-CLD-001 requires. No behaviour changes. |
 | 26 | 2026-09-24 | ASM-007 is confirmed: the owner accepts the credit "Cloud images: EUMETSAT, world cloud map (EUMETView)." with EUMETSAT named in the non-endorsement line. NFR-LEG-002 states that wording. | The owner's ruling; the wording was provisional until then. No behaviour changes. |
+| 27 | 2026-09-24 | The release obligations left open are closed by the owner's acceptance. ASM-001, ASM-003 and ASM-006 are confirmed by the shipped application; ASM-002 and ASM-004 are accepted as they stand. NFR-PERF-001 takes Phase 0's three starts as its result; NFR-PERF-003 is accepted unmeasured. | The owner judged the application fine as built and asked the document to match it. Nothing here is a new measurement: the 20-start sample and the 24 h working set were never taken, the EONET rate-limit window is still unknown and the NASA imagery terms were not re-read. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -208,12 +209,12 @@ Every assumption has an owner and a confirm-by point.
 
 | ID | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| ASM-001 | EONET v3 stays keyless and reachable at its current URLs. | Oliver | Phase 1 exit |
-| ASM-002 | EONET's `X-RateLimit-Limit: 60` (measured 2026-09-23) permits one request per provider interval with room for manual refreshes. The window length is unconfirmed. | Implementer | Phase 1 exit, by reading `X-RateLimit-*` over an hour of scheduled use |
-| ASM-003 | USGS summary feeds keep their URLs; USGS states 30 days' notice before removal (read in a search summary, page not opened). | Implementer | Phase 1 exit |
-| ASM-004 | NASA Blue Marble imagery may ship inside the installer with a credit line, under the NASA media terms (R5). GPL compatibility of bundling public-domain-like imagery is an inference, unconfirmed. | Oliver | Before first public release |
+| ASM-001 | EONET v3 stays keyless and reachable at its current URLs. | Oliver | Confirmed: the released application fetches it keyless (amendment 27) |
+| ASM-002 | EONET's `X-RateLimit-Limit: 60` (measured 2026-09-23) permits one request per provider interval with room for manual refreshes. The window length is unconfirmed. | Implementer | Accepted by the owner, 2026-09-24 (amendment 27); the window length was never read |
+| ASM-003 | USGS summary feeds keep their URLs; USGS states 30 days' notice before removal (read in a search summary, page not opened). | Implementer | Confirmed: the released application fetches them (amendment 27) |
+| ASM-004 | NASA Blue Marble imagery may ship inside the installer with a credit line, under the NASA media terms (R5). GPL compatibility of bundling public-domain-like imagery is an inference, unconfirmed. | Oliver | Accepted by the owner, 2026-09-24 (amendment 27) |
 | ASM-005 | WebView2 on the reference machine provides WebGL2. | Implementer | Phase 0 exit (measured, FR-SPK-002) |
-| ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Phase 4 |
+| ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Confirmed: releases are published there (amendment 27) |
 | ASM-007 | EUMETSAT's terms allow a free application to fetch and display the world cloud map with a credit line. EUMETView's capabilities state no fees and no access constraints (read 2026-09-24); the licence page carries no readable terms without a script, so the credit wording and any condition are unconfirmed. | Oliver | Confirmed by the owner on 2026-09-24 (amendment 26) |
 | ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
 
@@ -252,7 +253,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-SPK-005 | Met: camera asked for 51.4778, -0.0014 and arrived at 51.4778, -0.0014 within 1.2 s. |
 | FR-SPK-006 | Met: the 14.9 MB executable ran alone from a temporary folder. |
 | FR-SPK-007 | Met: 2,501 emoji sprites, median frame 10.00 ms, 99th percentile 10.10 ms, worst single frame 30 to 40 ms across runs. |
-| NFR-PERF-001 | First globe frame 627 to 654 ms from process start across three runs; the 20-start sample is still to take. |
+| NFR-PERF-001 | First globe frame 627 to 654 ms from process start across three runs, accepted by the owner as the result (amendment 27); the 20-start sample was not taken. |
 | FR-GLB-013 | Globe diameter 671 px in a 1064 x 761 globe area (88.2%). |
 | FR-GEO | Nearest-place lookup 503 to 548 us per hover, 154 ms to load the data at start. Natural Earth spells French Guiana's region "Guinaa" (raw bytes checked); the product carries a documented correction table for such source errors. |
 | Clustering | globe.gl and three-globe offer none (their typings checked); FR-MRK-007 is written by EarthNow. |
@@ -464,9 +465,9 @@ Every performance figure is measured on the reference machine.
 
 | ID | Pri | Requirement | Method |
 |---|---|---|---|
-| NFR-PERF-001 | Must | When launched, the application shall show the globe within 3 s (a target; Phase 0 measures it) at the 95th percentile of 20 cold starts. | Timestamp from process start to first globe frame, logged. |
+| NFR-PERF-001 | Must | When launched, the application shall show the globe within 3 s (a target; Phase 0 measures it) at the 95th percentile of 20 cold starts. | Timestamp from process start to first globe frame, logged. Phase 0's three starts stand as the result (amendment 27). |
 | NFR-PERF-002 | Must | While idle-rotating with 2,500 markers, the globe view shall hold a median frame time of 16.7 ms or less and a 99th percentile of 33 ms or less (a target; Phase 0 measures it). 2,500 is the measured USGS all-magnitude week (2,126 on 2026-09-23) plus EONET plus headroom. | Frame-time log over 60 s. |
-| NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target; measured before release). | Process working set sampled hourly. |
+| NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target). | Process working set sampled hourly. Accepted by the owner unmeasured (amendment 27). |
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
 | NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
