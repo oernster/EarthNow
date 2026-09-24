@@ -28,6 +28,12 @@ EONET passes GDACS flood polygons on with each vertex as [lat, lng], against Geo
 
 **Blocked on time.** This is a verification gap rather than a known defect. If EONET or GDACS corrects the order, every GDACS polygon will be drawn swapped, flood markers moving to impossible places (the week that found the rule put Honduras in Antarctica). The item closes when a later week's GDACS polygons are measured again and still arrive latitude first. Replacing the rule with one that decides per polygon would close it too.
 
+## 5. Appendix C's traceability test does not exist yet
+
+REQUIREMENTS.md Appendix C promises a structural test that lists every Must and fails when no test names it. Measured on 2026-09-24: 64 of the 134 Musts are named by no test; 31 of those are marked T, the rest D, I or a timing measurement. The count is a little high, since a test named "FR-DON-001 and 005" covers 005 without spelling the full ID.
+
+Closing it means naming (or writing) a test for each T requirement, listing the D and I ones in TESTING.md's "Checked by a person" table, then adding the test that holds both lists to the document. It changes no behaviour; it is a session of work rather than a line.
+
 ---
 
 ## Looks like debt, not worth touching

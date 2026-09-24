@@ -33,6 +33,10 @@ that each of its assertions was proved to bite by planting a violation.
 | `internal/domain` and `internal/application` together are at 100% statement coverage (NFR-MNT-001). | [`test.ps1`](test.ps1) |
 | Each infrastructure package holds its measured coverage floor; the page holds its istanbul floors. | [`test.ps1`](test.ps1), [`frontend/vite.config.ts`](frontend/vite.config.ts) |
 | `THIRD_PARTY_NOTICES` is exactly what `tools/notices.py` writes from the shipped dependency tree (NFR-LEG-001). | `python tools/notices.py --check`, run by [`test.ps1`](test.ps1) |
+| The geocoder imports no network package (`net`, `net/http`, `net/url`, `httpfetch`): places come from the embedded Natural Earth data (FR-GEO-004). | [`TestFRGEO004_TheGeocoderReachesNoNetwork`](tests/structural/rules_test.go) |
+| Every category emoji is written only in `frontend/src/categories.ts`, the table the key, markers, clusters and tooltips read (FR-KEY-002). | [`TestFRKEY002_EmojiLiveOnlyInTheCategoryTable`](tests/structural/rules_test.go) |
+| No Go string literal and no page source outside a comment uses the word "live" (FR-STS-006). | [`TestFRSTS006_NothingIsLabelledLive`](tests/structural/rules_test.go) |
+| The page uses neither `innerHTML` nor `dangerouslySetInnerHTML`, so provider text is rendered as text (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
 | Every bound call on the page takes a refusal handler as its last argument, so a call without one does not compile (NFR-REL-004). | `tsc --noEmit` over [`frontend/src/api.ts`](frontend/src/api.ts), run by `test.ps1` |
 
 ### Held by the code, not yet by a test
@@ -44,8 +48,6 @@ These hold in the tree as it stands; no test fails if one is broken.
 - The page's Content-Security-Policy in `frontend/index.html` limits every
   fetch to `'self'` (NFR-SEC-002); `frontend/src` makes no `fetch`,
   `XMLHttpRequest` or `WebSocket` call.
-- `frontend/src` sets no `innerHTML` and uses no `dangerouslySetInnerHTML`
-  (NFR-SEC-001).
 
 ## Layers
 
@@ -122,8 +124,7 @@ machine.
   every minute, EONET every ten minutes, the volcano report every hour.
 - `cache` keeps one JSON file per provider, stamped with a schema version and
   written beside the old one then renamed over it, so an interrupted write
-  leaves the previous set whole (NFR-REL-005). REQUIREMENTS.md CON-003 and
-  section 2.1 still name SQLite; the code does not use it.
+  leaves the previous set whole (NFR-REL-005, CON-003).
 - `geo` loads the embedded Natural Earth places and country outlines and words
   the nearest place, its distance and its direction (FR-GEO-001 to 005).
 - `runlog` keeps `Log.txt`, rotating it at 5 MB while running with one

@@ -79,7 +79,7 @@ export function guideSections(product: string): readonly GuideSection[] {
                 'Each event carries the time its source gives it. An exact time reads as "Observed 14 min ago"; a source that gives only a date reads as "Reported for 18 Sep 2026, 5 days ago".',
                 'A volcano\'s report covers the week before it is issued, so it reads as reported for that day.',
                 'Separately, each source shows when it was last retrieved, for example "retrieved 3 min ago". The detail panel gives every time three ways: in words, in UTC and in your own time zone.',
-                'Nothing is labelled live. Each source publishes with its own delay and is fetched on a schedule, so what you see is what the sources had said by the time shown.',
+                'Nothing is shown as happening this instant. Each source publishes with its own delay and is fetched on a schedule, so what you see is what the sources had said by the time shown.',
             ],
         },
         {

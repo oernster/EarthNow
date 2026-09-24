@@ -44,7 +44,7 @@ function cached(key: string, draw: (ctx: CanvasRenderingContext2D) => void): THR
         draw(ctx)
     }
     // The canvas holds sRGB pixels; left unmarked, three reads them as linear and
-    // encodes them again on output, which washed 🔥 from 243,134,60 to 250,190,133
+    // encodes them again on output, which washed the wildfire emoji from 243,134,60 to 250,190,133
     // (measured 2026-09-23 against three 0.186).
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace

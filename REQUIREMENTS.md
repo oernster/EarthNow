@@ -18,6 +18,7 @@ edits.
 | 10 | 2026-09-23 | FR-SEL-009 added: the source link is a page, never a data file; the EONET adapter takes the first source that is a page; a source that is only a file is shown as text. | The owner opened a hurricane's source and received a download. Measured in the live EONET feed: three storms list a JTWC `.tcw` warning file first (two with an NHC page second, one with nothing else) and one iceberg source is a `.csv`. |
 | 11 | 2026-09-23 | FR-PRV-001 now retrieves every EONET event of the week, open and closed, a closed one marked as ended in its detail panel. FR-SET-002 and OQ-003 lower the default USGS minimum magnitude to 2.5. | The owner doubted how little the globe showed. Measured that day: EONET held 80 events for the week while the open-only request returned 17, dropping most wildfires and floods though each happened inside the window; USGS held 362 earthquakes at 2.5 and above against 243 at 3.0 (owner's choice). |
 | 12 | 2026-09-23 | FR-PRV-015 added: a third provider, the Smithsonian / USGS Weekly Volcanic Activity Report (GVP), each volcano dated by the report's issue day at day precision. NFR-PRIV-001 allows its host, `volcano.si.edu`. FR-SEL-009 counts `.cfm` as a page ending. DATA-003 reads a GDACS-sourced EONET polygon latitude first. | EONET tracked no volcano in the 30 days to 2026-09-23 (25 in a year) while that week's report listed 20 erupting volcanoes; the feed carries a georss point per item (measured). The owner accepted the recommendation. All 14 GDACS flood polygons of the week arrived [lat, lng] against GeoJSON order while GDACS points did not: five were dropped as out of range and nine were drawn in the wrong place, Honduras in Antarctica. The Smithsonian feed answers 403 to a request asking only for JSON, so each adapter states what it accepts. |
+| 13 | 2026-09-24 | CON-003 and the architecture read a JSON file per provider, not SQLite. FR-PRV-003 states the 2.5 default of amendment 11. NFR-LEG-001 is verified by the notices generator's check. Scope names the third provider. OQ-011 names the rail. | The code measured against the document during the documentation pass; the owner chose to bring the document to the code. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -48,8 +49,8 @@ The product sentence, which settles any unclear choice:
 
 ### 1.3 Scope
 
-**In scope for V1 (Windows release):** the globe, the two providers (NASA EONET,
-USGS earthquakes), the provider-neutral event model, refresh with local caching,
+**In scope for V1 (Windows release):** the globe, the three providers (NASA EONET,
+USGS earthquakes, the Smithsonian / USGS weekly volcano report), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
 help surfaces, the Windows build script and the bespoke setup program.
@@ -117,7 +118,7 @@ nothing else.
    USGS feeds ─────┘   (providers,  methods  └── Controls, detail panel
                         store, cache)
                           │
-                    SQLite in %LOCALAPPDATA%
+                    JSON files in %LOCALAPPDATA%
 ```
 
 All network traffic originates in the Go backend. The web frontend makes no
@@ -146,7 +147,7 @@ network request of its own (NFR-SEC-002).
 |---|---|---|
 | CON-001 | Backend in Go; desktop shell Wails v2; frontend React with TypeScript built by Vite. | Owner decision. |
 | CON-002 | Architecture `UI → Application → Domain ← Infrastructure` under `internal/`, enforced by `tests/structural`. | House invariant. |
-| CON-003 | No CGO. SQLite through `modernc.org/sqlite`. | House rule; single static binary. |
+| CON-003 | No CGO. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
 | CON-004 | Licence GPL-3.0 for EarthNow's own code (the `LICENSE` already committed). Every bundled dependency and data asset must carry a licence compatible with shipping inside a GPL-3.0 application, recorded in a third-party notices file. | Owner's committed licence. |
 | CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
 | CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
@@ -278,7 +279,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-PRV-001 | Must | The EONET provider shall retrieve every event of the widest time window (7 days), open and closed, from `/api/v3/events?status=all&days=7`; the detail panel shall say when the source has marked an event as ended. | Request URL asserted in a test with a fake HTTP client. | T |
 | FR-PRV-002 | Must | The EONET provider shall parse the response body as JSON whatever `Content-Type` the server declares. | Measured 2026-09-23: EONET labels a JSON body `application/rss+xml` even when `Accept: application/json` is sent. Fixture served with that header parses. | T |
 | FR-PRV-015 | Must | The GVP provider shall retrieve `https://volcano.si.edu/news/WeeklyVolcanoRSS.xml` hourly and map each item to a Volcano event at its `georss:point`, dated by the item's publish date at day precision, titled by the volcano and the week's activity and linked to the item's `guid` page; the feed's declared ISO-8859-1 shall be decoded. | The captured feed yields 20 events, Krakatau at (-6.1009, 105.4233) dated 17 Sep 2026; an unusable item is dropped and counted. | T |
-| FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 3.0: `2.5_week.geojson` filtered to 3.0 and above; 238 events in the week measured 2026-09-23). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
+| FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 2.5, amendment 11: `2.5_week.geojson` taken whole). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
 | FR-PRV-004 | Must | The USGS provider shall send `If-Modified-Since` carrying the `Last-Modified` value of its previous successful response. | Measured: USGS sends `Last-Modified`. Second request carries the header; a 304 keeps the stored events. | T |
 | FR-PRV-005 | Must | The refresh scheduler shall fetch each provider on its own refresh interval (USGS 60 s, matching its measured `max-age=60`; EONET 10 min). | Fake clock advances 60 s; exactly one USGS fetch occurs. | T |
 | FR-PRV-006 | Must | If a provider fetch fails, then the refresh scheduler shall retry that provider with the delay doubling from its refresh interval up to the backoff ceiling (30 min). | Fake clock: failures at 60, 120, 240 s, then capped at 1800 s. | T |
@@ -425,7 +426,7 @@ Every performance figure is measured on the reference machine.
 | NFR-MNT-002 | Must | `test.ps1` shall run gofmt, go vet, staticcheck, go test with coverage, then the frontend's eslint, `tsc --noEmit` and Vitest, failing on any non-zero exit. | Run the script against a planted gofmt violation. |
 | NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
 | NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
-| NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence. | Structural test comparing `package.json` production dependencies and `go.mod` requires against the notices. |
+| NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence and the licence text in full. | `tools/notices.py --check` in `test.ps1`: the file must equal what the shipped Go modules (`go list -deps`) and page packages (`npm ls --omit=dev`) call for. |
 | NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, without implying endorsement and without the NASA insignia. | I against R5. |
 
 ### 3.4 Data requirements
@@ -509,7 +510,7 @@ disproportionate. The risks that could stop delivery:
    toggle filter, refresh now, read status), the refresh scheduler on an
    injected clock, the provider port.
 4. **Infrastructure**: EONET and USGS adapters against captured fixtures,
-   SQLite cache, settings file, log, the HTTP client with host allowlist and size cap.
+   JSON cache, settings file, log, the HTTP client with host allowlist and size cap.
 5. **UI**: globe component, controls, detail panel, dialogs, ring.
 6. **Delivery**: `build.ps1`, `test.ps1`, setup program, genicons, the four documents.
 
@@ -533,7 +534,7 @@ the owner on 2026-09-23; each answer now lives in the requirement it settled:
 | OQ-008 | main window dark only; setup program keeps light and dark | NFR-UX-005 |
 | OQ-009 | detail panel shows local time beside UTC | FR-SEL-003 |
 | OQ-010 | heading reads "EarthNow" | NFR-UX-006 |
-| OQ-011 | bottom tray as PigeonPost's | FR-DON-001 |
+| OQ-011 | the donate button at the foot of the action rail (amendment 8) | FR-DON-001 |
 | OQ-012 | earthquake emoji 〰️ | D.3 |
 
 The assumptions in 2.6 remain open until confirmed at their stated points; they
