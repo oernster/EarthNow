@@ -38,6 +38,11 @@ that each of its assertions was proved to bite by planting a violation.
 | No Go string literal and no page source outside a comment uses the word "live" (FR-STS-006). | [`TestFRSTS006_NothingIsLabelledLive`](tests/structural/rules_test.go) |
 | The page uses neither `innerHTML` nor `dangerouslySetInnerHTML`, so provider text is rendered as text (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
 | Every bound call on the page takes a refusal handler as its last argument, so a call without one does not compile (NFR-REL-004). | `tsc --noEmit` over [`frontend/src/api.ts`](frontend/src/api.ts), run by `test.ps1` |
+| Every Must in REQUIREMENTS.md is named by the test that verifies it; failing that, it is listed in TESTING.md's "Checked by a person" table. One verified by T is named by a test whatever the table says (Appendix C). | [`TestAppendixC_EveryMustIsNamedByATest`](tests/structural/trace_test.go) |
+| The gate runs every check in order, each throwing on failure; the build runs the gate before anything else and places the one icon on both executables (NFR-MNT-002, DEL-001, DEL-004). | [`delivery_test.go`](tests/structural/delivery_test.go) |
+| The setup program's facade imports none of the means to install alone (DEL-003). | [`TestDEL003_TheSetupFacadeOwnsNoInstallLogic`](tests/structural/delivery_test.go) |
+| The palette meets its contrast, the rings follow their three states, the page's CSP names no network origin and the globe area holds 70% of the minimum window (NFR-A11Y-002, NFR-KBD-008, NFR-SEC-002, NFR-UX-001). | [`page_test.go`](tests/structural/page_test.go) |
+| No EONET category id and no tsunami wording appears outside the adapter (DATA-007, DATA-010). | [`page_test.go`](tests/structural/page_test.go) |
 
 ### Held by the code, not yet by a test
 

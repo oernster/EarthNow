@@ -4,11 +4,7 @@ A standing reference to what is still open, what is deliberately left and what o
 
 ---
 
-## 1. Appendix C's traceability test does not exist yet
-
-REQUIREMENTS.md Appendix C promises a structural test that lists every Must and fails when no test names it. Measured on 2026-09-24: 64 of the 134 Musts are named by no test; 31 of those are marked T, the rest D, I or a timing measurement. The count is a little high, since a test named "FR-DON-001 and 005" covers 005 without spelling the full ID.
-
-Closing it means naming (or writing) a test for each T requirement, listing the D and I ones in TESTING.md's "Checked by a person" table, then adding the test that holds both lists to the document. It changes no behaviour; it is a session of work rather than a line.
+There is no open technical debt.
 
 ---
 

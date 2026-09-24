@@ -70,12 +70,14 @@ func track(times ...time.Time) event.Event {
 	return e
 }
 
+// DATA-004: an EONET event's time is the date of its latest geometry within the
+// window, the same observation that places its marker.
 func TestDATA003_LatestObservationInsideTheWindowIsTheMarker(t *testing.T) {
 	t.Parallel()
 	storm := track(noon.Add(-30*time.Hour), noon.Add(-12*time.Hour), noon.Add(-6*time.Hour))
 	o, ok := OneDay.Latest(storm, noon)
-	if !ok || o.Where.Lat != 2 {
-		t.Errorf("24 h: got %v, %v; want the newest point", o, ok)
+	if !ok || o.Where.Lat != 2 || !o.At.Equal(noon.Add(-6*time.Hour)) {
+		t.Errorf("24 h: got %v, %v; want the newest point and its time", o, ok)
 	}
 	o, ok = ThreeDays.Latest(storm, noon)
 	if !ok || o.Where.Lat != 2 {

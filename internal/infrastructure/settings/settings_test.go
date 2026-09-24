@@ -123,6 +123,7 @@ func TestASaveWhoseFolderCannotBeMadeFails(t *testing.T) {
 	}
 }
 
+// NFR-REL-001: a startup failure is carried on, never the end of the run.
 func TestAMachineWithNoDataFolderStillStarts(t *testing.T) {
 	t.Parallel()
 	store := New("")

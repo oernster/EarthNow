@@ -147,8 +147,10 @@ impure domain, a second composition root, a provider named outside its own
 package, a file over 400 lines or in the danger band, an undocumented exported
 type, the product's name or the donate address written outside
 `internal/product` and a wire shape that differs between the Go DTOs and
-`frontend/src/types.ts`. [ARCHITECTURE.md](ARCHITECTURE.md) lists each test
-beside the invariant it guards.
+`frontend/src/types.ts`. It also holds the traceability test: every Must in
+REQUIREMENTS.md is named by a test; failing that, it is listed in the table
+under "Checked by a person" below, where each ID is spelt in full. [ARCHITECTURE.md](ARCHITECTURE.md)
+lists each test beside the invariant it guards.
 
 ### The page
 
@@ -233,17 +235,22 @@ recorded there, in section 3.1.
 
 | Check | How |
 |---|---|
-| The globe draws with its texture, turns after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, 002, 005, 007) | Leave it, drag it, select an event on the far side. |
-| Reset view returns to the fit altitude; the whole globe fits the globe area (FR-GLB-008, 013) | Zoom, reset, resize the window. |
-| Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, 005, 006, 009) | Look. |
+| The Phase 0 spike (FR-SPK-001, FR-SPK-002, FR-SPK-003, FR-SPK-004, FR-SPK-005, FR-SPK-006, FR-SPK-007) | Its measured results, section 3.1 of REQUIREMENTS.md. |
+| The globe draws with its texture, turns after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, FR-GLB-002, FR-GLB-005, FR-GLB-007) | Leave it, drag it, select an event on the far side. |
+| Reset view returns to the fit altitude; the whole globe fits the globe area; the focus animation looks like one second (FR-GLB-008, FR-GLB-013, NFR-UX-003) | Zoom, reset, resize the window. |
+| Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look. |
 | A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |
 | Activating a marker opens its detail (FR-SEL-001) | Click one. |
 | The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 600 (NFR-UX-002). |
 | The keyboard works with no click at start (NFR-KBD-003) | Launch, press Tab; the log records each focus attempt. |
 | The guide names every button and category (FR-HLP-004); categories differ by emoji alone (NFR-A11Y-001) | Read the guide. |
 | Credits and notices (NFR-LEG-002, FR-GEO-008) | Read About and `THIRD_PARTY_NOTICES`. |
-| A panic leaves a record (NFR-REL-002) | A planted panic in a debug build; read the log. |
-| Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001 to 004) | The log and the frame-time log on the reference machine. |
+| One dark palette in the window; the setup program's theme toggle shows the mode it switches to (NFR-UX-005, NFR-UX-004) | Look at the window; press the setup program's toggle both ways. |
+| Nothing is fetched from the donate address; no feature depends on a donation (FR-DON-009) | Read `internal/product` and `app.go`'s `Donate`. |
+| The domain holds every datum DATA-001 lists (DATA-001) | Read `internal/domain/event` against the list. The retrieved-at time lives in the store's snapshot; occurred and observed at are one sighting's `At`. |
+| A panic leaves a record; a panic on a goroutine the application starts is recovered, logged and shown (NFR-REL-002, NFR-REL-003) | A planted panic in a debug build, on the main path and on each goroutine; read the log and the status popover. |
+| A failure found at startup reaches the window rather than ending the run (NFR-REL-001) | Launch with the data folder unwritable; the window opens and says so. |
+| Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log and the frame-time log on the reference machine. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 
 ## See also

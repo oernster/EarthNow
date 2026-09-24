@@ -79,6 +79,36 @@ func TestSuccessfulFetchIsCached(t *testing.T) {
 	}
 }
 
+// DATA-009: the cache holds the set, its retrieved-at and its validator, less any
+// event with nothing inside the widest window: eight days old is discarded, an
+// event with one sighting inside the week is kept whole.
+func TestDATA009_TheCacheDiscardsWhatTheWidestWindowCannotShow(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	cache := &fakeCache{}
+	g := NewGlobe(NewStore(clock), clock, nil)
+	g.UseCache(cache)
+	week := 7 * 24 * time.Hour
+	old := ev(event.USGS, "old", event.Earthquake, week+24*time.Hour)
+	track := ev(event.USGS, "track", event.Earthquake, week+time.Hour)
+	track.Observations = append(track.Observations, event.Observation{At: noon.Add(-time.Hour)})
+	fresh := quake("fresh", 3, "")
+	p := &fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{old, track, fresh}, Validator: "v1"}}
+	_, _ = g.Refresh(context.Background(), p)
+	held := cache.held[event.USGS]
+	var ids []string
+	for _, e := range held.Events {
+		ids = append(ids, e.ProviderEventID)
+	}
+	if len(ids) != 2 || ids[0] == "old" || ids[1] == "old" || held.Validator != "v1" || !held.RetrievedAt.Equal(noon) {
+		t.Errorf("cached %v, validator %q, retrieved %v; want track and fresh", ids, held.Validator, held.RetrievedAt)
+	}
+	if len(held.Events[0].Observations)+len(held.Events[1].Observations) != 3 {
+		t.Error("a kept event lost its older sightings")
+	}
+}
+
+// NFR-REL-001: an unreadable cache at startup is a stated notice in the window.
 func TestUnreadableCacheIsANotice(t *testing.T) {
 	t.Parallel()
 	clock := &fakeClock{noon}

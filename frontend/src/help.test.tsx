@@ -134,13 +134,20 @@ describe('the Help menu', () => {
 })
 
 describe('FR-RAIL-002 the rail', () => {
-    it('holds its buttons in the stated order', () => {
+    // FR-DON-008: donate is last, straight after Help. NFR-A11Y-003: every rail
+    // button is icon-only, so each carries its name as tooltip and accessible name.
+    it('holds its buttons in the stated order, FR-DON-008 donate last, NFR-A11Y-003 each named', () => {
         const noop = () => undefined
         render(<Rail autoRotate={false} attention={false} onToggleRotate={noop} onResetView={noop} onZoom={noop}
             onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
-        const labels = Array.from(document.querySelectorAll('.rail-btn')).map(b => b.getAttribute('aria-label'))
+        const buttons = Array.from(document.querySelectorAll('.rail-btn'))
+        const labels = buttons.map(b => b.getAttribute('aria-label'))
         expect(labels).toEqual(['Start rotating', 'Reset view', 'Zoom in', 'Zoom out', 'Refresh now',
             'Provider status', 'Settings', 'Help', donateLabel('')])
+        for (const b of buttons) {
+            expect(b.getAttribute('aria-label')).toBeTruthy()
+            expect(b.getAttribute('data-tip')).toBe(b.getAttribute('aria-label'))
+        }
     })
 
     it('zooms in and out from its buttons', () => {
@@ -236,7 +243,7 @@ describe('FR-HLP-006 a surface under a dialog', () => {
 describe('FR-DON the donate button', () => {
     afterEach(() => { delete (window as unknown as {go?: unknown}).go })
 
-    it('FR-DON-001 and 005 is a rail button at its foot, named as PigeonPost names it', () => {
+    it('FR-DON-001 and FR-DON-005 is a rail button at its foot, named as PigeonPost names it', () => {
         const onDonate = vi.fn()
         const noop = () => undefined
         // The name arrives from the Go side (internal/product) through the context.

@@ -20,6 +20,22 @@ func serve(t *testing.T, h http.HandlerFunc) (*Client, string) {
 	return New(srv.Client(), capBytes, u.Host), srv.URL
 }
 
+// FR-PRV-002: EONET labels its JSON application/rss+xml (measured 2026-09-23).
+// The client hands the body on whatever the label says; Response carries no
+// Content-Type, so no adapter can refuse a body for its label.
+func TestFRPRV002_ABodyIsHandedOnWhateverItsContentType(t *testing.T) {
+	t.Parallel()
+	const body = `{"events":[]}`
+	c, base := serve(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(body))
+	})
+	got, err := c.Get(context.Background(), base+"/api/v3/events", "")
+	if err != nil || string(got.Body) != body {
+		t.Errorf("Get = %q, %v; want the JSON body whatever its label", got.Body, err)
+	}
+}
+
 func TestFRPRV004_SendsValidatorAndReadsNotModified(t *testing.T) {
 	t.Parallel()
 	c, base := serve(t, func(w http.ResponseWriter, r *http.Request) {

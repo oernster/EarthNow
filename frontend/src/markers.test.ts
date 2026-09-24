@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {rescale, sprite} from './markers'
+import {fitAltitude, rescale, sprite, viewHalfAngle} from './markers'
 import type {EventDTO} from './types'
 
 const wildfire = {category: 'WILDFIRE', band: 0} as EventDTO
@@ -15,6 +15,22 @@ describe('marker textures', () => {
     it.each([false, true])('are marked sRGB (selected %s)', selected => {
         const material = sprite(wildfire, selected, 1).material as THREE.SpriteMaterial
         expect(material.map?.colorSpace).toBe(THREE.SRGBColorSpace)
+    })
+})
+
+describe('FR-GLB-013 the fit altitude', () => {
+    // The globe's silhouette spans tan(its angular radius) against tan(the
+    // narrower half-angle) of the shorter side. The camera stands at the altitude
+    // plus one globe radius from the centre.
+    const drawnShare = (camera: THREE.PerspectiveCamera) => {
+        const angularRadius = Math.asin(1 / (1 + fitAltitude(camera)))
+        return Math.tan(angularRadius) / Math.tan(viewHalfAngle(camera))
+    }
+
+    it.each([[50, 1264 / 761], [50, 0.6], [50, 1]])('draws the globe at 85 to 92%% of the shorter side (fov %s, aspect %s)', (fov, aspect) => {
+        const share = drawnShare(new THREE.PerspectiveCamera(fov, aspect))
+        expect(share).toBeGreaterThanOrEqual(0.85)
+        expect(share).toBeLessThanOrEqual(0.92)
     })
 })
 

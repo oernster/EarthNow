@@ -79,7 +79,9 @@ func (g *Globe) setNotice(n string) {
 	g.notice = n
 }
 
-// save writes a provider's set to the cache after a successful fetch.
+// save writes a provider's set to the cache after a successful fetch, less any
+// event with no sighting inside the widest window, which no window can show
+// (DATA-009).
 func (g *Globe) save(p event.Provider) {
 	g.mu.Lock()
 	cache := g.cache
@@ -88,9 +90,25 @@ func (g *Globe) save(p event.Provider) {
 		return
 	}
 	snap, _ := g.store.Snapshot(p)
+	snap.Events = showable(snap.Events, g.clock.Now().Add(-window.Widest.Length))
 	if err := cache.Save(p, snap); err != nil {
 		g.setNotice("Events could not be cached: " + err.Error())
 	}
+}
+
+// showable keeps each event with at least one sighting at or after cutoff,
+// whole, sightings before it included.
+func showable(events []event.Event, cutoff time.Time) []event.Event {
+	kept := make([]event.Event, 0, len(events))
+	for _, e := range events {
+		for _, o := range e.Observations {
+			if !o.At.Before(cutoff) {
+				kept = append(kept, e)
+				break
+			}
+		}
+	}
+	return kept
 }
 
 // NewGlobe builds the use case over its collaborators.

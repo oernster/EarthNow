@@ -21,4 +21,14 @@ describe('FR-FLT-001 the key offers every category', () => {
         expect(count('Volcano')).toBe('0')
         expect(screen.getByRole('button', {name: 'All events'})).toBeTruthy()
     })
+
+    // FR-KEY-001: each row is the category's emoji, then its name.
+    it('FR-KEY-001 draws each category as its emoji beside its name', () => {
+        render(<Key counts={{}} providers={[]} hiddenCategories={new Set()} hiddenProviders={new Set()}
+            onToggleCategory={noop} onToggleProvider={noop} onShowAll={noop}/>)
+        const rows = screen.getAllByRole('button', {pressed: true})
+        expect(rows.map(r => [r.querySelector('.key-emoji')!.textContent, r.querySelector('.key-name')!.textContent]))
+            .toEqual(CATEGORIES.map(c => [c.emoji, c.name]))
+        for (const r of rows) expect(r.firstElementChild!.className).toBe('key-emoji')
+    })
 })

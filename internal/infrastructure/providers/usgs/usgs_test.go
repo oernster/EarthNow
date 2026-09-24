@@ -42,6 +42,11 @@ func TestFRPRV003_URLPicksTheHighestFeedNotAboveTheMinimum(t *testing.T) {
 	}
 }
 
+// fixtureDepthKm is the first fixture quake's third coordinate, pr71534228.
+const fixtureDepthKm = 42.45
+
+// DATA-004: a USGS event's time is properties.time. DATA-010: its depth is kept
+// in kilometres as the feed gives it.
 func TestParseCapturedFixture(t *testing.T) {
 	t.Parallel()
 	all, dropped, err := Parse(fixture(t), AllMagnitudes)
@@ -56,7 +61,7 @@ func TestParseCapturedFixture(t *testing.T) {
 	if !o.At.Equal(time.UnixMilli(1790167038460)) || o.Measurement.Value != 3.21 || o.Measurement.Unit != "md" || o.Precision != event.Instant {
 		t.Errorf("first observation = %+v", o)
 	}
-	if first.Extras.DepthKm == nil || first.UpdatedAt.IsZero() || first.SourceURL != "https://earthquake.usgs.gov/earthquakes/eventpage/pr71534228" {
+	if first.Extras.DepthKm == nil || *first.Extras.DepthKm != fixtureDepthKm || first.UpdatedAt.IsZero() || first.SourceURL != "https://earthquake.usgs.gov/earthquakes/eventpage/pr71534228" {
 		t.Errorf("first extras = %+v", first)
 	}
 	atThree, _, _ := Parse(fixture(t), ownerDefault)
@@ -79,6 +84,8 @@ func TestFRPRV012_UnusableBodyIsAnError(t *testing.T) {
 	}
 }
 
+// DATA-012: a feature typed other than earthquake keeps its type and maps to
+// Other; a deleted one is left out. DATA-010: the tsunami flag is kept.
 func TestFRPRV013_MalformedFeaturesDroppedWithdrawnOnesLeftOut(t *testing.T) {
 	t.Parallel()
 	body := `{"features":[

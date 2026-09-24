@@ -2,6 +2,7 @@ package event
 
 import "testing"
 
+// DATA-011: no cross-category severity scale: a storm's measurement sizes nothing.
 func TestFRMRK003_FRMRK004_Bands(t *testing.T) {
 	t.Parallel()
 	quake := Event{Category: Earthquake}

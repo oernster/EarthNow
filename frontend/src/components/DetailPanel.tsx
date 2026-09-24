@@ -63,7 +63,7 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
                 {event.measurement && <><dt>Measurement</dt><dd>{event.measurement}</dd></>}
                 {event.description && <><dt>Source text</dt><dd>{event.description}</dd></>}
                 <dt>Provider</dt><dd>{event.provider}</dd>
-                <dt>Retrieved</dt><dd>{event.retrieved}<br/>{utc(event.retrievedAt, false)}</dd>
+                <dt>Retrieved</dt><dd>{event.retrieved}<br/>{utc(event.retrievedAt, false)}<br/>{local(event.retrievedAt, false)} local</dd>
                 {event.sourceUrl && <><dt>Source</dt><dd>
                     <button data-stop className="link" onClick={() => void api.openSource(event.sourceUrl, onProblem)}>Open the source page</button>
                 </dd></>}

@@ -96,6 +96,7 @@ func TestNFROBS001_RefreshAnswersItsOutcome(t *testing.T) {
 	}
 }
 
+// DATA-011: a measurement is shown with its source unit as given ("3.21 md").
 func TestViewWordsEachEvent(t *testing.T) {
 	t.Parallel()
 	clock := &fakeClock{noon}

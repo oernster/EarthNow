@@ -3,6 +3,7 @@ package geo
 import (
 	"bytes"
 	"compress/gzip"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -44,6 +45,31 @@ func TestFRGEO_KnownPoints(t *testing.T) {
 	for _, c := range cases {
 		if got := g.Describe(c.lat, c.lng); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// FR-GEO-005: directions round to the eight compass points and distances to
+// whole kilometres, so the line claims no precision the source lacks.
+func TestFRGEO005_DirectionsAndDistancesAreRounded(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		lat, lng float64
+		want     string
+	}{
+		{1, 0, "N"}, {1, 1, "NE"}, {0, 1, "E"}, {-1, 1, "SE"},
+		{-1, 0, "S"}, {-1, -1, "SW"}, {0, -1, "W"}, {1, -1, "NW"},
+		{1, 0.3, "N"}, {0.3, 1, "E"},
+	}
+	for _, c := range cases {
+		if got := compass(0, 0, c.lat, c.lng); got != c.want {
+			t.Errorf("compass to (%v, %v) = %s, want %s", c.lat, c.lng, got, c.want)
+		}
+	}
+	whole := regexp.MustCompile(`^(?:[A-Z][a-z]+ [a-z]+; )?\d{1,3}(?:,\d{3})* km (?:N|NE|E|SE|S|SW|W|NW) of `)
+	for _, p := range [][2]float64{{69.70, 19.10}, {30.0, -40.0}, {61.899, -150.919}, {-17.0, 179.9}} {
+		if line := gazetteer(t).Describe(p[0], p[1]); !whole.MatchString(line) {
+			t.Errorf("%q does not give a whole number of kilometres and a compass point", line)
 		}
 	}
 }
