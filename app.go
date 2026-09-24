@@ -182,16 +182,16 @@ func (a *App) nudge() {
 	}
 }
 
-// RefreshNow is the manual refresh (FR-PRV-009, FR-PRV-010). It answers an
-// empty string when started, else when a refresh becomes available.
-func (a *App) RefreshNow() string {
-	ok, available := a.sched.Manual()
-	if !ok {
-		return "Refresh available " + freshness.Until(available, time.Now())
+// RefreshNow is the manual refresh (FR-PRV-009, FR-PRV-010). It answers when
+// the last manual refresh was made, in Unix milliseconds: this one when it
+// starts, the earlier one when the cooldown refuses it.
+func (a *App) RefreshNow() int64 {
+	ok, last := a.sched.Manual()
+	if ok {
+		log.Printf("manual refresh")
+		a.nudge()
 	}
-	log.Printf("manual refresh")
-	a.nudge()
-	return ""
+	return last.UnixMilli()
 }
 
 // View answers what to show for a window and the categories and providers

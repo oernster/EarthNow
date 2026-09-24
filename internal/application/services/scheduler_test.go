@@ -89,16 +89,16 @@ func TestFRPRV009_FRPRV010_ManualRefreshWithCooldown(t *testing.T) {
 	s.Succeeded(event.USGS)
 	s.Succeeded(event.EONET)
 	clock.now = noon.Add(5 * time.Second)
-	if ok, _ := s.Manual(); !ok {
-		t.Fatal("first manual refresh refused")
+	if ok, at := s.Manual(); !ok || !at.Equal(noon.Add(5*time.Second)) {
+		t.Fatalf("first manual refresh = %v at %v, want started now", ok, at)
 	}
 	if got := names(s.Due()); got != "USGS EONET " {
 		t.Errorf("after manual due = %q", got)
 	}
 	clock.now = noon.Add(20 * time.Second)
-	ok, available := s.Manual()
-	if ok || !available.Equal(noon.Add(35*time.Second)) {
-		t.Errorf("manual within cooldown = %v, available %v", ok, available)
+	ok, last := s.Manual()
+	if ok || !last.Equal(noon.Add(5*time.Second)) {
+		t.Errorf("manual within cooldown = %v, last refreshed %v, want the refresh at 5 s", ok, last)
 	}
 	s.Succeeded(event.USGS)
 	clock.now = noon.Add(36 * time.Second)

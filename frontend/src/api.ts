@@ -13,7 +13,7 @@ interface Bound {
     SaveSettings(chosen: SettingsDTO): Promise<SettingsDTO>
     Place(lat: number, lng: number): Promise<string>
     OpenSource(link: string): Promise<void>
-    RefreshNow(): Promise<string>
+    RefreshNow(): Promise<number>
     About(): Promise<AboutDTO>
     Licence(): Promise<string>
     Notices(): Promise<string>
@@ -53,7 +53,7 @@ export const api = {
     saveSettings: (chosen: SettingsDTO, onRefused: Refused) => call(b => b.SaveSettings(chosen), onRefused),
     place: (lat: number, lng: number, onRefused: Refused) => call(b => b.Place(lat, lng), onRefused),
     openSource: (link: string, onRefused: Refused) => call(b => b.OpenSource(link), onRefused),
-    // refreshNow answers "" when a refresh started, else when one becomes available.
+    // refreshNow answers when the last manual refresh was made, Unix ms (FR-PRV-010).
     refreshNow: (onRefused: Refused) => call(b => b.RefreshNow(), onRefused),
     about: (onRefused: Refused) => call(b => b.About(), onRefused),
     licence: (onRefused: Refused) => call(b => b.Licence(), onRefused),

@@ -159,14 +159,15 @@ func (s *Scheduler) MarkRefreshing(providers []dto.Provider) {
 }
 
 // Manual makes every idle provider due now (FR-PRV-009), unless the last
-// manual refresh was within ManualCooldown; then it answers false and when a
-// refresh becomes available (FR-PRV-010).
+// manual refresh was within ManualCooldown; then it answers false (FR-PRV-010).
+// Either way it answers when the last manual refresh was made: now when this
+// one starts, the earlier one when this one is refused.
 func (s *Scheduler) Manual() (bool, time.Time) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := s.clock.Now()
-	if available := s.lastManual.Add(ManualCooldown); !s.lastManual.IsZero() && now.Before(available) {
-		return false, available
+	if !s.lastManual.IsZero() && now.Before(s.lastManual.Add(ManualCooldown)) {
+		return false, s.lastManual
 	}
 	s.lastManual = now
 	for _, st := range s.states {

@@ -9,7 +9,7 @@ import {GlobeView, type GlobeHandle} from './components/GlobeView'
 import {Key} from './components/Key'
 import {Rail} from './components/Rail'
 import {SettingsDialog} from './components/SettingsDialog'
-import {StatusLine} from './components/StatusLine'
+import {lastRefreshed, StatusLine} from './components/StatusLine'
 import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {TimeWindow} from './components/TimeWindow'
 import {settleKeyboard} from '../../installer/frontend/dist/settle-keyboard.js'
@@ -64,8 +64,11 @@ export default function App() {
         void api.saveSettings(next, onProblem).then(held => { if (held) setSettings(held) })
     }, [onProblem])
 
+    // FR-PRV-010: every press says when the last manual refresh was made, so a
+    // press the cooldown refused still shows the refresh that stands.
+    const [lastRefresh, setLastRefresh] = useState<number | null>(null)
     const refresh = () => {
-        void api.refreshNow(onProblem).then(wait => { if (wait !== null) setProblem(wait) })
+        void api.refreshNow(onProblem).then(at => { if (at !== null) setLastRefresh(at) })
     }
 
     // NFR-KBD-002: the window starts neutral while still holding the keyboard, so the
@@ -117,7 +120,8 @@ export default function App() {
             {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
                 onSelect={setSelected} onProblem={onProblem}/>}
-            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}/>
+            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}
+                note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
