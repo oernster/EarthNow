@@ -24,7 +24,7 @@ export default defineConfig({
             // the Go side's: they wire the parts together and are checked by eye.
             exclude: ['src/**/*.test.{ts,tsx}', 'src/test-setup.ts', 'src/main.tsx', 'src/App.tsx'],
             reporter: ['text-summary'],
-            thresholds: {statements: 82.59, branches: 75.78, functions: 80.22, lines: 84.69},
+            thresholds: {statements: 83.71, branches: 76.24, functions: 81.75, lines: 85.67},
         },
     },
 })

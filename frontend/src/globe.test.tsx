@@ -10,7 +10,7 @@ describe('FR-GLB-009 without WebGL2', () => {
     it('states WebGL2 as the missing requirement in place of the globe', () => {
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
 
-        render(<GlobeView events={[]} selectedId={null} autoRotate={false} secondsPerRevolution={1} cloudImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}}
+        render(<GlobeView events={[]} selectedId={null} autoRotate={false} secondsPerRevolution={1} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}}
             onSelect={noop} onProblem={noop}/>)
 
         expect(screen.getByRole('alert').textContent).toBe(NO_WEBGL2)

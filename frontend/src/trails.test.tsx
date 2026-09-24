@@ -35,7 +35,7 @@ describe('FR-TRL-001 which events draw a trail', () => {
 describe('FR-TRL-002 the trail on the globe', () => {
     it('hands the globe each storm faded from faint to strong at the marker altitude', () => {
         fake = fakeGlobe()
-        const {result, rerender} = renderHook(({trails}) => useGlobeLayers('', false, null, trails),
+        const {result, rerender} = renderHook(({trails}) => useGlobeLayers('', '', false, null, trails),
             {initialProps: {trails: [storm]}})
         act(() => result.current.attach(fake.g as never))
         expect(fake.calls).toContainEqual(['pathPoints', ['trail']])
@@ -55,7 +55,7 @@ describe('FR-TRL-004 the Settings box', () => {
     it('offers "Show storm tracks" and applies a change at once', () => {
         const onChange = vi.fn()
         const settings = {autoRotate: true, magnitude: '2.5', speed: 'normal', windowKey: '24h', hiddenCategories: [],
-            hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true} satisfies SettingsDTO
+            hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true, burntShown: false} satisfies SettingsDTO
         render(<SettingsDialog settings={settings} choices={{magnitudes: [], speeds: []}} onChange={onChange} onClose={() => undefined}/>)
         const box = screen.getByLabelText('Show storm tracks') as HTMLInputElement
         expect(box.checked).toBe(true)

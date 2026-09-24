@@ -30,6 +30,11 @@ export function SettingsDialog({settings, choices, onChange, onClose}: Props) {
                 onChange={e => onChange({trailsShown: e.target.checked})}/>
             Show storm tracks
         </label>
+        <label className="field-row">
+            <input data-stop type="checkbox" checked={settings.burntShown}
+                onChange={e => onChange({burntShown: e.target.checked})}/>
+            Show burnt areas
+        </label>
         <fieldset onKeyDown={walkGroup}>
             <legend>Idle rotation speed</legend>
             {choices.speeds.map(s => <label key={s.key} className="field-row">

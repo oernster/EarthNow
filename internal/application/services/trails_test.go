@@ -19,6 +19,21 @@ func TestFRTRL001_AStormsTrailReachesTheWireAsPairs(t *testing.T) {
 	}
 }
 
+func TestFRBA011_BurntAreasStartHiddenAndTheChoiceIsKept(t *testing.T) {
+	t.Parallel()
+	if Defaults().BurntShown {
+		t.Error("a first run shows burnt areas")
+	}
+	store := &fakeSettings{}
+	p := NewPreferences(store, (&minimums{}).apply)
+	p.Load()
+	chosen := p.Current()
+	chosen.BurntShown = true
+	if held, _ := p.Update(chosen); !held.BurntShown || !store.saved[0].BurntShown {
+		t.Errorf("showing burnt areas was not kept (FR-BA-010): %+v", held)
+	}
+}
+
 func TestFRTRL005_TrailsStartOnAndTheChoiceIsKept(t *testing.T) {
 	t.Parallel()
 	if !Defaults().TrailsShown {

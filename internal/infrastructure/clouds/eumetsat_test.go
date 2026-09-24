@@ -14,24 +14,12 @@ import (
 
 	"github.com/oernster/EarthNow/internal/domain/cloud"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
+	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch/fetchtest"
+	"github.com/oernster/EarthNow/internal/infrastructure/pngcheck"
 )
 
-// fakeGetter answers one body and records what was asked.
-type fakeGetter struct {
-	resp    httpfetch.Response
-	err     error
-	asked   []string
-	accepts []string
-}
-
-func (f *fakeGetter) GetAccepting(_ context.Context, rawURL, _, accept string) (httpfetch.Response, error) {
-	f.asked = append(f.asked, rawURL)
-	f.accepts = append(f.accepts, accept)
-	return f.resp, f.err
-}
-
-func sourceAnswering(body []byte) (*Source, *fakeGetter) {
-	g := &fakeGetter{resp: httpfetch.Response{Body: body}}
+func sourceAnswering(body []byte) (*Source, *fetchtest.Getter) {
+	g := fetchtest.Answering(body)
 	return New(g, BaseURL), g
 }
 
@@ -66,12 +54,12 @@ func TestFRCLD004_TheNewestValidTimeIsTheTimeDimensionsDefault(t *testing.T) {
 	if want := time.Date(2026, 9, 24, 15, 0, 0, 0, time.UTC); !got.Equal(want) {
 		t.Errorf("Latest = %v, want %v", got, want)
 	}
-	u, _ := url.Parse(g.asked[0])
+	u, _ := url.Parse(g.Asked[0])
 	if u.Host != Host || u.Path != "/geoserver/mumi/worldcloudmap_ir108/ows" || u.Query().Get("request") != "GetCapabilities" {
-		t.Errorf("asked %s", g.asked[0])
+		t.Errorf("asked %s", g.Asked[0])
 	}
-	if g.accepts[0] != httpfetch.AcceptXML {
-		t.Errorf("capabilities asked for %q", g.accepts[0])
+	if g.Accepts[0] != httpfetch.AcceptXML {
+		t.Errorf("capabilities asked for %q", g.Accepts[0])
 	}
 }
 
@@ -80,6 +68,7 @@ func TestLatest_RefusesADocumentWithNoUsableTime(t *testing.T) {
 	for _, doc := range []string{
 		`<WMS_Capabilities><Dimension name="elevation" default="0"/></WMS_Capabilities>`,
 		`<WMS_Capabilities><Dimension name="time" default="yesterday"/></WMS_Capabilities>`,
+		`<WMS_Capabilities><Dimension default="2026-09-23T09:00:00Z"/></WMS_Capabilities>`,
 	} {
 		s, _ := sourceAnswering([]byte(doc))
 		if _, err := s.Latest(context.Background()); !errors.Is(err, ErrNoTime) {
@@ -99,7 +88,7 @@ func TestFRCLD016_TheImageIsAskedForAtTheListedTime(t *testing.T) {
 	if _, err := s.Image(context.Background(), at); err != nil {
 		t.Fatal(err)
 	}
-	u, _ := url.Parse(g.asked[0])
+	u, _ := url.Parse(g.Asked[0])
 	q := u.Query()
 	want := map[string]string{
 		"request": "GetMap", "layers": "mumi:worldcloudmap_ir108", "crs": "CRS:84",
@@ -145,9 +134,9 @@ func TestFRCLD012_AnythingButThePNGAskedForIsRefused(t *testing.T) {
 		body []byte
 		want error
 	}{
-		{"an XML exception served with 200", exception, ErrNotAnImage},
-		{"a PNG of another size", sourceImage(t, Width/2, Height/2), ErrWrongSize},
-		{"a PNG cut short", good[:len(good)/2], ErrNotAnImage},
+		{"an XML exception served with 200", exception, pngcheck.ErrNotAnImage},
+		{"a PNG of another size", sourceImage(t, Width/2, Height/2), pngcheck.ErrWrongSize},
+		{"a PNG cut short", good[:len(good)/2], pngcheck.ErrNotAnImage},
 	}
 	for _, c := range cases {
 		s, _ := sourceAnswering(c.body)
@@ -160,12 +149,12 @@ func TestFRCLD012_AnythingButThePNGAskedForIsRefused(t *testing.T) {
 func TestFetch_FailuresReachTheCaller(t *testing.T) {
 	t.Parallel()
 	down := errors.New("no route to host")
-	s := New(&fakeGetter{err: down}, BaseURL)
+	s := New(&fetchtest.Getter{Err: down}, BaseURL)
 	if _, err := s.Latest(context.Background()); !errors.Is(err, down) {
 		t.Errorf("err = %v, want the fetch error", err)
 	}
-	s = New(&fakeGetter{resp: httpfetch.Response{NotModified: true}}, BaseURL)
-	if _, err := s.Image(context.Background(), time.Now()); !errors.Is(err, ErrNotChanged) {
+	s = New(&fetchtest.Getter{Resp: httpfetch.Response{NotModified: true}}, BaseURL)
+	if _, err := s.Image(context.Background(), time.Now()); !errors.Is(err, httpfetch.ErrNotChanged) {
 		t.Errorf("err = %v, want ErrNotChanged", err)
 	}
 }

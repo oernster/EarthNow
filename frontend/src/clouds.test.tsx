@@ -5,7 +5,7 @@ import {fireEvent, render, screen} from '@testing-library/react'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import * as THREE from 'three'
 import {api} from './api'
-import {CLOUD_ALTITUDE, makeCloudSphere, showCloudImage} from './cloudLayer'
+import {CLOUD_ALTITUDE, makeCloudSphere, showLayerImage} from './imageLayers'
 import {Rail} from './components/Rail'
 import {guideSections} from './guide'
 import {StatusLine} from './components/StatusLine'
@@ -93,15 +93,15 @@ describe('FR-CLD-008 the cloud sphere', () => {
         const sphere = makeCloudSphere(100)
         const texture = new THREE.Texture()
         const load = vi.fn((_: string, done: (t: THREE.Texture) => void) => done(texture))
-        showCloudImage(sphere, 'data:image/png;base64,AAAA', load)
+        showLayerImage(sphere, 'data:image/png;base64,AAAA', load)
         const material = sphere.material as THREE.MeshBasicMaterial
         expect(sphere.visible).toBe(true)
         expect(material.map).toBe(texture)
         expect(material.transparent).toBe(true)
         const replaced = vi.spyOn(texture, 'dispose')
-        showCloudImage(sphere, 'data:image/png;base64,BBBB', (_, done) => done(new THREE.Texture()))
+        showLayerImage(sphere, 'data:image/png;base64,BBBB', (_, done) => done(new THREE.Texture()))
         expect(replaced).toHaveBeenCalled()
-        showCloudImage(sphere, '', load)
+        showLayerImage(sphere, '', load)
         expect(sphere.visible).toBe(false)
         expect(load).toHaveBeenCalledTimes(1)
     })
@@ -112,7 +112,7 @@ describe('FR-CLD-008 the cloud sphere', () => {
             return new THREE.Texture()
         })
         const sphere = makeCloudSphere(100)
-        showCloudImage(sphere, 'data:image/png;base64,AAAA')
+        showLayerImage(sphere, 'data:image/png;base64,AAAA')
         expect(load.mock.calls[0][0]).toBe('data:image/png;base64,AAAA')
         expect(sphere.visible).toBe(true)
     })

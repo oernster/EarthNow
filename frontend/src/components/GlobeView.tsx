@@ -47,6 +47,8 @@ interface Props {
     secondsPerRevolution: number
     // cloudImage is the drawn cloud image as a data URL; empty draws none.
     cloudImage: string
+    // burntImage is the window's drawn burnt areas (FR-BA-006); empty draws none.
+    burntImage: string
     // dayNightShown switches the day and night layer (FR-DAY-006); sun is
     // where the sun stands overhead, null until first asked.
     dayNightShown: boolean
@@ -79,7 +81,7 @@ function markerRadius(g: GlobeInstance): number {
 }
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
-    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, dayNightShown, sun, start, trailsShown, onSelect, onProblem}, ref) {
+    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, burntImage, dayNightShown, sun, start, trailsShown, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
@@ -94,7 +96,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const rotationWanted = useRef(autoRotate)
     const idleTimer = useRef<number | null>(null)
     const trails = useMemo(() => trailed(events, trailsShown), [events, trailsShown])
-    const layers = useGlobeLayers(cloudImage, dayNightShown, sun, trails)
+    const layers = useGlobeLayers(cloudImage, burntImage, dayNightShown, sun, trails)
     const opening = useRef(start)
 
     // pause stops rotation for input and restarts it after the idle delay.

@@ -132,6 +132,7 @@ func (p *Preferences) Update(chosen dto.Settings) (dto.Settings, []event.Provide
 		CloudsShown:      chosen.CloudsShown,
 		DayNightShown:    chosen.DayNightShown,
 		TrailsShown:      chosen.TrailsShown,
+		BurntShown:       chosen.BurntShown,
 	})
 	err := p.store.Save(next)
 	p.mu.Lock()
@@ -206,5 +207,6 @@ func toSettingsDTO(s ports.Settings) dto.Settings {
 		CloudsShown:      s.CloudsShown,
 		DayNightShown:    s.DayNightShown,
 		TrailsShown:      s.TrailsShown,
+		BurntShown:       s.BurntShown,
 	}
 }

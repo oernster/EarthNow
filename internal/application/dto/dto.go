@@ -83,6 +83,24 @@ type Settings struct {
 	DayNightShown bool `json:"dayNightShown"`
 	// TrailsShown is whether storm trails are drawn (FR-TRL-004).
 	TrailsShown bool `json:"trailsShown"`
+	// BurntShown is whether the burnt-area layer is drawn (FR-BA-010).
+	BurntShown bool `json:"burntShown"`
+}
+
+// BurntAreas is the burnt-area layer's state (FR-BA-008, FR-BA-009,
+// FR-BA-017). The image is asked for apart, since it is large; Key changes
+// whenever the image would, so the page asks again only then.
+type BurntAreas struct {
+	Shown bool `json:"shown"`
+	// Line is the status line; empty while the layer is hidden.
+	Line string `json:"line"`
+	// Key names the days drawn and when each arrived; empty when none draws.
+	Key string `json:"key"`
+	// Notice is a cache problem the reader should know about; empty when none.
+	Notice string `json:"notice"`
+	// Provider is GWIS's entry for the provider status popover (FR-BA-012),
+	// filled only while the layer is shown, as the cloud service's is.
+	Provider Provider `json:"provider"`
 }
 
 // Clouds is the cloud layer's state (FR-CLD-009, FR-CLD-013). The image

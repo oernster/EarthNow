@@ -82,6 +82,10 @@ func TestFRDAY007_AFileFromBeforeTheLayerStartsItShown(t *testing.T) {
 	if !got.TrailsShown {
 		t.Errorf("Load = %+v; want storm trails on", got)
 	}
+	// FR-BA-011: nor a burnt-area field, so the layer starts hidden.
+	if got.BurntShown {
+		t.Errorf("Load = %+v; want burnt areas hidden", got)
+	}
 }
 
 func TestFRDAY007_HidingTheLayerSurvivesASave(t *testing.T) {

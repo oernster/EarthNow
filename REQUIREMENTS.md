@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 32.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 33.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -38,6 +38,7 @@ edits.
 | 30 | 2026-09-24 | The start view (FR-GLB-014 to 017): at launch the globe opens facing the country the operating system's country or region setting names, at Natural Earth's label point for it, before idle rotation begins; with no usable region it opens as before and logs why. ASM-010 added. The Won't "favourites and home location" stands: nothing is chosen or kept inside EarthNow; the region is the operating system's own setting, read on the machine and sent nowhere. | Owner request: open over the reader's own part of the world. The owner chose the country or region setting over the time zone and the display language (measured on the reference machine: all three read the United Kingdom there; a UK machine often runs an en-US display language). It chose Natural Earth's label point over the capital or the outline's centre, with 1.0.0's view as the fallback. The owner also set the order of the work before the next release: this, then earthquake depth, recent-event trails and Replay the Earth, each its own amendment; no release is cut until all four are in. |
 | 31 | 2026-09-24 | Earthquake depth (FR-SEL-010 to 014): the detail panel gains a Depth row for an event whose source gives one, to one decimal with USGS's band word; a depth above sea level is worded as such; exactly 10 km is marked as often a fixed depth. Nothing changes on the globe or in the tooltip. R10 and R11 added. | Owner request, the detail panel only: "I'd resist turning the globe into a Christmas tree." DATA-010 already keeps USGS depth in kilometres (measured: `Extras.DepthKm`); nothing carried it past the domain. Measured over the cached week of 244 USGS quakes at 2.5 and above: 165 shallow, 62 intermediate, 17 deep, 77 at exactly 10 km. USGS states that 10 km is a fixed depth assigned when the data are too poor to compute one (R11); its summary feed does not say which ones, so the row says often rather than claiming this one is. |
 | 32 | 2026-09-24 | Storm trails (3.2.12, FR-TRL-001 to 005): a severe storm's fixes inside the time window are drawn as a line to its marker, oldest faintest, switched by a Settings box that starts on. The Won't "storm tracks drawn as lines" leaves 1.3 and 3.6; iceberg drift and earthquake swarms are recorded there instead. | Owner request: show where a storm has been. The owner chose storms only (measured on 2026-09-23: five storms with 6 to 14 fixes over one to three days; icebergs held 41 to 65 fixes back to 2021, which a window clips to a stub; swarms need a rule, measured at 8 groups of 5 or more within 50 km in 48 h and none of 10 or more within 20 km in a day) and a Settings box over a rail button, since the rail is full at the minimum height. Wildfire perimeters were researched apart: FIRMS gives points, NIFC's are the United States only (rejected by the owner as inconsistent) and GWIS's global burnt areas come as a daily image, a candidate for its own amendment. |
+| 33 | 2026-09-25 | The burnt-area layer (3.2.13, FR-BA-001 to 017): a Settings switch drawing GWIS's burnt areas over the globe for every UTC day the time window overlaps, fetched only while shown, a day at a time. NFR-PRIV-001 allows `maps.effis.emergency.copernicus.eu`; NFR-LEG-002 credits GWIS and names it in the non-endorsement line; NFR-PERF-007, ASM-011, ASM-012, R12 and R13 added. Scope admits the layer; GWIS vector perimeters and NIFC perimeters join the Won't list. | Owner request: show where wildfires have burnt, worldwide. The owner rejected NIFC's perimeters as the United States only. Measured on 2026-09-25: GWIS's WMS layer `nrt.ba` answers one day per request (a range answers an empty body), keyless; each day's image keeps only 11 to 25% of the day before's pixels, so it is that day's mapping and never a running total; a day not yet begun in UTC answers a valid empty image. The owner chose the rule: a window shows every day it overlaps ("if a user selects a window they should see that window"), so 7 days draws eight days; a window holding nothing mapped says so in words. A Settings switch, since the rail is full at the minimum height (amendment 29). |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -69,7 +70,7 @@ The product sentence, which settles any unclear choice:
 ### 1.3 Scope
 
 **In scope for V1 (Windows, macOS and Linux):** the globe, the three providers (NASA EONET,
-USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the day and night layer (3.2.11), the provider-neutral event model, refresh with local caching,
+USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the day and night layer (3.2.11), the burnt-area layer from GWIS (3.2.13), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
 help surfaces, the Windows build script and the bespoke setup program, the
@@ -81,8 +82,8 @@ Linux Flatpak with its cleanup script and the macOS DMG (3.5).
 - AI summaries, interpretation, predictions or forecasts;
 - push or desktop notifications;
 - a historical archive beyond the 7-day window, timeline playback;
-- NASA FIRMS hotspots, event polygons drawn as areas, iceberg drift and earthquake swarms drawn as trails;
-- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, aurora;
+- NASA FIRMS hotspots, event polygons drawn as areas, wildfire perimeters as shapes (GWIS or NIFC), iceberg drift and earthquake swarms drawn as trails;
+- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud and burnt-area layers, cloud history or animation, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
 - an update check, a system tray icon, start with Windows.
@@ -108,6 +109,9 @@ One term, one meaning, throughout.
 | **Cloud image** | One image of EUMETSAT's world cloud map: the 10.8 µm infrared brightness of the whole geostationary ring at one valid time, in plate carrée. |
 | **Valid time** | The instant a cloud image shows, as the service lists it (a new one every 3 h). |
 | **Cloud layer** | The cloud image drawn over the globe texture, its brightness mapped to opacity (FR-CLD-006). |
+| **GWIS** | The Global Wildfire Information System of the Copernicus Emergency Management Service (R12). |
+| **Burnt-area day** | One UTC calendar day of GWIS's burnt-area mapping: the image its WMS layer `nrt.ba` answers for `time=` that day. |
+| **Burnt-area layer** | The burnt-area days the time window overlaps (FR-BA-001), drawn together over the globe texture (FR-BA-006). |
 | **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
 
 ### 1.5 References
@@ -125,6 +129,8 @@ One term, one meaning, throughout.
 | R9 | PigeonPost, SymDiary (Go + Wails flatpak and DMG script references) |
 | R10 | USGS, Determining the Depth of an Earthquake, https://www.usgs.gov/programs/earthquake-hazards/determining-depth-earthquake |
 | R11 | USGS FAQ, Why do so many earthquakes occur at a depth of 10km?, https://www.usgs.gov/faqs/why-are-so-many-earthquakes-located-10-km-deep |
+| R12 | GWIS WMS, https://maps.effis.emergency.copernicus.eu/gwis (layer `nrt.ba`) |
+| R13 | GWIS data licence (CC BY 4.0), https://gwis.jrc.ec.europa.eu/about-gwis/data-license |
 
 ---
 
@@ -227,6 +233,8 @@ Every assumption has an owner and a confirm-by point.
 | ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
 | ASM-009 | NASA's Black Marble 2016 may ship inside the application with a credit line under the NASA media terms (R5), as the Blue Marble does (ASM-004). | Oliver | Before the release carrying the day and night layer |
 | ASM-010 | macOS keeps its Region setting as the region part of the `AppleLocale` preference; a Linux desktop's region is the territory of `LC_ALL`, else of `LANG` (FR-GLB-014). Only Windows is measured (the reference machine reads GB). | Oliver | On a Mac and on Linux, before the next release |
+| ASM-011 | GWIS's CC BY 4.0 licence (R13) is met by the credit in NFR-LEG-002, naming the source, the licence and that the images are redrawn. The licence is read in the snapshot of 2026-09-24; the attribution wording GWIS asks for, if any, is not. | Oliver | Before the release carrying the burnt-area layer |
+| ASM-012 | The `nrt.ba` layer keeps its name, its EPSG:4326 extent and its one-day `time` parameter at `https://maps.effis.emergency.copernicus.eu/gwis`. | Implementer | Burnt-area spike exit (FR-BA-015) |
 
 ---
 
@@ -516,6 +524,47 @@ earthquake swarms stay Won'ts (3.6).
 | FR-TRL-004 | Must | The settings dialog shall offer "Show storm tracks", applied at once and kept by the settings store (FR-SET-004). | Clearing it hides the tracks; reopening keeps it cleared. | T |
 | FR-TRL-005 | Must | When no saved choice exists, including a settings file from before this amendment, trails shall be switched on. | A first run and a 1.0.0 settings file both start with trails on. | T |
 
+#### 3.2.13 Burnt areas (amendment 33)
+
+The source is GWIS (R12), measured on 2026-09-25: WMS layer `nrt.ba` in
+EPSG:4326, keyless, no fees and no access constraints in its capabilities,
+licensed CC BY 4.0 (R13). It answers one day per request (`time=YYYY-MM-DD`; a
+range answers HTTP 200 with an empty body) and draws burnt ground in red
+(255, 0, 0) with antialiased edges. Each day is that day's own mapping, never a
+running total: the solid pixels (opacity 128 or more) of a 2048 x 1024 image
+kept 10.9% of 22 September's on 23 September and 24.8% of 23 September's on
+24 September. Days measured held 393 to 3,887 solid pixels, the largest on
+24 September, the current UTC day when measured at 23:16 UTC. A day not yet
+begun in UTC answers a valid empty image. At 2048 pixels a pixel spans about
+20 km at the equator; a 2048 image of one day was about 37.5 KB in 0.5 s, a
+4096 image about 76 KB in 0.57 s (three fetches each). Identical requests
+differ in their antialiased edges, so a change is judged on the mask of drawn
+pixels, which held steady across them. There is no vector route: the WFS
+capabilities are empty and GWIS's API serves charts only (`nrt.ba.poly` draws
+nothing). Three things are not yet measured: whether the current UTC day's
+image grows while the day runs; whether a finished day's image later changes;
+the hour at which a new day first draws (FR-BA-015).
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-BA-001 | Must | The domain shall give the burnt-area days for a time window at an instant as every UTC calendar day that begins before the instant and ends after the window's start, oldest first. | At 12:00 UTC on 24 Sep: 7 days gives 17 to 24 Sep (eight days); 24 h gives 23 and 24 Sep; 1 h gives 24 Sep alone. At 03:00 on 24 Sep, 6 h gives 23 and 24 Sep. At 00:00 on 24 Sep, 24 h gives 23 Sep alone. | T |
+| FR-BA-002 | Must | While the burnt-area layer is shown, the burnt-area provider shall retrieve each burnt-area day it does not hold as a 2048 x 1024 PNG (a width FR-BA-015 confirms) of layer `nrt.ba` over (-180, -90, 180, 90) in EPSG:4326, one request per day with `time=` that day. | Fake fetcher, 7 days at 12:00 on 24 Sep: eight GetMap requests, each carrying one day's `time=` and none a range. | T |
+| FR-BA-003 | Must | While the burnt-area layer is shown, the burnt-area provider shall retrieve every burnt-area day again once per burnt-area interval (60 min), since a day's image is not known never to change. | Fake clock over two intervals with 24 h selected: each of the two days is requested twice. | T |
+| FR-BA-004 | Must | When the time window changes while the burnt-area layer is shown, the burnt-area provider shall retrieve the burnt-area days of the new window it does not hold. | Changing from 24 h to 3 days at 12:00 on 24 Sep requests 21 and 22 Sep alone. | T |
+| FR-BA-005 | Must | While the burnt-area layer is hidden, the burnt-area provider shall make no request. | Fake clock over two intervals with the layer hidden: zero requests. | T |
+| FR-BA-006 | Must | While the burnt-area layer is shown, the globe view shall draw the union of the held images of the current window's burnt-area days, each pixel at the highest opacity any of those days gives it, in the source's own red (a look the real window confirms by eye). | Two days with disjoint pixels: both drawn. A pixel at opacity 0.4 in one day and 0.9 in another: drawn at 0.9. A held day outside the window: not drawn. | T + D |
+| FR-BA-007 | Must | The globe view shall draw the burnt-area layer over the globe texture, turning with it, beneath the cloud layer and beneath every marker. | Inspection with the layers shown: burnt areas turn with the globe and sit under cloud and markers. | D |
+| FR-BA-008 | Must | While the burnt-area layer is shown, the status area shall state the span from the oldest to the newest burnt-area day that drew anything (in UTC) with when it was last retrieved, worded "Burnt areas: 17 to 23 Sep (UTC), retrieved 12 min ago" (NFR-FRESH-002), never "live" (FR-STS-006). | 7 days at 12:00 on 24 Sep, 24 Sep empty, retrieved 12 min before: reads exactly that. One drawn day reads "Burnt areas: 23 Sep (UTC), ...". | T |
+| FR-BA-009 | Must | If every burnt-area day of the window draws nothing, then the status area shall read "Burnt areas: none mapped yet for this window". | 1 h at 12:00 on 24 Sep with 24 Sep empty: reads exactly that; the globe draws no burnt area. | T |
+| FR-BA-010 | Must | The settings dialog shall offer "Show burnt areas", applied at once and kept by the settings store (FR-SET-004). | Ticking it shows the layer; reopening keeps it ticked. | T |
+| FR-BA-011 | Must | When no saved choice exists, including a settings file from before this amendment, the burnt-area layer shall start hidden. | A first run and a 1.0.0 settings file both start hidden, with no request made. | T |
+| FR-BA-012 | Must | If a burnt-area day's fetch fails, then the burnt-area provider shall keep that day's held image where one exists, keep drawing the other days, retry with FR-PRV-006's backoff and state the reason and the day in the provider status popover under "GWIS". | Fake fetcher failing for 23 Sep alone: 22 Sep still draws; the popover names 23 Sep, the reason and the next attempt. | T |
+| FR-BA-013 | Must | If GWIS answers with anything other than a PNG of the requested size, then the burnt-area provider shall treat the answer as a failed fetch (FR-BA-012). | An empty body with status 200 and an XML body with status 200 are both refused. | T |
+| FR-BA-017 | Must | If the burnt-area layer is shown with no burnt-area day of the window held and a fetch has failed, then the status area shall read "Burnt areas: the maps could not be retrieved", with the reason in the provider status popover. | Fake fetcher failing on a first run: the status line reads exactly that; the globe draws no burnt area. | T |
+| FR-BA-014 | Must | The cache shall keep the last good image of each burnt-area day with its retrieval instant and discard days older than the widest window's, so the layer draws offline at start, marked with its age (FR-STS-004). | Start offline with three days held: they draw and the status line gives their age. A held day of 10 Sep on 24 Sep is discarded. | T |
+| FR-BA-015 | Must | Before the burnt-area layer is built, a burnt-area spike shall measure, on the reference machine: whether the current UTC day's image grows while the day runs; whether a finished day's image changes across three consecutive days of retrieval; the UTC hour at which a new day first draws; the size and fetch time of one day at 2048 and at 4096 pixels wide, choosing the width; the look by eye; NFR-PERF-007's frame time. | Its measured results recorded in this section, as the cloud spike's are in 3.2.10. | D |
+| FR-BA-016 | Must | The guide shall say that GWIS maps burnt ground from satellites one UTC day at a time, that a burn shows on the day it was mapped rather than the day the fire began, that a small burn may not show at the drawn resolution and that a short window may show none yet. | The guide's burnt-area entry names all four. | T |
+
 ### 3.3 Non-functional requirements
 
 Every performance figure is measured on the reference machine.
@@ -527,6 +576,7 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target). | Process working set sampled hourly. Accepted by the owner unmeasured (amendment 27). |
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
 | NFR-PERF-006 | Must | While idle-rotating with the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over 60 s with both layers shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005 (amendment 27). |
+| NFR-PERF-007 | Must | While idle-rotating with the burnt-area layer showing 7 days, the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the burnt-area spike, FR-BA-015, measures it). | Frame-time log over 60 s with every layer shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
 | NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
@@ -550,7 +600,7 @@ Every performance figure is measured on the reference machine.
 | NFR-SEC-001 | Must | The frontend shall render provider text as text only. | Structural test: `dangerouslySetInnerHTML` and `innerHTML` appear nowhere in `frontend/src`. |
 | NFR-SEC-002 | Must | The page's Content-Security-Policy shall let no fetch directive reach a network origin: `default-src` and `connect-src` are `'self'`, no directive names a network scheme or a wildcard. Images may also come from `data:` and `blob:`, which fetch nothing. | T reading the meta tag in `index.html`. |
 | NFR-SEC-003 | Must | The backend shall validate every coordinate (latitude in [-90, 90], longitude in [-180, 180], finite) before an event is stored. | T with out-of-range fixtures. |
-| NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the three provider hosts (EONET, USGS, GVP), plus `view.eumetsat.int` while the cloud layer is shown (FR-CLD-005). (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
+| NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the three provider hosts (EONET, USGS, GVP), plus `view.eumetsat.int` while the cloud layer is shown (FR-CLD-005) and `maps.effis.emergency.copernicus.eu` while the burnt-area layer is shown (FR-BA-005). (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
 | NFR-PRIV-002 | Must | The application shall store settings, cache and log under `%LOCALAPPDATA%\EarthNow` only. | T on the path helper. |
 | NFR-REL-001 | Must | The application shall not end the run before its window opens for any runtime failure; a failure found at startup is carried into the window as a stated problem. | T on startup paths with injected failures. |
 | NFR-REL-002 | Must | The application shall point the standard error handle at the log file as the first act of `main`, so a panic leaves a record. | I + D (planted panic in a debug build). |
@@ -564,7 +614,7 @@ Every performance figure is measured on the reference machine.
 | NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
 | NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
 | NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence and the licence text in full. | `tools/notices.py --check` in `test.ps1`: the file must equal what the shipped Go modules (`go list -deps`) and page packages (`npm ls --omit=dev`) call for. |
-| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images ("Cloud images: EUMETSAT, world cloud map (EUMETView).", ASM-007), NASA Earth Observatory for the night lights ("Night lights: NASA Earth Observatory (Black Marble 2016)."), without implying endorsement and without the NASA insignia. | I against R5. |
+| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images ("Cloud images: EUMETSAT, world cloud map (EUMETView).", ASM-007), NASA Earth Observatory for the night lights ("Night lights: NASA Earth Observatory (Black Marble 2016)."), GWIS for the burnt areas ("Burnt areas: Global Wildfire Information System (GWIS), Copernicus Emergency Management Service, CC BY 4.0; redrawn over the globe.", ASM-011), without implying endorsement and without the NASA insignia. | I against R5. |
 
 ### 3.4 Data requirements
 
@@ -597,7 +647,7 @@ Every performance figure is measured on the reference machine.
 
 ### 3.6 Won't this time (recorded so they are not re-proposed)
 
-Timeline playback; NASA FIRMS; polygons drawn as shapes; iceberg drift and earthquake swarms drawn as trails (amendment 32: no agreed swarm rule yet); the
+Timeline playback; NASA FIRMS; polygons drawn as shapes; wildfire perimeters as shapes (amendment 33: GWIS offers no vector service, measured; NIFC's cover the United States only, rejected by the owner); iceberg drift and earthquake swarms drawn as trails (amendment 32: no agreed swarm rule yet); the
 notifications; favourites and
 home location; screenshots and export; an event list or search view (Plan 16
 allows deferring it; NFR-KBD-004 makes every event reachable from the keyboard
@@ -612,7 +662,7 @@ Windows.
 ### 4.1 Legal
 
 Covered by CON-004, NFR-LEG-001 and NFR-LEG-002. EarthNow names NASA, the
-USGS, the Smithsonian's Global Volcanism Program, EUMETSAT and Natural Earth
+USGS, the Smithsonian's Global Volcanism Program, EUMETSAT, GWIS (Copernicus) and Natural Earth
 only as sources; the product name, icon and site never suggest any of them endorses it.
 
 ### 4.2 Internationalisation

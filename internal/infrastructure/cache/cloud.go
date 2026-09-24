@@ -13,8 +13,9 @@ import (
 // cloudName names the cloud image's file and its errors.
 const cloudName = "cloud"
 
-// ErrNoFolder refuses to save the cloud image on a machine with no data folder.
-var ErrNoFolder = errors.New("there is no data folder to keep the cloud image in")
+// ErrNoFolder refuses to save a layer's images (the cloud image, the burnt-area
+// days) on a machine with no data folder.
+var ErrNoFolder = errors.New("there is no data folder to keep the map images in")
 
 type cloudFile struct {
 	Schema    int       `json:"schema"`

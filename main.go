@@ -26,6 +26,7 @@ import (
 	"github.com/oernster/EarthNow/internal/infrastructure/cache"
 	"github.com/oernster/EarthNow/internal/infrastructure/clouds"
 	"github.com/oernster/EarthNow/internal/infrastructure/geo"
+	"github.com/oernster/EarthNow/internal/infrastructure/gwis"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
 	"github.com/oernster/EarthNow/internal/infrastructure/oslocale"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
@@ -115,18 +116,19 @@ func main() {
 	log.SetOutput(keepLog())
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host, clouds.Host)
+	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host, clouds.Host, gwis.Host)
 	quakes := usgs.New(client, usgs.AllMagnitudes)
 	providers := []ports.Provider{eonet.New(client), quakes, gvp.New(client)}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
 	dir, err := dataDir()
-	// With no data folder the cloud cache has no home; it then holds nothing
-	// and refuses to save, which the cloud status says (FR-CLD-014).
-	cloudDir := ""
+	// With no data folder the image layers' caches have no home; each then
+	// holds nothing and refuses to save, which its status says (FR-CLD-014,
+	// FR-BA-014).
+	layerDir := ""
 	if err == nil {
 		globe.UseCache(cache.New(filepath.Join(dir, cacheFolder), responseCap))
-		cloudDir = filepath.Join(dir, cacheFolder)
+		layerDir = filepath.Join(dir, cacheFolder)
 	} else {
 		log.Printf("no data folder: %v", err)
 		dir = ""
@@ -140,9 +142,14 @@ func main() {
 	// FR-CLD-005: the cloud service is reached only while the layer is shown;
 	// the use case asks nothing while hidden, so its host being allowed costs
 	// nothing then (NFR-PRIV-001).
-	cloudLayer := services.NewClouds(clock, clouds.New(client, clouds.BaseURL), cache.NewCloud(cloudDir, responseCap))
+	cloudLayer := services.NewClouds(clock, clouds.New(client, clouds.BaseURL), cache.NewCloud(layerDir, responseCap))
 	cloudLayer.Restore()
 	cloudLayer.SetShown(prefs.Current().CloudsShown)
+	// FR-BA-005: GWIS is reached only while the burnt-area layer is shown.
+	burntLayer := services.NewBurntAreas(clock, gwis.New(client, gwis.BaseURL), cache.NewBurnt(layerDir, responseCap))
+	burntLayer.Restore()
+	burntLayer.SetWindow(prefs.Current().WindowKey)
+	burntLayer.SetShown(prefs.Current().BurntShown)
 	help := Help{
 		About:   dto.About{Name: product.Name, Version: appVersion, Copyright: product.Copyright, Licence: product.Licence, Attributions: product.Attributions()},
 		Licence: licenceText,
@@ -156,7 +163,7 @@ func main() {
 		labels = &geo.Labels{}
 	}
 	start := services.NewStartView(oslocale.Setting{}, labels)
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, services.NewSun(clock), start, help, providers)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, burntLayer, services.NewSun(clock), start, help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

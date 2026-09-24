@@ -45,6 +45,8 @@ type Settings struct {
 	DayNightShown bool
 	// TrailsShown is whether storm trails are drawn (FR-TRL-004).
 	TrailsShown bool
+	// BurntShown is whether the burnt-area layer is drawn (FR-BA-010).
+	BurntShown bool
 }
 
 // SettingsStore keeps the settings between runs (FR-SET-004). Load starts from
@@ -109,6 +111,31 @@ type CloudSource interface {
 type CloudCache interface {
 	Load() (CloudImage, bool, error)
 	Save(CloudImage) error
+}
+
+// BurntDay is one UTC day of burnt-area mapping as retrieved (FR-BA-002): the
+// source's image, checked, whether it drew anything and when it arrived.
+type BurntDay struct {
+	Day         time.Time
+	PNG         []byte
+	Drawn       bool
+	RetrievedAt time.Time
+}
+
+// BurntSource is the burnt-area service behind its adapter. Day answers one
+// day's image and whether it drew anything; an answer that is not the image
+// asked for is an error (FR-BA-013). Compose draws several days' images as one
+// (FR-BA-006), so the page is handed pixels and fetches nothing (NFR-SEC-002).
+type BurntSource interface {
+	Day(ctx context.Context, day time.Time) ([]byte, bool, error)
+	Compose(images [][]byte) ([]byte, error)
+}
+
+// BurntCache keeps the last good image of each burnt-area day across runs
+// (FR-BA-014). Load answers false with no error when nothing is held.
+type BurntCache interface {
+	Load() ([]BurntDay, bool, error)
+	Save([]BurntDay) error
 }
 
 // Provider is one public source behind an adapter.

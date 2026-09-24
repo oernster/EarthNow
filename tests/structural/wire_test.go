@@ -32,6 +32,7 @@ var wireContract = filepath.Join("frontend", "src", "types.ts")
 // shape is a decision taken twice: once in the code and once here.
 var wireShapes = map[string]string{
 	"About":          "AboutDTO",
+	"BurntAreas":     "BurntAreasDTO",
 	"Choice":         "ChoiceDTO",
 	"Clouds":         "CloudsDTO",
 	"Event":          "EventDTO",

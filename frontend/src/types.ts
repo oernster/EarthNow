@@ -67,6 +67,18 @@ export interface SettingsDTO {
     cloudsShown: boolean
     dayNightShown: boolean
     trailsShown: boolean
+    burntShown: boolean
+}
+
+// The burnt-area layer's state (FR-BA-008, FR-BA-009, FR-BA-017). The image is
+// asked for apart; key changes whenever the image would.
+export interface BurntAreasDTO {
+    shown: boolean
+    line: string
+    key: string
+    notice: string
+    // GWIS's popover entry, filled only while shown (FR-BA-012).
+    provider: ProviderDTO
 }
 
 // The cloud layer's state (FR-CLD-009, FR-CLD-013). The image is asked for

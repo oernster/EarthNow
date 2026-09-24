@@ -209,7 +209,9 @@ The About dialog carries these credits:
   Volcanic Activity Report.
 - Place names and borders: Natural Earth.
 - Cloud images: EUMETSAT, world cloud map (EUMETView).
-- Neither NASA, the USGS, the Smithsonian nor EUMETSAT endorses EarthNow.
+- Burnt areas: Global Wildfire Information System (GWIS), Copernicus Emergency
+  Management Service, CC BY 4.0; redrawn over the globe.
+- None of NASA, the USGS, the Smithsonian, EUMETSAT or GWIS endorses EarthNow.
 
 ## Licence
 

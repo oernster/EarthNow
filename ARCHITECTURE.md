@@ -3,7 +3,8 @@
 EarthNow answers one sentence: open a globe and see what is happening on Earth
 right now. The Go side fetches three public sources of events, keeps their last
 good sets and decides what falls inside the chosen time window. While the cloud
-layer is shown it also fetches EUMETSAT's cloud image and draws it. For the
+layer is shown it also fetches EUMETSAT's cloud image and draws it; while the
+burnt-area layer is shown, GWIS's burnt areas for every day the window touches. For the
 day and night layer it works out where the sun stands, from the time alone.
 The page draws the globe and reads the answer. This document says how the code is divided, which rules
 the tests hold it to and why each design choice was made.
@@ -64,10 +65,11 @@ main.go, app.go          composition root and the Wails facade the page calls
 frontend/src             the page: React, TypeScript, globe.gl
 internal/application/
     ports                what the application needs from outside
-    services             the use cases: globe, store, scheduler, preferences, clouds, sun,
-                         start view
+    services             the use cases: globe, store, scheduler, preferences, clouds,
+                         burnt areas, sun, start view
     dto                  the shapes that cross to the page
 internal/domain/
+    burnt                the burnt-area union and wording
     cloud                the cloud layer's opacity ramp, veil and wording
     event                the provider-neutral event, magnitude bands, links
     freshness            age wording and staleness
@@ -80,7 +82,9 @@ internal/infrastructure/
     providers/usgs       USGS earthquake GeoJSON feeds
     providers/gvp        the Weekly Volcanic Activity Report
     clouds               EUMETSAT's world cloud map, drawn for the globe
-    cache                each provider's last good set and the cloud image on disk
+    gwis                 GWIS's daily burnt-area maps, composed for the globe
+    pngcheck             refusing a map answer that is not the PNG asked for
+    cache                each provider's last good set and the layers' images on disk
     settings             settings.json
     geo                  nearest place and country, plus each country's label point,
                          from embedded data
@@ -99,6 +103,10 @@ docs                     the GitHub Pages site
 
 Pure Go over values handed in; no clock, no disk, no network.
 
+- `burnt`: the union of a window's days, each pixel at the highest opacity any
+  day gives it (FR-BA-006); also the status wording: the span of days drawn in
+  UTC with its age, else none mapped yet (FR-BA-008, FR-BA-009). Which days a
+  window touches is `window`'s `Days` (FR-BA-001).
 - `cloud`: the brightness-to-opacity ramp between the thresholds the cloud
   spike measured, 65 and 90 of 255 (FR-CLD-006); the grey veil for a pixel
   with no data (FR-CLD-007); the status wording and the image's staleness
@@ -155,6 +163,12 @@ The use cases, behind the ports in
   own backoff, one shared function (FR-CLD-011). It answers the status line
   and the EUMETSAT entry for the status popover, which travels apart from the
   event providers since the key filters those.
+- `BurntAreas` runs the burnt-area layer on the same pattern: asked nothing
+  while hidden (FR-BA-005), it fetches every day the window touches once an
+  hour; when the window widens, only the days it lacks (FR-BA-002 to
+  004). A day that fails keeps its held image while the others draw
+  (FR-BA-012). It composes the drawn days into one image only when their key
+  changes, since composing decodes each day.
 - `Sun` answers where the sun stands overhead by the clock, with the twilight
   limit and the night floor, so the page draws the light without holding a
   figure of its own (FR-DAY-001, FR-DAY-004).
@@ -180,11 +194,18 @@ machine.
   the service reports errors as XML with status 200 (FR-CLD-012), then draws
   every pixel by the domain's ramp and veil. Measured on the real image: 238 ms,
   1.6 MB in and 652 KB out, once per new image.
+- `gwis` asks for one UTC day's 2048 by 1024 PNG per request, since a range
+  answers an empty body; it also says whether each drew anything. Composing a window
+  keeps each pixel at its highest opacity in the source's red. Measured against
+  the live service: 0.2 to 0.4 s a day, 376 ms to compose seven days into
+  96 KB.
+- `pngcheck` is the one check both map adapters make: a PNG, of the size asked
+  for, its size read before the pixels are decoded (FR-CLD-012, FR-BA-013).
 - `cache` keeps one JSON file per provider, stamped with a schema version and
   written beside the old one then renamed over it, so an interrupted write
   leaves the previous set whole (NFR-REL-005, CON-003). The cloud image and its
   valid time are kept the same way in `cloud.json`, through the same reader and
-  writer (FR-CLD-014).
+  writer (FR-CLD-014); so are the burnt-area days in `burnt.json` (FR-BA-014).
 - `geo` loads the embedded Natural Earth places, country outlines and Antarctic
   ice shelves and words the nearest place, its distance and its direction
   (FR-GEO-001 to 005). A point on an ice shelf lies in Antarctica, since
@@ -232,7 +253,7 @@ tests read, so it belongs to no layer.
             +--------------------+------------------+
             |            infrastructure             |
             | httpfetch, providers, clouds, cache,  |
-            | settings,                             |
+            | gwis, pngcheck, settings,             |
             | geo, runlog, window, setup            |
             +---------------------------------------+
 ```
@@ -259,7 +280,8 @@ tests read, so it belongs to no layer.
 5. **The cached sets,** put back before any fetch so the globe opens on the
    last known events marked with their age (FR-STS-004). Then the cloud layer:
    its held image restored and its shown setting applied, so a hidden layer
-   asks nothing (FR-CLD-005, FR-CLD-014).
+   asks nothing (FR-CLD-005, FR-CLD-014). The burnt-area layer likewise, with
+   the saved time window (FR-BA-005, FR-BA-014).
 6. **The help texts:** the About details from `internal/product`, plus
    `LICENSE` and `THIRD_PARTY_NOTICES` embedded from the repository root.
 7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 700, a
@@ -270,7 +292,7 @@ tests read, so it belongs to no layer.
 
 When Wails starts, the facade starts two goroutines, each with a recover at
 its top that logs the stack and tells the page (NFR-REL-003): one loads the
-gazetteer; the other drives the scheduler and the cloud layer. The driver
+gazetteer; the other drives the scheduler and the image layers. The driver
 starts every provider that is due, each fetch in a guarded goroutine of its own, emits
 `events-changed` so the page can show them refreshing (FR-STS-007), then sleeps
 until the next provider falls due, a fetch finishes or a manual refresh
@@ -278,7 +300,10 @@ arrives. Each fetch logs its start and its outcome, with the status, the event
 count and the dropped count (NFR-OBS-001), then emits `events-changed` again;
 the page answers each by asking for the view. A cloud check runs the same
 way and emits `clouds-changed`; the page then asks for the cloud state; it asks
-for the image only when the valid time has changed. The day and night layer
+for the image only when the valid time has changed. A burnt-area round emits
+`burnt-changed` and the page asks for the image only when the key has
+changed; both layers share one reader on the page (`useLayer.ts`). A change of
+window reaches the layer through the saved settings. The day and night layer
 needs no background work: while it is shown the page asks for the sun on
 showing and once a minute after (FR-DAY-004).
 
@@ -291,7 +316,7 @@ falling back to asking Wails to show the window. The page calls
 | What | Where |
 |---|---|
 | Settings | `%LOCALAPPDATA%\EarthNow\settings.json` |
-| Cache | `%LOCALAPPDATA%\EarthNow\cache`, one `<provider>.json` per provider plus `cloud.json` |
+| Cache | `%LOCALAPPDATA%\EarthNow\cache`, one `<provider>.json` per provider plus `cloud.json` and `burnt.json` |
 | Log | `%LOCALAPPDATA%\EarthNow\Log.txt`, rotating at 5 MB to `Log.previous.txt` |
 | The window's WebView2 data | `%LOCALAPPDATA%\EarthNow\webview` |
 | Installed files | `%LOCALAPPDATA%\Programs\EarthNow`, with `uninstall.exe` beside the application |
@@ -367,7 +392,8 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The page's composition root | `App.tsx` and `main.tsx` excluded from the coverage floors, checked by eye | Counting them: they wire the parts together, as `main.go` does on the Go side. |
 | Future-dated events | Shown only up to `window.ClockSkew` (15 minutes) ahead of the clock, so a slow machine clock hides nothing new | Showing any future date: GDACS published a flood alert dated days ahead, which is not an event that has happened (TECH_DEBT.md). |
 | Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
-| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`cloudLayer.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
+| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`imageLayers.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
+| The burnt areas | Each UTC day fetched and held apart, composed in Go into one image for the window and laid on a sphere beneath the clouds (`imageLayers.ts`) | One image per day on the page: up to eight textures and spheres, decoded on the page. A date range in one request: GWIS answers an empty body (measured). |
 | The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |
 | Drawing day and night | three-globe's own lit material kept, the night lights added as its emissive map; one light factor per point, from the world-space normal against a world-space sun, scales the day by it and the lights by what is left (`dayNight.ts`). The cloud sphere dims by the same uniforms. | The example's unlit shader in view space: three-globe's default globe is a Phong material lit by globe.gl's ambient and directional lights (read in source), so an unlit shader would change the day side and hiding the layer would not restore the globe as before (FR-DAY-008). View space also needs the camera's turn fed in every frame, where world space needs nothing while only the camera moves. |
 | The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |

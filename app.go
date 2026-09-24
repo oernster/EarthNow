@@ -23,9 +23,6 @@ import (
 // changedEvent tells the page to ask for a fresh view.
 const changedEvent = "events-changed"
 
-// cloudsEvent tells the page to ask for the cloud layer's state again.
-const cloudsEvent = "clouds-changed"
-
 // ErrUnsafeURL refuses a link that is not an absolute https URL (FR-SEL-006).
 var ErrUnsafeURL = errors.New("not an https link")
 
@@ -37,6 +34,7 @@ type App struct {
 	sched  *services.Scheduler
 	prefs  *services.Preferences
 	clouds *services.Clouds
+	burnt  *services.BurntAreas
 	sun    *services.Sun
 	start  *services.StartView
 	help   Help
@@ -53,12 +51,12 @@ type Help struct {
 }
 
 // NewApp builds the facade.
-func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, sun *services.Sun, start *services.StartView, help Help, providers []ports.Provider) *App {
+func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, burnt *services.BurntAreas, sun *services.Sun, start *services.StartView, help Help, providers []ports.Provider) *App {
 	byName := map[event.Provider]ports.Provider{}
 	for _, p := range providers {
 		byName[p.Name()] = p
 	}
-	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, sun: sun, start: start, help: help, byName: byName, wake: make(chan struct{}, 1)}
+	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, burnt: burnt, sun: sun, start: start, help: help, byName: byName, wake: make(chan struct{}, 1)}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -117,10 +115,10 @@ func (a *App) loadGazetteer() {
 	log.Printf("gazetteer loaded in %v", time.Since(t0))
 }
 
-// drive starts whatever the scheduler and the cloud layer say is due, then
+// drive starts whatever the scheduler and the image layers say is due, then
 // sleeps until the next falls due, a fetch finishes or a manual refresh
 // arrives. Every timing rule lives in the application (FR-PRV-005 to 010,
-// FR-CLD-004).
+// FR-CLD-004, FR-BA-003).
 func (a *App) drive() {
 	for {
 		due := a.sched.Due()
@@ -136,9 +134,12 @@ func (a *App) drive() {
 		if a.clouds.Due() {
 			go a.guard("clouds", a.fetchClouds)
 		}
+		if a.burnt.Due() {
+			go a.guard("burnt areas", a.fetchBurnt)
+		}
 		var timer *time.Timer
 		var fire <-chan time.Time
-		if next := earliest(a.sched.NextWake(), a.clouds.NextWake()); !next.IsZero() {
+		if next := earliest(a.sched.NextWake(), a.clouds.NextWake(), a.burnt.NextWake()); !next.IsZero() {
 			timer = time.NewTimer(max(time.Until(next), 0))
 			fire = timer.C
 		}
@@ -184,31 +185,6 @@ func (a *App) fetch(p ports.Provider) {
 	a.nudge()
 }
 
-// fetchClouds runs one cloud check and logs what happened (NFR-OBS-001). A
-// panic is recorded as a failure first, as fetch does, so the check is retried.
-func (a *App) fetchClouds() {
-	defer func() {
-		if r := recover(); r != nil {
-			_, _ = a.clouds.Refresh(canceled())
-			a.nudge()
-			panic(r)
-		}
-	}()
-	log.Printf("clouds: check start")
-	t0 := time.Now()
-	fresh, err := a.clouds.Refresh(a.ctx)
-	switch {
-	case err != nil:
-		log.Printf("clouds: check failed after %v: %v; next attempt %v", time.Since(t0), err, a.clouds.NextWake())
-	case fresh:
-		log.Printf("clouds: new image in %v", time.Since(t0))
-	default:
-		log.Printf("clouds: no newer image (%v)", time.Since(t0))
-	}
-	wruntime.EventsEmit(a.ctx, cloudsEvent)
-	a.nudge()
-}
-
 // canceled answers a context already ended, so a Refresh made only to record
 // a failure reaches no network.
 func canceled() context.Context {
@@ -217,12 +193,15 @@ func canceled() context.Context {
 	return ctx
 }
 
-// earliest answers the sooner of two wake times, where zero means none.
-func earliest(a, b time.Time) time.Time {
-	if a.IsZero() || (!b.IsZero() && b.Before(a)) {
-		return b
+// earliest answers the soonest of the wake times, where zero means none.
+func earliest(times ...time.Time) time.Time {
+	var soonest time.Time
+	for _, t := range times {
+		if soonest.IsZero() || (!t.IsZero() && t.Before(soonest)) {
+			soonest = t
+		}
 	}
-	return a
+	return soonest
 }
 
 // nudge wakes the driver without ever blocking on it.
@@ -263,7 +242,7 @@ func (a *App) View(windowKey string, hiddenCategories, hiddenProviders []string)
 		}
 	}
 	a.sched.MarkRefreshing(view.Providers)
-	view.Notice = services.JoinNotices(view.Notice, a.prefs.Notice(), a.clouds.Status().Notice)
+	view.Notice = services.JoinNotices(view.Notice, a.prefs.Notice(), a.clouds.Status().Notice, a.burnt.Status().Notice)
 	return view
 }
 
@@ -282,6 +261,10 @@ func (a *App) SaveSettings(chosen dto.Settings) dto.Settings {
 	held, refetch := a.prefs.Update(chosen)
 	a.clouds.SetShown(held.CloudsShown)
 	wruntime.EventsEmit(a.ctx, cloudsEvent)
+	// The burnt-area days follow the window as well as the switch (FR-BA-004).
+	a.burnt.SetShown(held.BurntShown)
+	a.burnt.SetWindow(held.WindowKey)
+	wruntime.EventsEmit(a.ctx, burntEvent)
 	a.nudge()
 	for _, p := range refetch {
 		log.Printf("%s: query changed; fetching again", p)
@@ -292,12 +275,6 @@ func (a *App) SaveSettings(chosen dto.Settings) dto.Settings {
 	}
 	return held
 }
-
-// Clouds answers the cloud layer's state (FR-CLD-009, FR-CLD-013).
-func (a *App) Clouds() dto.Clouds { return a.clouds.Status() }
-
-// CloudImage answers the held cloud image as a data URL; empty when none.
-func (a *App) CloudImage() string { return a.clouds.Image() }
 
 // Sun answers where the sun stands overhead now (FR-DAY-001).
 func (a *App) Sun() dto.Sun { return a.sun.Position() }

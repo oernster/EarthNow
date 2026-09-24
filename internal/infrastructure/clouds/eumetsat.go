@@ -20,6 +20,7 @@ import (
 
 	"github.com/oernster/EarthNow/internal/domain/cloud"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
+	"github.com/oernster/EarthNow/internal/infrastructure/pngcheck"
 )
 
 // Host is the one host the cloud layer reaches (NFR-PRIV-001).
@@ -45,26 +46,16 @@ const (
 const timeDimension = "time"
 
 // Sentinel failures, each worded where it is raised.
-var (
-	ErrNoTime     = errors.New("the layer lists no valid time")
-	ErrNotAnImage = errors.New("the answer is not a PNG image")
-	ErrWrongSize  = errors.New("the image is not the size asked for")
-	ErrNotChanged = errors.New("the service answered not modified to an unconditional request")
-)
-
-// Getter is the part of httpfetch.Client the adapter uses.
-type Getter interface {
-	GetAccepting(ctx context.Context, rawURL, validator, accept string) (httpfetch.Response, error)
-}
+var ErrNoTime = errors.New("the layer lists no valid time")
 
 // Source implements ports.CloudSource over the service at base.
 type Source struct {
-	get  Getter
+	get  httpfetch.Getter
 	base string
 }
 
 // New builds the adapter; base is BaseURL outside tests.
-func New(get Getter, base string) *Source {
+func New(get httpfetch.Getter, base string) *Source {
 	return &Source{get: get, base: base}
 }
 
@@ -74,7 +65,7 @@ func New(get Getter, base string) *Source {
 func (s *Source) Latest(ctx context.Context) (time.Time, error) {
 	q := url.Values{"service": {"WMS"}, "version": {wmsVersion}, "request": {"GetCapabilities"}}
 	raw := s.base + "/" + layerWorkspace + "/" + layerName + "/ows?" + q.Encode()
-	body, err := s.fetch(ctx, raw, httpfetch.AcceptXML)
+	body, err := httpfetch.Fresh(ctx, s.get, raw, httpfetch.AcceptXML)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -91,22 +82,11 @@ func (s *Source) Image(ctx context.Context, validTime time.Time) ([]byte, error)
 		"format": {pngType}, "transparent": {"true"},
 		"time": {validTime.UTC().Format(time.RFC3339)},
 	}
-	body, err := s.fetch(ctx, s.base+"/wms?"+q.Encode(), pngType)
+	body, err := httpfetch.Fresh(ctx, s.get, s.base+"/wms?"+q.Encode(), pngType)
 	if err != nil {
 		return nil, err
 	}
 	return Draw(body)
-}
-
-func (s *Source) fetch(ctx context.Context, raw, accept string) ([]byte, error) {
-	resp, err := s.get.GetAccepting(ctx, raw, "", accept)
-	if err != nil {
-		return nil, err
-	}
-	if resp.NotModified {
-		return nil, ErrNotChanged
-	}
-	return resp.Body, nil
 }
 
 // newestTime reads the default of the layer's time dimension.
@@ -148,18 +128,9 @@ func attr(el xml.StartElement, name string) string {
 // requested size is refused (FR-CLD-012); the service's errors arrive as XML
 // with status 200, which fails here.
 func Draw(src []byte) ([]byte, error) {
-	cfg, err := png.DecodeConfig(bytes.NewReader(src))
+	img, err := pngcheck.Decode(src, Width, Height)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrNotAnImage, err)
-	}
-	// The size is checked before the pixels are decoded, so a foreign header
-	// never sets how much is set aside.
-	if cfg.Width != Width || cfg.Height != Height {
-		return nil, fmt.Errorf("%w: %d x %d", ErrWrongSize, cfg.Width, cfg.Height)
-	}
-	img, err := png.Decode(bytes.NewReader(src))
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrNotAnImage, err)
+		return nil, err
 	}
 	out := image.NewNRGBA(image.Rect(0, 0, Width, Height))
 	b := img.Bounds()

@@ -58,7 +58,7 @@ export function guideSections(product: string): readonly GuideSection[] {
                 {icon: icons.zoomOut, name: RAIL_LABELS.zoomOut, text: 'moves the camera further away.'},
                 {icon: icons.refresh, name: RAIL_LABELS.refresh, text: 'fetches every source at once; it can be used again after a short pause.'},
                 {icon: icons.status, name: RAIL_LABELS.status, text: 'each source\'s state, why a fetch failed and when the next attempt is. A dot on the button means there is something to read.'},
-                {icon: icons.settings, name: RAIL_LABELS.settings, text: 'idle rotation, its speed, the smallest earthquake shown and whether storm tracks show.'},
+                {icon: icons.settings, name: RAIL_LABELS.settings, text: 'idle rotation, its speed, the smallest earthquake shown and whether storm tracks and burnt areas show.'},
                 {icon: icons.help, name: RAIL_LABELS.help, text: 'this guide, About, the licence and the third-party notices.'},
                 {icon: icons.donate, name: donateLabel(product), text: 'opens the donation page in your browser. Nothing is held back without a donation.'},
             ],
@@ -102,6 +102,16 @@ export function guideSections(product: string): readonly GuideSection[] {
                 'Dawn and dusk fade across a band either side of that line rather than cutting off, as twilight does.',
                 'The lights on the night side are NASA\'s Black Marble picture of the Earth at night, a composite from 2016: they show where cities are, not which lights are on now.',
                 'Clouds over the night side are drawn fainter, so they never glow white in the dark.',
+            ],
+        },
+        {
+            heading: 'Burnt areas',
+            paragraphs: [
+                'Settings can lay burnt ground over the globe in red, from the Global Wildfire Information System (GWIS), which maps it from satellites one UTC day at a time. Every day the chosen time window touches is drawn, so 7 days shows eight days of maps.',
+                'A burn shows on the day it was mapped, which may be after the day the fire began.',
+                'Each point of the map covers about 20 km at the equator, so a small burn may not show at all.',
+                'A short window may show none yet, when nothing has been mapped for the days it touches; the line beneath the globe says so.',
+                'The maps are fetched only while they are shown. The last ones are kept, so they still show without a connection, marked with their age.',
             ],
         },
         {

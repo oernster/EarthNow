@@ -1,7 +1,7 @@
 // The one door to the Go side. Every call takes a refusal handler as its last
 // argument and answers null rather than rejecting, so a call without one does
 // not compile and nothing is left for a console nobody opens (NFR-REL-004).
-import type {AboutDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, SunDTO, ViewDTO} from './types'
+import type {AboutDTO, BurntAreasDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, SunDTO, ViewDTO} from './types'
 
 type Refused = (reason: string) => void
 
@@ -16,6 +16,8 @@ interface Bound {
     RefreshNow(): Promise<number>
     Clouds(): Promise<CloudsDTO>
     CloudImage(): Promise<string>
+    BurntAreas(): Promise<BurntAreasDTO>
+    BurntImage(): Promise<string>
     Sun(): Promise<SunDTO>
     StartView(): Promise<StartViewDTO>
     About(): Promise<AboutDTO>
@@ -63,6 +65,10 @@ export const api = {
     // image as a data URL, empty when none is held.
     clouds: (onRefused: Refused) => call(b => b.Clouds(), onRefused),
     cloudImage: (onRefused: Refused) => call(b => b.CloudImage(), onRefused),
+    // burntAreas answers the burnt-area layer's state (FR-BA-008); burntImage the
+    // window's burnt areas drawn as one data URL, empty when none draws.
+    burntAreas: (onRefused: Refused) => call(b => b.BurntAreas(), onRefused),
+    burntImage: (onRefused: Refused) => call(b => b.BurntImage(), onRefused),
     // sun answers where the sun stands overhead now (FR-DAY-001).
     sun: (onRefused: Refused) => call(b => b.Sun(), onRefused),
     // startView answers where the globe opens (FR-GLB-015).
