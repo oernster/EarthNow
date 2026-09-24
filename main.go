@@ -89,6 +89,9 @@ func dataDir() (string, error) {
 // it, so a panic leaves a record (NFR-REL-002). A log that cannot be opened falls
 // back to standard error rather than ending the run (NFR-REL-001).
 func keepLog() io.Writer {
+	if bindingPass {
+		return os.Stderr
+	}
 	dir, err := dataDir()
 	if err != nil {
 		return os.Stderr
