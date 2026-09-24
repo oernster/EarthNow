@@ -7,10 +7,10 @@ for artwork and wrong for a rail that draws them at 48. Each is trimmed to its
 own content then centred on a square canvas, so every icon carries the same
 optical weight, then written small enough to embed.
 
-The stop-rotating icon has no master. It is DERIVED here by laying negative.png
-over rotate.png, so the two states of the rotation button cannot drift apart:
-every pixel the overlay does not cover is the rotate artwork's own pixel
-(REQUIREMENTS.md Appendix D.2, NFR-UX-004).
+The stop-rotating and hide-clouds icons have no master. Each is DERIVED here by
+laying negative.png over its button's artwork (rotate.png, cloud-cover.png), so
+the two states of a toggle cannot drift apart: every pixel the overlay does not
+cover is the artwork's own pixel (REQUIREMENTS.md Appendix D.2, NFR-UX-004).
 
 The application icon: assets/application-icon.png becomes a multi-size Windows
 .ico beside it (DEL-004, Appendix D.1). That one file is the whole identity:
@@ -64,11 +64,15 @@ SIZE = 208
 # PAD keeps the trimmed artwork off the edge of its square.
 PAD = 2
 
-# ROTATE_MASTER is the rotation artwork and OVERLAY_MASTER the mark laid over it
-# to make STOP_ICON. The overlay is never shown alone, so it is not rendered.
-ROTATE_MASTER = "rotate.png"
+# OVERLAY_MASTER is the mark laid over a toggle's artwork to make the icon for
+# the state that switches it off (NFR-UX-004). It is never shown alone, so it is
+# not rendered. DERIVED pairs each such artwork with the icon made from it: the
+# rotation button's stop state and the cloud button's hide state (FR-CLD-001).
 OVERLAY_MASTER = "negative.png"
-STOP_ICON = "rotate-stop.png"
+DERIVED = (
+    ("rotate.png", "rotate-stop.png"),
+    ("cloud-cover.png", "cloud-cover-hide.png"),
+)
 
 # NOT_RAIL are masters with another destination: the application icon (the .ico
 # and the About crest, Phase 4), the donate mark (cropped by height, FR-DON) and
@@ -311,17 +315,20 @@ def main() -> int:
         total_out += written
         print(f"{master.name:<22} {source:>9,} -> {written:>7,} bytes")
 
-    rotate = MASTERS / ROTATE_MASTER
     overlay = MASTERS / OVERLAY_MASTER
-    for needed in (rotate, overlay):
-        if not needed.exists():
-            sys.exit(f"no {needed.name} in {MASTERS}; the stop icon is made from it")
+    if not overlay.exists():
+        sys.exit(f"no {OVERLAY_MASTER} in {MASTERS}; the derived icons are made from it")
     total_in += overlay.stat().st_size
-    written = render_image(overlaid(rotate, overlay), OUTPUT / STOP_ICON)
-    total_out += written
-    print(f"{STOP_ICON:<22} {'derived':>9} -> {written:>7,} bytes")
+    for base_name, derived in DERIVED:
+        base = MASTERS / base_name
+        if not base.exists():
+            sys.exit(f"no {base_name} in {MASTERS}; {derived} is made from it")
+        written = render_image(overlaid(base, overlay), OUTPUT / derived)
+        total_out += written
+        print(f"{derived:<22} {'derived':>9} -> {written:>7,} bytes")
 
-    print(f"\n{len(masters) + 1} rail icons, {total_in:,} -> {total_out:,} bytes")
+    count = len(masters) + len(DERIVED)
+    print(f"\n{count} rail icons, {total_in:,} -> {total_out:,} bytes")
 
     render_setup()
     render_donate()
