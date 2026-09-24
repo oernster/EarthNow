@@ -1,7 +1,7 @@
 // The globe (FR-GLB, FR-MRK): texture, fitted camera, start view, idle rotation,
 // emoji markers, hover place lines and selection with a camera focus. The clouds
 // and day and night are the layers useGlobeLayers attaches (FR-CLD-008, FR-DAY-003).
-import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react'
+import {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react'
 import Globe, {type GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
@@ -11,6 +11,7 @@ import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {clusterSprite, fitAltitude, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
+import {trailed} from '../trails'
 import {useGlobeLayers} from '../useGlobeLayers'
 import type {EventDTO, StartViewDTO, SunDTO} from '../types'
 
@@ -52,6 +53,8 @@ interface Props {
     sun: SunDTO | null
     // start is where the globe first faces (FR-GLB-015); not found keeps 1.0.0's view.
     start: StartViewDTO
+    // trailsShown switches the storm trails (FR-TRL-002, FR-TRL-003).
+    trailsShown: boolean
     onSelect: (e: EventDTO) => void
     onProblem: (reason: string) => void
 }
@@ -76,7 +79,7 @@ function markerRadius(g: GlobeInstance): number {
 }
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
-    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, dayNightShown, sun, start, onSelect, onProblem}, ref) {
+    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, dayNightShown, sun, start, trailsShown, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
@@ -90,7 +93,8 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     // The setting as last rendered, read when the idle delay runs out.
     const rotationWanted = useRef(autoRotate)
     const idleTimer = useRef<number | null>(null)
-    const layers = useGlobeLayers(cloudImage, dayNightShown, sun)
+    const trails = useMemo(() => trailed(events, trailsShown), [events, trailsShown])
+    const layers = useGlobeLayers(cloudImage, dayNightShown, sun, trails)
     const opening = useRef(start)
 
     // pause stops rotation for input and restarts it after the idle delay.

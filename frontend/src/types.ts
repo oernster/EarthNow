@@ -17,6 +17,9 @@ export interface EventDTO {
     measurement: string
     // The Depth row, worded on the Go side (FR-SEL-010 to 012); empty when none.
     depth: string
+    // A storm's positions inside the window as [lat, lng], oldest first, ending
+    // at the marker (FR-TRL-001); empty for any other event.
+    trail: [number, number][]
     band: number
     sourceUrl: string
     sourceText: string
@@ -63,6 +66,7 @@ export interface SettingsDTO {
     hiddenProviders: string[]
     cloudsShown: boolean
     dayNightShown: boolean
+    trailsShown: boolean
 }
 
 // The cloud layer's state (FR-CLD-009, FR-CLD-013). The image is asked for

@@ -20,10 +20,13 @@ type Event struct {
 	Retrieved   string  `json:"retrieved"`
 	Measurement string  `json:"measurement"`
 	// Depth is the Depth row, worded (FR-SEL-010 to 012); empty when none.
-	Depth      string `json:"depth"`
-	Band       int    `json:"band"`
-	SourceURL  string `json:"sourceUrl"`
-	SourceText string `json:"sourceText"`
+	Depth string `json:"depth"`
+	// Trail is a storm's positions inside the window as [lat, lng], oldest
+	// first, ending at the marker (FR-TRL-001); empty for any other event.
+	Trail      [][2]float64 `json:"trail"`
+	Band       int          `json:"band"`
+	SourceURL  string       `json:"sourceUrl"`
+	SourceText string       `json:"sourceText"`
 	// Ended is true when the source has closed the event (FR-PRV-001).
 	Ended bool `json:"ended"`
 }
@@ -78,6 +81,8 @@ type Settings struct {
 	CloudsShown      bool     `json:"cloudsShown"`
 	// DayNightShown is whether the day and night layer is drawn (FR-DAY-007).
 	DayNightShown bool `json:"dayNightShown"`
+	// TrailsShown is whether storm trails are drawn (FR-TRL-004).
+	TrailsShown bool `json:"trailsShown"`
 }
 
 // Clouds is the cloud layer's state (FR-CLD-009, FR-CLD-013). The image

@@ -43,6 +43,8 @@ type Settings struct {
 	CloudsShown bool
 	// DayNightShown is whether the day and night layer is drawn (FR-DAY-007).
 	DayNightShown bool
+	// TrailsShown is whether storm trails are drawn (FR-TRL-004).
+	TrailsShown bool
 }
 
 // SettingsStore keeps the settings between runs (FR-SET-004). Load starts from

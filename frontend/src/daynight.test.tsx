@@ -180,8 +180,9 @@ describe('the layers on a globe (FR-DAY-003, FR-CLD-008)', () => {
         })
         const setMaterial = vi.fn()
         const added: THREE.Object3D[] = []
-        const g = {globeMaterial: setMaterial, getGlobeRadius: () => 100, scene: () => ({add: (o: THREE.Object3D) => added.push(o)})}
-        const {result, rerender} = renderHook(({image, sun}) => useGlobeLayers(image, true, sun),
+        const g: Record<string, unknown> = {globeMaterial: setMaterial, getGlobeRadius: () => 100, scene: () => ({add: (o: THREE.Object3D) => added.push(o)})}
+        for (const name of ['pathPoints', 'pathPointLat', 'pathPointLng', 'pathPointAlt', 'pathColor', 'pathTransitionDuration', 'pathsData']) g[name] = () => g
+        const {result, rerender} = renderHook(({image, sun}) => useGlobeLayers(image, true, sun, []),
             {initialProps: {image: '', sun: null as SunDTO | null}})
         act(() => result.current.attach(g as never))
         const sphere = added[0] as THREE.Mesh

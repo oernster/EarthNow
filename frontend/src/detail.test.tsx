@@ -16,7 +16,7 @@ const RETRIEVED_AT = '2026-09-20T10:05:00Z'
 const full: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
     lat: 61.899, lng: -150.919, at: AT, dayOnly: false, reported: 'Reported 2 h ago', retrievedAt: RETRIEVED_AT,
-    retrieved: 'Retrieved 1 h ago', measurement: 'Magnitude 3.1', depth: '18.4 km, shallow', band: 2, sourceUrl: 'https://earthquake.usgs.gov/e',
+    retrieved: 'Retrieved 1 h ago', measurement: 'Magnitude 3.1', depth: '18.4 km, shallow', trail: [], band: 2, sourceUrl: 'https://earthquake.usgs.gov/e',
     sourceText: '', ended: false,
 }
 const noop = () => undefined

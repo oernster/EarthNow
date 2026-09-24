@@ -20,6 +20,8 @@ type Shown struct {
 	Event       event.Event
 	Observation event.Observation
 	RetrievedAt time.Time
+	// Trail is the storm's positions inside the window (FR-TRL-001); nil otherwise.
+	Trail []event.Point
 }
 
 // Filter says what the user has switched off (FR-FLT-002, FR-FLT-004). The
@@ -96,7 +98,7 @@ func (s *Store) Visible(w window.Window, f Filter) []Shown {
 				continue
 			}
 			if o, ok := w.Latest(e, now); ok {
-				out = append(out, Shown{Event: e, Observation: o, RetrievedAt: snap.RetrievedAt})
+				out = append(out, Shown{Event: e, Observation: o, RetrievedAt: snap.RetrievedAt, Trail: w.Trail(e, now)})
 			}
 		}
 	}

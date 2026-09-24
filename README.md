@@ -61,7 +61,8 @@ source that reported it and how old that report is.
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
   one cluster with its count; activating a cluster zooms in until its members
-  separate.
+  separate. A storm draws a faint track through the positions its source gave
+  inside the time window, fading with age; Settings can hide it.
 - **Names where it is.** Hovering a marker shows the event with its nearest
   populated place, its country, the distance and the compass direction, worked
   out on your own machine from embedded Natural Earth data.

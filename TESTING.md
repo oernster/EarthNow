@@ -101,10 +101,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 82.23 |
-| Branches | 75.66 |
-| Functions | 79.61 |
-| Lines | 84.39 |
+| Statements | 82.59 |
+| Branches | 75.78 |
+| Functions | 80.22 |
+| Lines | 84.69 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -129,6 +129,11 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   the stored set, the cache restored before any fetch, the notices when there
   is no cache or no settings file. The https rule for source links is tested
   there as well.
+- **Storm trails**: a storm's fixes clipped to the window and ending at the
+  marker, none for one fix or for any other category (FR-TRL-001); the trail
+  reaching the wire as pairs, empty rather than absent; trails on for a first
+  run and for a settings file from before them, the choice kept (FR-TRL-004,
+  FR-TRL-005).
 - **Earthquake depth**: the wording at each band edge and either side of it,
   a value rounding across an edge taking the band it shows, a negative depth
   above sea level, -0.04 reading 0.0 rather than -0.0 (proved by planting the
@@ -211,7 +216,9 @@ the keyboard repair shared with the setup page, the keyboard ring (with the
 page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
 the Help surfaces with the rail's order, the detail panel's Depth row shown
 or left out and the guide's note on the fixed depth (FR-SEL-010, FR-SEL-013,
-FR-SEL-014). The refresh indicator is covered too:
+FR-SEL-014), the storms handed to the globe as paths with their colour ramp,
+none while switched off (proved by planting the switch away) and the Settings
+box (FR-TRL-002 to FR-TRL-004). The refresh indicator is covered too:
 the status line's wording, the turning Refresh button held for one turn and
 the last refresh time. So is the cloud layer: the button's name and artwork in
 each state, the press, the cloud line shown, marked or absent; also the sphere
@@ -315,6 +322,7 @@ recorded there, in section 3.1.
 | Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log's timestamps for start and refreshes; frame time as the Phase 0 spike measured it (section 3.1 of REQUIREMENTS.md), since the application keeps no frame-time log. |
 | The cloud layer draws over the texture, turns with it and stays beneath every marker; the veil reads as unseen rather than as cloud; frame time holds with the layer shown (FR-CLD-008, FR-CLD-015, NFR-PERF-005) | Show the clouds, leave the globe turning, look at the poles. With no frame-time log in the application, smoothness is judged by eye; the result and the spike's measured thresholds are in section 3.2.10 of REQUIREMENTS.md. |
 | The lit side faces the sun and the terminator runs through dawn and dusk; the city lights show on the night side only; clouds over the night side dim and never glow white; frame time holds with both layers shown and 2,500 markers (FR-DAY-003, FR-DAY-009, NFR-PERF-006) | Show both layers and compare the terminator with NOAA's or any day and night map for the same minute; leave the globe turning. With no frame-time log in the application, smoothness is judged by eye, as for NFR-PERF-005. |
+| A storm's track fades from faint to strong and ends in its marker without crowding the globe (FR-TRL-002) | Show the 7 day window with a storm in it; look, then clear Settings' box. |
 | The globe opens facing your country, then turns from there; on a Mac and on Linux the region is read as ASM-010 states (FR-GLB-014, FR-GLB-015) | Launch; the log's "Start view:" line names the region and the point. On a Mac and on Linux, the same line after launch. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 

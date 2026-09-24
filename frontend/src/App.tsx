@@ -153,7 +153,7 @@ export default function App() {
             {speed && settings && start && <GlobeView ref={globe} start={start} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
                 cloudImage={settings.cloudsShown ? cloudImage : ''}
-                dayNightShown={dayNightShown} sun={sun}
+                dayNightShown={dayNightShown} sun={sun} trailsShown={settings.trailsShown}
                 onSelect={setSelected} onProblem={onProblem}/>}
             <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}
                 note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds}/>

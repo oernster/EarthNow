@@ -121,7 +121,9 @@ Pure Go over values handed in; no clock, no disk, no network.
   6 degrees below the horizon to 1 at 6 above (FR-DAY-002); the share of a
   cloud's opacity kept at night, from 25% (FR-DAY-009).
 - `window`: the five windows of FR-TW-001 with 24 h the default; which
-  observation of an event falls inside a window (DATA-003, DATA-004).
+  observation of an event falls inside a window (DATA-003, DATA-004); a
+  severe storm's trail, its positions inside the window oldest first ending
+  at the marker, none with fewer than two (FR-TRL-001).
 
 ### Application
 

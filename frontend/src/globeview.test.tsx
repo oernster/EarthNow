@@ -42,14 +42,14 @@ const {GlobeView} = await import('./components/GlobeView')
 const quake: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
     lat: 61.899, lng: -150.919, at: '', dayOnly: false, reported: '', retrievedAt: '', retrieved: '',
-    measurement: '', depth: '', band: 2, sourceUrl: '', sourceText: '', ended: false,
+    measurement: '', depth: '', trail: [], band: 2, sourceUrl: '', sourceText: '', ended: false,
 }
 const noop = () => undefined
 const IDLE_MS = 10_000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+        secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
 }
 
@@ -102,7 +102,7 @@ describe('the globe', () => {
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
         view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 
@@ -116,7 +116,7 @@ describe('the globe', () => {
 
     it('FR-GLB-015 opens facing the start view, with rotation to follow from there', () => {
         render(<GlobeView events={[]} selectedId={null} autoRotate secondsPerRevolution={60} cloudImage=""
-            dayNightShown={false} sun={null} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onProblem={noop}/>)
+            dayNightShown={false} sun={null} trailsShown={false} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onProblem={noop}/>)
         const globe = made[made.length - 1]
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: 54.4027, lng: -2.1163}]])
         expect(globe.controls.autoRotate).toBe(true)
@@ -140,7 +140,7 @@ describe('the globe', () => {
         const {view} = draw(false)
         expect(load).not.toHaveBeenCalled()
         const shown = (dayNightShown: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" dayNightShown={dayNightShown} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" dayNightShown={dayNightShown} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
         shown(true)
         shown(false)
         shown(true)

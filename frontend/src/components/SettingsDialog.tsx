@@ -25,6 +25,11 @@ export function SettingsDialog({settings, choices, onChange, onClose}: Props) {
                 onChange={e => onChange({autoRotate: e.target.checked})}/>
             Rotate the globe when idle
         </label>
+        <label className="field-row">
+            <input data-stop type="checkbox" checked={settings.trailsShown}
+                onChange={e => onChange({trailsShown: e.target.checked})}/>
+            Show storm tracks
+        </label>
         <fieldset onKeyDown={walkGroup}>
             <legend>Idle rotation speed</legend>
             {choices.speeds.map(s => <label key={s.key} className="field-row">

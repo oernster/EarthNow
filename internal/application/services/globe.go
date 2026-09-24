@@ -254,6 +254,10 @@ func toDTO(s Shown, now time.Time) dto.Event {
 			out.Measurement += " " + m.Unit
 		}
 	}
+	out.Trail = [][2]float64{}
+	for _, p := range s.Trail {
+		out.Trail = append(out.Trail, [2]float64{p.Lat, p.Lng})
+	}
 	if d := s.Event.Extras.DepthKm; d != nil {
 		out.Depth = event.DepthWording(*d)
 	}

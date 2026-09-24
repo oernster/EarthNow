@@ -15,7 +15,7 @@ import (
 	"github.com/oernster/EarthNow/internal/application/ports"
 )
 
-var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h", DayNightShown: true}
+var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h", DayNightShown: true, TrailsShown: true}
 
 func storeIn(t *testing.T) *File {
 	t.Helper()
@@ -77,6 +77,10 @@ func TestFRDAY007_AFileFromBeforeTheLayerStartsItShown(t *testing.T) {
 	got, held, err := store.Load(defaults)
 	if !held || err != nil || !got.DayNightShown {
 		t.Errorf("Load = %+v, %v, %v; want the layer shown", got, held, err)
+	}
+	// FR-TRL-005: the same file holds no trails field either, so trails start on.
+	if !got.TrailsShown {
+		t.Errorf("Load = %+v; want storm trails on", got)
 	}
 }
 

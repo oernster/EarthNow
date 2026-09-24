@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 31.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 32.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -37,6 +37,7 @@ edits.
 | 29 | 2026-09-24 | The day and night layer (3.2.11, FR-DAY-001 to 009): the globe lit by the real sun, NASA's Black Marble city lights on the night side, a rail button after the clouds, shown on a first run. The day and night terminator and the night-lights texture leave the out-of-scope list and the Won't list. NFR-UX-002's minimum window rises to 960 by 700; NFR-PERF-006, ASM-009 and the Black Marble credit (NFR-LEG-002) added. | Owner request: show where it is daytime on Earth now, from astronomy alone with no service. The owner chose city lights over a plain darkened side, a rail button over a setting and the layer on by default. The rail's own figures (54 px buttons, 8 px gaps, about 11 px spare at 640) leave a tenth button 51 px short. |
 | 30 | 2026-09-24 | The start view (FR-GLB-014 to 017): at launch the globe opens facing the country the operating system's country or region setting names, at Natural Earth's label point for it, before idle rotation begins; with no usable region it opens as before and logs why. ASM-010 added. The Won't "favourites and home location" stands: nothing is chosen or kept inside EarthNow; the region is the operating system's own setting, read on the machine and sent nowhere. | Owner request: open over the reader's own part of the world. The owner chose the country or region setting over the time zone and the display language (measured on the reference machine: all three read the United Kingdom there; a UK machine often runs an en-US display language). It chose Natural Earth's label point over the capital or the outline's centre, with 1.0.0's view as the fallback. The owner also set the order of the work before the next release: this, then earthquake depth, recent-event trails and Replay the Earth, each its own amendment; no release is cut until all four are in. |
 | 31 | 2026-09-24 | Earthquake depth (FR-SEL-010 to 014): the detail panel gains a Depth row for an event whose source gives one, to one decimal with USGS's band word; a depth above sea level is worded as such; exactly 10 km is marked as often a fixed depth. Nothing changes on the globe or in the tooltip. R10 and R11 added. | Owner request, the detail panel only: "I'd resist turning the globe into a Christmas tree." DATA-010 already keeps USGS depth in kilometres (measured: `Extras.DepthKm`); nothing carried it past the domain. Measured over the cached week of 244 USGS quakes at 2.5 and above: 165 shallow, 62 intermediate, 17 deep, 77 at exactly 10 km. USGS states that 10 km is a fixed depth assigned when the data are too poor to compute one (R11); its summary feed does not say which ones, so the row says often rather than claiming this one is. |
+| 32 | 2026-09-24 | Storm trails (3.2.12, FR-TRL-001 to 005): a severe storm's fixes inside the time window are drawn as a line to its marker, oldest faintest, switched by a Settings box that starts on. The Won't "storm tracks drawn as lines" leaves 1.3 and 3.6; iceberg drift and earthquake swarms are recorded there instead. | Owner request: show where a storm has been. The owner chose storms only (measured on 2026-09-23: five storms with 6 to 14 fixes over one to three days; icebergs held 41 to 65 fixes back to 2021, which a window clips to a stub; swarms need a rule, measured at 8 groups of 5 or more within 50 km in 48 h and none of 10 or more within 20 km in a day) and a Settings box over a rail button, since the rail is full at the minimum height. Wildfire perimeters were researched apart: FIRMS gives points, NIFC's are the United States only (rejected by the owner as inconsistent) and GWIS's global burnt areas come as a daily image, a candidate for its own amendment. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -80,7 +81,7 @@ Linux Flatpak with its cleanup script and the macOS DMG (3.5).
 - AI summaries, interpretation, predictions or forecasts;
 - push or desktop notifications;
 - a historical archive beyond the 7-day window, timeline playback;
-- NASA FIRMS hotspots, storm tracks drawn as lines, event polygons drawn as areas;
+- NASA FIRMS hotspots, event polygons drawn as areas, iceberg drift and earthquake swarms drawn as trails;
 - weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
@@ -499,6 +500,22 @@ both textures bundled rather than fetched.
 | FR-DAY-008 | Must | While the day and night layer is hidden, the globe view shall draw the day texture over the whole globe, as before this amendment. | The light factor handed to the globe is 1 everywhere while hidden. | T |
 | FR-DAY-009 | Must | While the day and night layer and the cloud layer are both shown, the globe view shall dim each cloud by its point's light factor, down to a night floor of 25% of its opacity (a target the real window confirms by eye), so no cloud glows white over a dark side. | Light factor 0 gives 25% of the cloud's opacity, 1 gives all of it. | T + D |
 
+#### 3.2.12 Storm trails (amendment 32)
+
+A storm's source gives a fix every few hours (measured: the five storms cached
+on 2026-09-23 held 6 to 14 fixes over one to three days). The trail joins the
+fixes that fall inside the chosen time window, so it is recent movement and
+never an archive. Only severe storms carry one this time: iceberg drift and
+earthquake swarms stay Won'ts (3.6).
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-TRL-001 | Must | The domain shall give a severe storm's trail as the positions of its observations inside the time window, oldest first, the newest being its marker position (DATA-003); where fewer than two fall inside, the storm shall have no trail. | A storm with fixes at -30 h, -20 h and -2 h gives two points in the 24 h window, three in 3 days; one fix gives none; an iceberg gives none. | T |
+| FR-TRL-002 | Must | While trails are switched on, the globe view shall draw each trail as a line through its points at the marker altitude, fading from faintest at the oldest point to strongest at the marker (a look the real window confirms by eye). | The globe is handed each storm's points with a colour ramp from faint to strong. | T + D |
+| FR-TRL-003 | Must | While trails are switched off, the globe view shall draw no trail. | No path data is handed to the globe while off. | T |
+| FR-TRL-004 | Must | The settings dialog shall offer "Show storm tracks", applied at once and kept by the settings store (FR-SET-004). | Clearing it hides the tracks; reopening keeps it cleared. | T |
+| FR-TRL-005 | Must | When no saved choice exists, including a settings file from before this amendment, trails shall be switched on. | A first run and a 1.0.0 settings file both start with trails on. | T |
+
 ### 3.3 Non-functional requirements
 
 Every performance figure is measured on the reference machine.
@@ -580,7 +597,7 @@ Every performance figure is measured on the reference machine.
 
 ### 3.6 Won't this time (recorded so they are not re-proposed)
 
-Timeline playback; NASA FIRMS; storm tracks and polygons drawn as shapes; the
+Timeline playback; NASA FIRMS; polygons drawn as shapes; iceberg drift and earthquake swarms drawn as trails (amendment 32: no agreed swarm rule yet); the
 notifications; favourites and
 home location; screenshots and export; an event list or search view (Plan 16
 allows deferring it; NFR-KBD-004 makes every event reachable from the keyboard
