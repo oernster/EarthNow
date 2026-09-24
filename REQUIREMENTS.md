@@ -442,7 +442,15 @@ and 90 agreed on 87.5%, with the drawn opacity a mean 0.052 from the mask's
 cloud share at each brightness, the closest of the pairs tried (61/78, 55/95,
 55/105, 60/100, 50/110). The reference covers Meteosat's disk alone, in one
 September week; the other satellites of the mosaic are assumed to be calibrated
-alike (ASM-008). The veil and NFR-PERF-005 remain for the real window.
+alike (ASM-008).
+
+**Cloud spike, the real window (checked by the owner, 2026-09-24).** In a
+packaged build the cloud layer lines up with the texture, turns with the globe
+and stays beneath every marker and cluster (FR-CLD-008). The 20% grey veil reads
+as unseen rather than as cloud or clear sky, so it stands (FR-CLD-007). Idle
+rotation with the layer shown looked smooth; the owner accepted that as
+NFR-PERF-005's result for this release. No frame time was recorded, since the
+application carries no frame-time log: the figure stays unmeasured.
 
 The infrared channel cannot tell cold ground from cloud: Antarctica,
 Greenland and high mountains in winter read as cloud. The guide says so
