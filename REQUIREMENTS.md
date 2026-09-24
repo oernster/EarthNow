@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 17.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 18.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -23,6 +23,7 @@ edits.
 | 15 | 2026-09-24 | FR-MRK-010 added: every marker keeps its fit-altitude size on screen while the camera zooms. FR-FLT-001 offers a toggle for every category, present or not, as the key lists them. Appendix D.1 names the page's mark and the site's icon among the application icon's uses. | Markers were built to hold their launch size on screen, so that two overlapping markers separate as the camera closes in (FR-MRK-008); at a fixed size in globe units they grow with the gap between them. The owner approved writing it down. FR-KEY-001 and FR-FLT-001 described one control two ways; the owner chose the key's reading, which keeps it steady as events come and go. `tools/genicons.py` writes both from one render. |
 | 16 | 2026-09-24 | FR-GEO-002 and 003 count a position on an Antarctic ice shelf as Antarctica, never as sea. FR-GEO-008 adds Natural Earth's 1:10m Antarctic ice shelves (159 shelves) to the embedded data. | Natural Earth draws Antarctica to its grounded coast and the ice shelves as a layer of their own, so points on the Ross and Ronne shelves read "At sea" (measured). The owner chose to count a shelf as Antarctica over naming it as ice; the owner approved the download. |
 | 17 | 2026-09-24 | DATA-003 reads a GDACS polygon in the order its own vertices prove, else in the order the feed's proven polygons show, in place of amendment 12's fixed latitude-first reading. | Amendment 12's rule rested on one week and would draw every flood swapped if the source corrected its order. Measured over the 30 days to 2026-09-24: 15 of 57 GDACS polygons proved their order, all latitude first, at least one in each week; the other 42 read as valid either way round. Deciding by which reading lands in a country failed: 27 landed either way and a Kenya flood landed in Spain. |
+| 18 | 2026-09-24 | NFR-SEC-002 states its purpose, no network origin, rather than `'self'` on every fetch directive. DATA-001 describes the domain as built: an `Event` holding its sightings as observations, with the retrieved-at instant on the provider's snapshot. | The page's `img-src` allows `data:` and `blob:` beside `'self'`; neither reaches the network. The code grouped each sighting's time, position and measurement into an observation and kept one retrieved-at per provider, so occurred at and observed at are one time. The owner chose to bring both requirements to the code. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -416,7 +417,7 @@ Every performance figure is measured on the reference machine.
 | NFR-A11Y-002 | Must | Text and icon contrast against its surface shall be at least 4.5:1 for body text and 3:1 for glyphs and large text. | Contrast check over the palette tokens. |
 | NFR-A11Y-003 | Must | Every icon-only control shall carry a text tooltip and an accessible name. | T |
 | NFR-SEC-001 | Must | The frontend shall render provider text as text only. | Structural test: `dangerouslySetInnerHTML` and `innerHTML` appear nowhere in `frontend/src`. |
-| NFR-SEC-002 | Must | The page's Content-Security-Policy shall restrict every fetch directive to `'self'`, so the frontend can reach no network origin. | I on `index.html`; T asserting the meta tag. |
+| NFR-SEC-002 | Must | The page's Content-Security-Policy shall let no fetch directive reach a network origin: `default-src` and `connect-src` are `'self'`, no directive names a network scheme or a wildcard. Images may also come from `data:` and `blob:`, which fetch nothing. | T reading the meta tag in `index.html`. |
 | NFR-SEC-003 | Must | The backend shall validate every coordinate (latitude in [-90, 90], longitude in [-180, 180], finite) before an event is stored. | T with out-of-range fixtures. |
 | NFR-PRIV-001 | Must | EarthNow's own code shall send no telemetry and contact no host other than the three provider hosts (EONET, USGS, GVP). (What the WebView2 runtime itself contacts is Microsoft's and is not measured here.) | I on the provider registry; T asserting the host allowlist in the HTTP client. |
 | NFR-PRIV-002 | Must | The application shall store settings, cache and log under `%LOCALAPPDATA%\EarthNow` only. | T on the path helper. |
@@ -438,7 +439,7 @@ Every performance figure is measured on the reference machine.
 
 | ID | Pri | Requirement |
 |---|---|---|
-| DATA-001 | Must | The domain shall define `EarthEvent` with: id (provider plus provider event id), provider, provider event id, category, title, description (source text only), latitude, longitude, geometry (all source points retained), occurred at, observed at, updated at, retrieved at, time precision, status, measurement value, measurement unit, source URL, metadata (a closed set of named provider extras). Absent source fields stay absent; none is defaulted to a plausible value. |
+| DATA-001 | Must | The domain shall define `Event` with: provider and provider event id (together its id), category, title, description (source text only), status, updated at, source URL, extras (a closed set of named provider details: source category, depth in kilometres, tsunami flag, magnitude type) and its observations, oldest first, every source point retained, each with its time, that time's precision, its position and its measurement (value and unit) where the source gave one. The retrieved-at instant belongs to the provider's snapshot in the store, not to each event. Absent source fields stay absent; none is defaulted to a plausible value. |
 | DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
 | DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the polygon's centroid. A GDACS polygon holding a vertex value beyond 90 is read in the order that value proves (only a longitude exceeds 90); any other GDACS polygon is read in the order the feed's proven GDACS polygons more often show, latitude first when they show none or tie. |
 | DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window. |

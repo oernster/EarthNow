@@ -95,14 +95,15 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 54.37 |
-| Branches | 54.21 |
-| Functions | 58.9 |
-| Lines | 55.09 |
+| Statements | 77.5 |
+| Branches | 70.83 |
+| Functions | 73.63 |
+| Lines | 80.14 |
 
-These are measured figures too. The components that draw the globe and the
-window (`GlobeView.tsx` among them) need WebGL and real layout, which jsdom does
-not have; they are exercised by eye, in the checks below.
+These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
+placement, the cursor's tooltip, the focus animation) are tested against a
+stand-in for globe.gl; the drawing itself needs WebGL and real layout, which
+jsdom does not have, so it is exercised by eye, in the checks below.
 
 ## What the tests prove
 
@@ -247,7 +248,6 @@ recorded there, in section 3.1.
 | Credits and notices (NFR-LEG-002, FR-GEO-008) | Read About and `THIRD_PARTY_NOTICES`. |
 | One dark palette in the window; the setup program's theme toggle shows the mode it switches to (NFR-UX-005, NFR-UX-004) | Look at the window; press the setup program's toggle both ways. |
 | Nothing is fetched from the donate address; no feature depends on a donation (FR-DON-009) | Read `internal/product` and `app.go`'s `Donate`. |
-| The domain holds every datum DATA-001 lists (DATA-001) | Read `internal/domain/event` against the list. The retrieved-at time lives in the store's snapshot; occurred and observed at are one sighting's `At`. |
 | A panic leaves a record; a panic on a goroutine the application starts is recovered, logged and shown (NFR-REL-002, NFR-REL-003) | A planted panic in a debug build, on the main path and on each goroutine; read the log and the status popover. |
 | A failure found at startup reaches the window rather than ending the run (NFR-REL-001) | Launch with the data folder unwritable; the window opens and says so. |
 | Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log and the frame-time log on the reference machine. |
