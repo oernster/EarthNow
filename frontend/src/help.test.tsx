@@ -138,11 +138,11 @@ describe('FR-RAIL-002 the rail', () => {
     // button is icon-only, so each carries its name as tooltip and accessible name.
     it('holds its buttons in the stated order, FR-DON-008 donate last, NFR-A11Y-003 each named', () => {
         const noop = () => undefined
-        render(<Rail autoRotate={false} attention={false} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} onResetView={noop} onZoom={noop}
+        render(<Rail autoRotate={false} attention={false} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop} onZoom={noop}
             onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
         const buttons = Array.from(document.querySelectorAll('.rail-btn'))
         const labels = buttons.map(b => b.getAttribute('aria-label'))
-        expect(labels).toEqual(['Start rotating', 'Show clouds', 'Reset view', 'Zoom in', 'Zoom out', 'Refresh now',
+        expect(labels).toEqual(['Start rotating', 'Show clouds', 'Show day and night', 'Reset view', 'Zoom in', 'Zoom out', 'Refresh now',
             'Provider status', 'Settings', 'Help', donateLabel('')])
         for (const b of buttons) {
             expect(b.getAttribute('aria-label')).toBeTruthy()
@@ -153,7 +153,7 @@ describe('FR-RAIL-002 the rail', () => {
     it('zooms in and out from its buttons', () => {
         const onZoom = vi.fn()
         const noop = () => undefined
-        render(<Rail autoRotate attention onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} onResetView={noop} onZoom={onZoom}
+        render(<Rail autoRotate attention onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop} onZoom={onZoom}
             onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
         fireEvent.click(screen.getByLabelText('Zoom in'))
         fireEvent.click(screen.getByLabelText('Zoom out'))
@@ -248,7 +248,7 @@ describe('FR-DON the donate button', () => {
         const noop = () => undefined
         // The name arrives from the Go side (internal/product) through the context.
         render(<ProductName.Provider value="Product"><Rail autoRotate={false} attention={false}
-            onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} onResetView={noop} onZoom={noop} onRefresh={noop} onStatus={noop}
+            onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop} onZoom={noop} onRefresh={noop} onStatus={noop}
             onSettings={noop} onHelp={noop} onDonate={onDonate}/></ProductName.Provider>)
         const button = screen.getByLabelText('Donate to support Product')
         expect(button.className).toBe('rail-btn rail-foot')

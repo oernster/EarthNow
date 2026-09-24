@@ -1,17 +1,20 @@
-// The globe (FR-GLB, FR-MRK, FR-CLD-008): texture, cloud layer, fitted camera,
+// The globe (FR-GLB, FR-MRK, FR-CLD-008, FR-DAY-003): texture, day and night,
+// cloud layer, fitted camera,
 // idle rotation, emoji markers, hover place lines and selection with a camera focus.
 import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react'
 import Globe, {type GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
+import earthNight from '../assets/earth-night.jpg'
 import {api} from '../api'
 import {categoryCounts, categoryOf} from '../categories'
 import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {clusterSprite, fitAltitude, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
 import {makeCloudSphere, showCloudImage} from '../cloudLayer'
+import {dimClouds, lightNights, makeGlobeMaterial, makeUniforms, placeSun, showDayNight} from '../dayNight'
 import {noClickFocus} from '../ring'
-import type {EventDTO} from '../types'
+import type {EventDTO, SunDTO} from '../types'
 
 // NFR-UX-003: the camera focus animation, used by Reset view as well.
 const FOCUS_MS = 1000
@@ -45,6 +48,10 @@ interface Props {
     secondsPerRevolution: number
     // cloudImage is the drawn cloud image as a data URL; empty draws none.
     cloudImage: string
+    // dayNightShown switches the day and night layer (FR-DAY-006); sun is
+    // where the sun stands overhead, null until first asked.
+    dayNightShown: boolean
+    sun: SunDTO | null
     onSelect: (e: EventDTO) => void
     onProblem: (reason: string) => void
 }
@@ -79,7 +86,7 @@ function clusterTitle(members: readonly EventDTO[]): string {
 }
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
-    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, onSelect, onProblem}, ref) {
+    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, dayNightShown, sun, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
@@ -94,6 +101,10 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const rotationWanted = useRef(autoRotate)
     const idleTimer = useRef<number | null>(null)
     const clouds = useRef<THREE.Mesh | null>(null)
+    // The light both the globe and the clouds are drawn by (FR-DAY-003, FR-DAY-009).
+    const [light] = useState(makeUniforms)
+    const material = useRef<THREE.MeshPhongMaterial | null>(null)
+    const nightsAsked = useRef(false)
 
     // pause stops rotation for input and restarts it after the idle delay.
     const pause = useRef(() => {
@@ -258,7 +269,10 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
                 relayout.current(false)
             })
         globe.current = g
+        material.current = makeGlobeMaterial(light)
+        g.globeMaterial(material.current)
         clouds.current = makeCloudSphere(g.getGlobeRadius())
+        dimClouds(clouds.current.material as THREE.MeshBasicMaterial, light)
         g.scene().add(clouds.current)
         const controls = g.controls()
         controls.autoRotate = rotationWanted.current
@@ -300,8 +314,9 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             g._destructor()
             globe.current = null
             clouds.current = null
+            material.current = null
         }
-    }, [webgl2])
+    }, [webgl2, light])
 
     // The setting is the only switch (FR-GLB-004, FR-GLB-012). Switching it on
     // starts rotation at once unless input is still inside its idle delay.
@@ -318,6 +333,18 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     useEffect(() => {
         if (clouds.current) showCloudImage(clouds.current, cloudImage)
     }, [cloudImage])
+
+    // The switch (FR-DAY-006, FR-DAY-008). The night lights are large, so they
+    // load on the first show rather than for a reader who keeps the layer off.
+    useEffect(() => {
+        showDayNight(light, dayNightShown)
+        const m = material.current
+        if (!dayNightShown || !m || nightsAsked.current) return
+        nightsAsked.current = true
+        new THREE.TextureLoader().load(earthNight, t => lightNights(m, t))
+    }, [dayNightShown, light])
+
+    useEffect(() => { if (sun) placeSun(light, sun) }, [sun, light])
 
     // New events or a new selection draw afresh; the sprites carry both.
     useEffect(() => relayout.current(true), [events, selectedId])

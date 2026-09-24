@@ -74,6 +74,8 @@ type Settings struct {
 	HiddenCategories []string `json:"hiddenCategories"`
 	HiddenProviders  []string `json:"hiddenProviders"`
 	CloudsShown      bool     `json:"cloudsShown"`
+	// DayNightShown is whether the day and night layer is drawn (FR-DAY-007).
+	DayNightShown bool `json:"dayNightShown"`
 }
 
 // Clouds is the cloud layer's state (FR-CLD-009, FR-CLD-013). The image
@@ -91,6 +93,17 @@ type Clouds struct {
 	// (FR-CLD-011), filled only while the layer is shown. It travels here, not
 	// in View.Providers, since those are the event sources the key filters.
 	Provider Provider `json:"provider"`
+}
+
+// Sun is where the sun stands overhead now (FR-DAY-001), with the two
+// figures the page draws the light by, so the page holds no light rule of
+// its own: the twilight limit of FR-DAY-002 in degrees and FR-DAY-009's
+// share of a cloud's opacity kept at night.
+type Sun struct {
+	Lat             float64 `json:"lat"`
+	Lng             float64 `json:"lng"`
+	TwilightDegrees float64 `json:"twilightDegrees"`
+	CloudNightFloor float64 `json:"cloudNightFloor"`
 }
 
 // About is what the About dialog shows (FR-HLP-001).

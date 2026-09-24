@@ -61,13 +61,15 @@ func NewPreferences(store ports.SettingsStore, applyMinimum func(float64)) *Pref
 }
 
 // Defaults are the settings of a first run: rotating at the normal speed,
-// minimum 2.5, the 24 h window and nothing filtered out.
+// minimum 2.5, the 24 h window, nothing filtered out and the day and night
+// layer shown (FR-DAY-007).
 func Defaults() ports.Settings {
 	return ports.Settings{
-		AutoRotate: true,
-		Magnitude:  DefaultMagnitude,
-		Speed:      DefaultSpeed,
-		Window:     window.Default.Key,
+		AutoRotate:    true,
+		Magnitude:     DefaultMagnitude,
+		Speed:         DefaultSpeed,
+		Window:        window.Default.Key,
+		DayNightShown: true,
 	}
 }
 
@@ -127,6 +129,7 @@ func (p *Preferences) Update(chosen dto.Settings) (dto.Settings, []event.Provide
 		HiddenCategories: chosen.HiddenCategories,
 		HiddenProviders:  chosen.HiddenProviders,
 		CloudsShown:      chosen.CloudsShown,
+		DayNightShown:    chosen.DayNightShown,
 	})
 	err := p.store.Save(next)
 	p.mu.Lock()
@@ -199,5 +202,6 @@ func toSettingsDTO(s ports.Settings) dto.Settings {
 		HiddenCategories: nonNil(s.HiddenCategories),
 		HiddenProviders:  nonNil(s.HiddenProviders),
 		CloudsShown:      s.CloudsShown,
+		DayNightShown:    s.DayNightShown,
 	}
 }

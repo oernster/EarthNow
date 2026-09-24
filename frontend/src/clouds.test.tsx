@@ -17,7 +17,7 @@ const noop = () => undefined
 
 function rail(cloudsShown: boolean, onToggleClouds: () => void = noop) {
     return render(<Rail autoRotate={false} attention={false} onToggleRotate={noop} cloudsShown={cloudsShown}
-        onToggleClouds={onToggleClouds} onResetView={noop} onZoom={noop} onRefresh={noop} onStatus={noop}
+        onToggleClouds={onToggleClouds} dayNightShown={false} onToggleDayNight={noop} onResetView={noop} onZoom={noop} onRefresh={noop} onStatus={noop}
         onSettings={noop} onHelp={noop} onDonate={noop}/>)
 }
 

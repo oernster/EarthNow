@@ -56,7 +56,7 @@ const (
 	windowWidth  = 1280
 	windowHeight = 800
 	minWidth     = 960
-	minHeight    = 640
+	minHeight    = 700
 )
 
 // responseCap is FR-PRV-011's size cap; the largest measured feed was 1.51 MB.
@@ -146,7 +146,7 @@ func main() {
 		Licence: licenceText,
 		Notices: noticesText,
 	}
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, help, providers)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, services.NewSun(clock), help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

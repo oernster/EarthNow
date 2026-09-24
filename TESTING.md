@@ -100,10 +100,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 79.75 |
-| Branches | 74.48 |
-| Functions | 76.49 |
-| Lines | 82.25 |
+| Statements | 81.26 |
+| Branches | 74.93 |
+| Functions | 77.95 |
+| Lines | 83.78 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -136,6 +136,14 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   failure with the backoff, the first failure said, the cached image drawn at
   start with its age (FR-CLD-003 to FR-CLD-005, FR-CLD-011, FR-CLD-013,
   FR-CLD-014, FR-CLD-016).
+- **The day and night layer**: the subsolar point against NOAA's solar
+  calculator at 2026's solstices and equinoxes, read off the calculator
+  itself, within 0.1 degrees; the elevation at latitude and longitude 0
+  against the calculator's; the longitude wrapping at the date line a
+  quarter degree a minute (FR-DAY-001). The light ramp at -6, 0 and 6
+  degrees (FR-DAY-002) and the clouds' night floor (FR-DAY-009). On a fake
+  clock the sun moves between two readings a minute apart (FR-DAY-004); a
+  first run shows the layer and hiding it is kept (FR-DAY-007).
 
 ### The adapters
 
@@ -153,7 +161,8 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 - **`httpfetch`** against a local test server: the host allowlist, a redirect
   held to the allowed hosts, the size cap, the status check, `If-Modified-Since` and a 304.
 - **The cache and the settings** in temporary folders: round trips (the cloud
-  image with its valid time among them), another
+  image with its valid time among them), a 1.0.0 settings file with no day
+  and night field starting the layer shown (FR-DAY-007), another
   schema version read as absent, a damaged file, an oversized file and a save
   that cannot be written.
 - **The log**: rotation at start and while running with one previous file
@@ -190,6 +199,13 @@ the status line's wording, the turning Refresh button held for one turn and
 the last refresh time. So is the cloud layer: the button's name and artwork in
 each state, the press, the cloud line shown, marked or absent; also the sphere
 sitting between the texture and the markers, drawn only while it has an image.
+The day and night layer too: the button's name and artwork in each state, the
+press, the sun placed in three-globe's own frame, the sun asked for on showing
+and within a minute and never while hidden, the night lights loaded once on
+the first show, a light of 1 everywhere while hidden (FR-DAY-003 to
+FR-DAY-006, FR-DAY-008). The injected light is assembled over three's own
+Phong and basic shader sources, so a chunk three renames fails a test rather
+than drawing nothing (FR-DAY-003, FR-DAY-009).
 The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
@@ -271,7 +287,7 @@ recorded there, in section 3.1.
 | Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look. |
 | A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |
 | Activating a marker opens its detail (FR-SEL-001) | Click one. |
-| The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 640 (NFR-UX-002). |
+| The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 700 (NFR-UX-002). |
 | The keyboard works with no click at start (NFR-KBD-003) | Launch, press Tab; the log records each focus attempt. |
 | The guide names every button and category (FR-HLP-004); categories differ by emoji alone (NFR-A11Y-001) | Read the guide. |
 | Credits and notices (NFR-LEG-002, FR-GEO-008) | Read About and `THIRD_PARTY_NOTICES`. |
@@ -281,6 +297,7 @@ recorded there, in section 3.1.
 | A failure found at startup reaches the window rather than ending the run (NFR-REL-001) | Launch with the data folder unwritable; the window opens and says so. |
 | Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log's timestamps for start and refreshes; frame time as the Phase 0 spike measured it (section 3.1 of REQUIREMENTS.md), since the application keeps no frame-time log. |
 | The cloud layer draws over the texture, turns with it and stays beneath every marker; the veil reads as unseen rather than as cloud; frame time holds with the layer shown (FR-CLD-008, FR-CLD-015, NFR-PERF-005) | Show the clouds, leave the globe turning, look at the poles. With no frame-time log in the application, smoothness is judged by eye; the result and the spike's measured thresholds are in section 3.2.10 of REQUIREMENTS.md. |
+| The lit side faces the sun and the terminator runs through dawn and dusk; the city lights show on the night side only; clouds over the night side dim and never glow white; frame time holds with both layers shown and 2,500 markers (FR-DAY-003, FR-DAY-009, NFR-PERF-006) | Show both layers and compare the terminator with NOAA's or any day and night map for the same minute; leave the globe turning. With no frame-time log in the application, smoothness is judged by eye, as for NFR-PERF-005. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 
 ## See also

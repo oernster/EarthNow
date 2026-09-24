@@ -46,6 +46,7 @@ const (
 func Attributions() []string {
 	return []string{
 		"Earth imagery: NASA Earth Observatory (Blue Marble Next Generation).",
+		"Night lights: NASA Earth Observatory (Black Marble 2016).",
 		"Natural events: NASA Earth Observatory Natural Event Tracker (EONET).",
 		"Earthquakes: USGS Earthquake Hazards Program.",
 		// The Smithsonian's minimum citation is this name with its home page

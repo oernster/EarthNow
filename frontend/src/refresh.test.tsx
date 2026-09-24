@@ -14,7 +14,7 @@ const usgs = (over: Partial<ProviderDTO>): ProviderDTO =>
     ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved under a minute ago', problem: '', nextAttempt: '', ...over})
 
 function refreshButton(refreshing: boolean): HTMLElement {
-    render(<Rail autoRotate={false} attention={false} refreshing={refreshing} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} onResetView={noop}
+    render(<Rail autoRotate={false} attention={false} refreshing={refreshing} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop}
         onZoom={noop} onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
     return document.querySelector<HTMLElement>(`[aria-label="${RAIL_LABELS.refresh}"]`)!
 }

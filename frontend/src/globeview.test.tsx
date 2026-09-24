@@ -49,7 +49,7 @@ const IDLE_MS = 10_000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} cloudImage="" onSelect={noop} onProblem={noop}/>)
+        secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} onSelect={noop} onProblem={noop}/>)
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
 }
 
@@ -102,7 +102,7 @@ describe('the globe', () => {
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
         view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} onSelect={noop} onProblem={noop}/>)
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 
@@ -112,5 +112,24 @@ describe('the globe', () => {
         await act(async () => { await Promise.resolve() })
         expect(screen.getByText(PLACE)).toBeTruthy()
         expect(document.querySelector('.tip-title')!.textContent).toContain(quake.title)
+    })
+
+    it('FR-DAY-003 draws the globe with the day and night material', () => {
+        const {globe} = draw(false)
+        const set = globe.calls.find(([name]) => name === 'globeMaterial')
+        expect(set?.[1][0]).toBeInstanceOf(THREE.MeshPhongMaterial)
+        expect(globe.calls).toContainEqual(['globeImageUrl', [expect.any(String)]])
+    })
+
+    it('FR-DAY-006 loads the night lights on the first show only, never while hidden', () => {
+        const load = vi.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation(() => new THREE.Texture())
+        const {view} = draw(false)
+        expect(load).not.toHaveBeenCalled()
+        const shown = (dayNightShown: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={false}
+            secondsPerRevolution={60} cloudImage="" dayNightShown={dayNightShown} sun={null} onSelect={noop} onProblem={noop}/>)
+        shown(true)
+        shown(false)
+        shown(true)
+        expect(load).toHaveBeenCalledTimes(1)
     })
 })

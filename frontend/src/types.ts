@@ -60,6 +60,7 @@ export interface SettingsDTO {
     hiddenCategories: string[]
     hiddenProviders: string[]
     cloudsShown: boolean
+    dayNightShown: boolean
 }
 
 // The cloud layer's state (FR-CLD-009, FR-CLD-013). The image is asked for
@@ -72,6 +73,15 @@ export interface CloudsDTO {
     // The cloud service's popover entry, filled only while shown. It is kept
     // out of ViewDTO.providers, which are the event sources the key filters.
     provider: ProviderDTO
+}
+
+// Where the sun stands overhead now (FR-DAY-001), with FR-DAY-002's twilight
+// limit in degrees and FR-DAY-009's share of cloud opacity kept at night.
+export interface SunDTO {
+    lat: number
+    lng: number
+    twilightDegrees: number
+    cloudNightFloor: number
 }
 
 export interface AboutDTO {

@@ -3,8 +3,9 @@
 EarthNow answers one sentence: open a globe and see what is happening on Earth
 right now. The Go side fetches three public sources of events, keeps their last
 good sets and decides what falls inside the chosen time window. While the cloud
-layer is shown it also fetches EUMETSAT's cloud image and draws it. The page
-draws the globe and reads the answer. This document says how the code is divided, which rules
+layer is shown it also fetches EUMETSAT's cloud image and draws it. For the
+day and night layer it works out where the sun stands, from the time alone.
+The page draws the globe and reads the answer. This document says how the code is divided, which rules
 the tests hold it to and why each design choice was made.
 
 [REQUIREMENTS.md](REQUIREMENTS.md) is the specification; requirement numbers
@@ -63,12 +64,13 @@ main.go, app.go          composition root and the Wails facade the page calls
 frontend/src             the page: React, TypeScript, globe.gl
 internal/application/
     ports                what the application needs from outside
-    services             the use cases: globe, store, scheduler, preferences, clouds
+    services             the use cases: globe, store, scheduler, preferences, clouds, sun
     dto                  the shapes that cross to the page
 internal/domain/
     cloud                the cloud layer's opacity ramp, veil and wording
     event                the provider-neutral event, magnitude bands, links
     freshness            age wording and staleness
+    sun                  where the sun stands overhead and the light it gives
     window               the time windows and what falls inside one
 internal/infrastructure/
     httpfetch            the one way to the network
@@ -102,6 +104,11 @@ Pure Go over values handed in; no clock, no disk, no network.
   and the rule that a source link is a page rather than a data file (FR-SEL-009).
 - `freshness`: age wording (NFR-FRESH-002, FR-SEL-004) and the rule that a
   provider is stale three intervals after its last success (NFR-FRESH-001).
+- `sun`: the subsolar point for a UTC instant by NOAA's solar position
+  equations, within 0.1 degrees of NOAA's calculator at 2026's solstices and
+  equinoxes (FR-DAY-001); the sun's elevation at a point; the light from 0 at
+  6 degrees below the horizon to 1 at 6 above (FR-DAY-002); the share of a
+  cloud's opacity kept at night, from 25% (FR-DAY-009).
 - `window`: the five windows of FR-TW-001 with 24 h the default; which
   observation of an event falls inside a window (DATA-003, DATA-004).
 
@@ -134,6 +141,9 @@ The use cases, behind the ports in
   own backoff, one shared function (FR-CLD-011). It answers the status line
   and the EUMETSAT entry for the status popover, which travels apart from the
   event providers since the key filters those.
+- `Sun` answers where the sun stands overhead by the clock, with the twilight
+  limit and the night floor, so the page draws the light without holding a
+  figure of its own (FR-DAY-001, FR-DAY-004).
 
 ### Infrastructure
 
@@ -234,7 +244,7 @@ tests read, so it belongs to no layer.
    asks nothing (FR-CLD-005, FR-CLD-014).
 6. **The help texts:** the About details from `internal/product`, plus
    `LICENSE` and `THIRD_PARTY_NOTICES` embedded from the repository root.
-7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 640, a
+7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 700, a
    black background and WebView2's data kept in
    `%LOCALAPPDATA%\EarthNow\webview`. On Linux the web view's GPU policy is set
    to Always, since Wails otherwise turns acceleration off and the globe would
@@ -250,7 +260,9 @@ arrives. Each fetch logs its start and its outcome, with the status, the event
 count and the dropped count (NFR-OBS-001), then emits `events-changed` again;
 the page answers each by asking for the view. A cloud check runs the same
 way and emits `clouds-changed`; the page then asks for the cloud state; it asks
-for the image only when the valid time has changed.
+for the image only when the valid time has changed. The day and night layer
+needs no background work: while it is shown the page asks for the sun on
+showing and once a minute after (FR-DAY-004).
 
 When the page's DOM is ready, the facade focuses the WebView2 child directly,
 falling back to asking Wails to show the window. The page calls
@@ -338,6 +350,9 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | Future-dated events | Shown only up to `window.ClockSkew` (15 minutes) ahead of the clock, so a slow machine clock hides nothing new | Showing any future date: GDACS published a flood alert dated days ahead, which is not an event that has happened (TECH_DEBT.md). |
 | Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
 | The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`cloudLayer.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
+| The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |
+| Drawing day and night | three-globe's own lit material kept, the night lights added as its emissive map; one light factor per point, from the world-space normal against a world-space sun, scales the day by it and the lights by what is left (`dayNight.ts`). The cloud sphere dims by the same uniforms. | The example's unlit shader in view space: three-globe's default globe is a Phong material lit by globe.gl's ambient and directional lights (read in source), so an unlit shader would change the day side and hiding the layer would not restore the globe as before (FR-DAY-008). View space also needs the camera's turn fed in every frame, where world space needs nothing while only the camera moves. |
+| The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |
 | Cloud times | The layer's own capabilities document, its time dimension's default | The whole service's document: 282 KB against 6.4 KB (measured). |
 | The network | One client with a host allowlist and a size cap; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). |
 | What each source is asked for | Each adapter states the media types it accepts | One `Accept` for all: the Smithsonian feed answers 403 to a request asking only for JSON (measured). |

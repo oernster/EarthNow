@@ -1,5 +1,6 @@
 // The action rail down the left side (FR-RAIL-001 to 003). The order is
-// FR-RAIL-002's: the view first (rotation, clouds, Reset view, zoom), then the data
+// FR-RAIL-002's: the view first (rotation, clouds, day and night, Reset view,
+// zoom), then the data
 // (Refresh, provider status), then Settings and Help. The donate button sits at
 // the rail's foot (FR-DON-001). Every name is read from railLabels.
 import type {CSSProperties} from 'react'
@@ -18,6 +19,8 @@ interface Props {
     onToggleRotate: () => void
     cloudsShown: boolean
     onToggleClouds: () => void
+    dayNightShown: boolean
+    onToggleDayNight: () => void
     onResetView: () => void
     onZoom: (zoomIn: boolean) => void
     onRefresh: () => void
@@ -40,12 +43,17 @@ export function Rail(p: Props) {
     const clouds = p.cloudsShown
         ? {label: RAIL_LABELS.hideClouds, icon: icons.cloudCoverHide}
         : {label: RAIL_LABELS.showClouds, icon: icons.cloudCover}
+    // FR-DAY-005: the same, for the day and night layer.
+    const dayNight = p.dayNightShown
+        ? {label: RAIL_LABELS.hideDayNight, icon: icons.dayNightHide}
+        : {label: RAIL_LABELS.showDayNight, icon: icons.dayNight}
     // The turn's length has its one home in useHeld; the stylesheet reads it here.
     const turn = {'--refresh-turn': `${REFRESH_TURN_MS}ms`} as CSSProperties
     return <nav className="rail" aria-label="Actions" style={turn}>
         <div className="rail-actions">
             <RailButton {...rotation} onClick={p.onToggleRotate}/>
             <RailButton {...clouds} onClick={p.onToggleClouds}/>
+            <RailButton {...dayNight} onClick={p.onToggleDayNight}/>
             <RailButton label={RAIL_LABELS.resetView} icon={icons.resetView} onClick={p.onResetView}/>
             <RailButton label={RAIL_LABELS.zoomIn} icon={icons.zoomIn} onClick={() => p.onZoom(true)}/>
             <RailButton label={RAIL_LABELS.zoomOut} icon={icons.zoomOut} onClick={() => p.onZoom(false)}/>

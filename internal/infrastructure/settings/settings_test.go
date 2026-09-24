@@ -15,7 +15,7 @@ import (
 	"github.com/oernster/EarthNow/internal/application/ports"
 )
 
-var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h"}
+var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h", DayNightShown: true}
 
 func storeIn(t *testing.T) *File {
 	t.Helper()
@@ -66,6 +66,30 @@ func TestAFieldTheFileLacksKeepsItsDefault(t *testing.T) {
 	got, held, err := store.Load(defaults)
 	if !held || err != nil || !got.AutoRotate || got.Magnitude != "all" || got.Window != "24h" {
 		t.Errorf("Load = %+v, %v, %v", got, held, err)
+	}
+}
+
+func TestFRDAY007_AFileFromBeforeTheLayerStartsItShown(t *testing.T) {
+	t.Parallel()
+	store := storeIn(t)
+	// A 1.0.0 file: every field of its day, none for the day and night layer.
+	plant(t, store, `{"autoRotate":true,"magnitude":"2.5","speed":"normal","window":"24h","cloudsShown":true}`)
+	got, held, err := store.Load(defaults)
+	if !held || err != nil || !got.DayNightShown {
+		t.Errorf("Load = %+v, %v, %v; want the layer shown", got, held, err)
+	}
+}
+
+func TestFRDAY007_HidingTheLayerSurvivesASave(t *testing.T) {
+	t.Parallel()
+	store := storeIn(t)
+	want := defaults
+	want.DayNightShown = false
+	if err := store.Save(want); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, err := store.Load(defaults); err != nil || got.DayNightShown {
+		t.Errorf("Load = %+v, %v; want the layer hidden", got, err)
 	}
 }
 

@@ -32,8 +32,9 @@ source that reported it and how old that report is.
 - Anyone who wants history. The widest time window is seven days; there is no
   archive and no playback.
 - Anyone after a GIS tool or a weather service. There are no measurements or
-  projections. The one layer is the clouds, which show where cloud lay when the
-  image was made; there is no rain, wind, temperature or forecast.
+  projections. There are two layers. The clouds show where cloud lay when the
+  image was made; day and night shows where the sun is up now. There is no
+  rain, wind, temperature or forecast.
 
 ## What it does
 
@@ -47,6 +48,13 @@ source that reported it and how old that report is.
   globe beneath the markers. The line beneath the globe gives the image's time
   in UTC with its age. A grey veil marks where no satellite sees. The layer
   starts hidden and is fetched only while it is shown.
+- **Shows day and night** as the real sun lights the Earth now. The night side
+  darkens and NASA's Black Marble city lights show through it; dawn and dusk
+  fade across a twilight band that moves with the sun. The lights are a 2016
+  composite, so they show where cities are rather than which lights are on.
+  The sun's place is worked out on your machine from the time, with no
+  request. Clouds over the night side are drawn fainter. The layer shows from
+  the first run; a button hides it.
 - **Places every event** with its category's emoji: earthquake, volcano,
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
@@ -189,6 +197,7 @@ tier, no licence key and no feature a donation unlocks.
 The About dialog carries these credits:
 
 - Earth imagery: NASA Earth Observatory (Blue Marble Next Generation).
+- Night lights: NASA Earth Observatory (Black Marble 2016).
 - Natural events: NASA Earth Observatory Natural Event Tracker (EONET).
 - Earthquakes: USGS Earthquake Hazards Program.
 - Volcanoes: Global Volcanism Program, Smithsonian Institution

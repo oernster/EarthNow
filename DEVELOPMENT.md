@@ -135,9 +135,10 @@ Both scripts are run by hand; their output is committed.
 `tools/genicons.py` reads the masters in `assets/` and writes:
 
 - the rail icons into `frontend/src/assets/icons`, at 208 pixels, plus
-  `rotate-stop.png` and `cloud-cover-hide.png`, made by laying `negative.png`
-  over `rotate.png` and `cloud-cover.png`, so the two states of the rotation and
-  cloud buttons cannot drift apart;
+  `rotate-stop.png`, `cloud-cover-hide.png` and `day-night-hide.png`, made by
+  laying `negative.png` over `rotate.png`, `cloud-cover.png` and
+  `day-night.png`, so the two states of the rotation, cloud and day and night
+  buttons cannot drift apart;
 - `assets/application-icon.ico` at 16, 24, 32, 48, 64, 128 and 256 pixels,
   which `build.ps1` puts on both executables;
 - the setup page's header mark (256 pixels) and its sun and moon (128 pixels)
@@ -179,6 +180,10 @@ with `--check` and fails until the file matches.
 
 - `frontend/src/assets/earth.jpg` is the NASA Blue Marble Next Generation
   texture, downloaded and committed.
+- `frontend/src/assets/earth-night.jpg` is NASA's Black Marble 2016 night
+  lights at 3 km, downloaded once, resampled from 13500 by 6750 to 5400 by
+  2700 (Lanczos, JPEG quality 90) to match `earth.jpg`'s size and
+  projection, then committed.
 - `internal/infrastructure/geo/data` holds the Natural Earth places, borders
   and Antarctic ice shelves the application embeds. `tools/geodata.py`, first
   written for the Phase 0 spike, converts Natural Earth shapefiles. It is given the
@@ -248,7 +253,7 @@ bash build_flatpak.sh
 | `main.go` | the composition root |
 | `app.go` | the Wails facade the page calls |
 | `binding_pass.go`, `binding_pass_off.go` | the switch that keeps the build's bindings pass out of the user's log |
-| `internal/domain` | `cloud`, `event`, `freshness`, `window`: no I/O |
+| `internal/domain` | `cloud`, `event`, `freshness`, `sun`, `window`: no I/O |
 | `internal/application` | `ports`, `services` and the `dto` wire shapes |
 | `internal/infrastructure` | `cache`, `clouds`, `geo`, `httpfetch`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
 | `internal/product` | the name, slug, licence line, copyright, donate address and credits |

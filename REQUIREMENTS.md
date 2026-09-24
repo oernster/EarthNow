@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 28.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 29.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -34,6 +34,7 @@ edits.
 | 26 | 2026-09-24 | ASM-007 is confirmed: the owner accepts the credit "Cloud images: EUMETSAT, world cloud map (EUMETView)." with EUMETSAT named in the non-endorsement line. NFR-LEG-002 states that wording. | The owner's ruling; the wording was provisional until then. No behaviour changes. |
 | 27 | 2026-09-24 | The release obligations left open are closed by the owner's acceptance. ASM-001, ASM-003 and ASM-006 are confirmed by the shipped application; ASM-002 and ASM-004 are accepted as they stand. NFR-PERF-001 takes Phase 0's three starts as its result; NFR-PERF-003 is accepted unmeasured. | The owner judged the application fine as built and asked the document to match it. Nothing here is a new measurement: the 20-start sample and the 24 h working set were never taken, the EONET rate-limit window is still unknown and the NASA imagery terms were not re-read. No behaviour changes. |
 | 28 | 2026-09-24 | The Linux Flatpak, its cleanup script and the macOS DMG move from release 2 into the released product: 1.3 takes them out of scope's exclusions, 2.3 lists the three platforms side by side, DEL-005 to DEL-007 read release 1, CON-003 and D.1 drop "release 2" and RSK-002 is closed. | The owner released v1.0.0 with `EarthNowSetup.exe`, `EarthNow.dmg` and `earthnow.flatpak` (the release's assets, read) and tested the notarised Apple Silicon DMG and the Flatpak on the latest Ubuntu LTS, where the globe drew with WebGL2. Emoji coverage under Linux and macOS fonts stays unmeasured (D.3). No behaviour changes. |
+| 29 | 2026-09-24 | The day and night layer (3.2.11, FR-DAY-001 to 009): the globe lit by the real sun, NASA's Black Marble city lights on the night side, a rail button after the clouds, shown on a first run. The day and night terminator and the night-lights texture leave the out-of-scope list and the Won't list. NFR-UX-002's minimum window rises to 960 by 700; NFR-PERF-006, ASM-009 and the Black Marble credit (NFR-LEG-002) added. | Owner request: show where it is daytime on Earth now, from astronomy alone with no service. The owner chose city lights over a plain darkened side, a rail button over a setting and the layer on by default. The rail's own figures (54 px buttons, 8 px gaps, about 11 px spare at 640) leave a tenth button 51 px short. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -65,7 +66,7 @@ The product sentence, which settles any unclear choice:
 ### 1.3 Scope
 
 **In scope for V1 (Windows, macOS and Linux):** the globe, the three providers (NASA EONET,
-USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the provider-neutral event model, refresh with local caching,
+USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the day and night layer (3.2.11), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
 help surfaces, the Windows build script and the bespoke setup program, the
@@ -78,7 +79,7 @@ Linux Flatpak with its cleanup script and the macOS DMG (3.5).
 - push or desktop notifications;
 - a historical archive beyond the 7-day window, timeline playback;
 - NASA FIRMS hotspots, storm tracks drawn as lines, event polygons drawn as areas;
-- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, the day and night terminator, aurora;
+- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud layer, cloud history or animation, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
 - an update check, a system tray icon, start with Windows.
@@ -219,6 +220,7 @@ Every assumption has an owner and a confirm-by point.
 | ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Confirmed: releases are published there (amendment 27) |
 | ASM-007 | EUMETSAT's terms allow a free application to fetch and display the world cloud map with a credit line. EUMETView's capabilities state no fees and no access constraints (read 2026-09-24); the licence page carries no readable terms without a script, so the credit wording and any condition are unconfirmed. | Oliver | Confirmed by the owner on 2026-09-24 (amendment 26) |
 | ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
+| ASM-009 | NASA's Black Marble 2016 may ship inside the application with a credit line under the NASA media terms (R5), as the Blue Marble does (ASM-004). | Oliver | Before the release carrying the day and night layer |
 
 ---
 
@@ -331,7 +333,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-KEY-002 | Must | The key shall read its emoji and names from the category table (Appendix D.3), the same single home the markers read. | Structural test: no emoji literal outside the category table. | T |
 | FR-KEY-003 | Must | The key shall never overlap the globe: the globe area ends at the key's left edge (FR-GLB-013). | D at the minimum window size. | D |
 | FR-RAIL-001 | Must | The main window shall carry an action rail down its left side, 68 px wide, holding the action buttons one above another, each drawing its artwork at the rail's glyph size of 48 px (`--rail-glyph-size`); the globe area begins at the rail's right edge. | T (render) + D at the minimum window size. | T + D |
-| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), clouds (FR-CLD-001), Reset view (FR-GLB-008), zoom in and zoom out (FR-GLB-006), Refresh (FR-PRV-009), provider status (FR-STS-003), Settings (FR-SET), then Help, a menu opening the guide, About, the licence and the third-party notices (FR-HLP). | Vitest reads the rail's accessible names in that order. | T |
+| FR-RAIL-002 | Must | The action rail's buttons shall be, top to bottom: rotation (FR-GLB-010), clouds (FR-CLD-001), day and night (FR-DAY-005), Reset view (FR-GLB-008), zoom in and zoom out (FR-GLB-006), Refresh (FR-PRV-009), provider status (FR-STS-003), Settings (FR-SET), then Help, a menu opening the guide, About, the licence and the third-party notices (FR-HLP). | Vitest reads the rail's accessible names in that order. | T |
 | FR-RAIL-003 | Must | Every rail button's tooltip shall open to the right of the button, so it is not clipped at the window's left edge. | D at the minimum window size. | D |
 | FR-KEY-004 | Should | Each key row shall show the count of that category's displayed events. | 3 displayed quakes read "〰️ Earthquake 3". | T |
 | FR-CNT-001 | Must | The status area shall show the count of events currently displayed with the window it applies to, worded "N events in the last <window>". | 3 displayed events with 24 h selected reads "3 events in the last 24 h". | T (wording) |
@@ -386,7 +388,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-HLP-001 | Must | The About dialog shall show the product name, version from `VERSION`, the copyright notice "© Oliver Ernster 2026", the licence and the data attributions of NFR-LEG-002. | T | T |
 | FR-HLP-002 | Must | The licence dialog shall show the full GPL-3.0 text. | T | T |
 | FR-HLP-003 | Must | The third-party notices dialog shall show each bundled dependency and data asset with its licence or terms. | Every entry in `THIRD_PARTY_NOTICES` renders. | T |
-| FR-HLP-004 | Should | The guide dialog shall name every rail button and every category, each entry led by the control's own picture (the rail icon, the category emoji), then explain the time window, freshness wording and staleness, plus what the cloud layer shows, its veil and that cold ground reads as cloud. | I | I |
+| FR-HLP-004 | Should | The guide dialog shall name every rail button and every category, each entry led by the control's own picture (the rail icon, the category emoji), then explain the time window, freshness wording and staleness, plus what the cloud layer shows, its veil and that cold ground reads as cloud, plus what the day and night layer shows. | I | I |
 | FR-HLP-005 | Must | While the About, licence, notices or guide dialog overflows, its reading body shall read itself using the house auto-scroll cycle (CON-007). | Tick-driven Vitest over the ported state machine; hook test under jsdom. | T |
 | FR-HLP-006 | Must | While the detail panel's body overflows, the detail panel shall read itself using the same cycle. | T | T |
 
@@ -461,6 +463,28 @@ The infrared channel cannot tell cold ground from cloud: Antarctica,
 Greenland and high mountains in winter read as cloud. The guide says so
 (FR-HLP-004); no requirement here claims otherwise.
 
+#### 3.2.11 Day and night (amendment 29)
+
+The sun's position is astronomy: a pure function of the UTC instant, so the
+layer needs no service and makes no request. The night side shows NASA Earth
+Observatory's Black Marble 2016 city lights (D.4). globe.gl's own
+`day-night-cycle` example (read in `node_modules/globe.gl/example`) blends a day
+and a night texture by the angle to the sun; EarthNow takes that approach, with
+the sun's position computed in the domain rather than by a page library and
+both textures bundled rather than fetched.
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-DAY-001 | Must | The domain shall compute, for any UTC instant, the subsolar point: its latitude the solar declination and its longitude from the hour angle corrected by the equation of time, by NOAA's solar position equations. | Within 0.1 degrees of NOAA's solar calculator at the four instants recorded in the test (2026's solstices and equinoxes at 12:00 UTC). | T |
+| FR-DAY-002 | Must | The domain shall give the light at a point as a factor from 0 (night) to 1 (day) of the sun's elevation there: 0 at or below the twilight limit (6 degrees below the horizon), 1 at or above 6 degrees above it, linear between (a target the real window confirms by eye). | Elevation -6 gives 0, 0 gives 0.5, 6 gives 1. | T |
+| FR-DAY-003 | Must | While the day and night layer is shown, the globe view shall draw each point of the globe as the day texture and the night texture mixed by FR-DAY-002's light factor, the sun placed at FR-DAY-001's subsolar point. | Inspection with the layer shown: the lit side faces the subsolar point; the terminator runs through dawn and dusk. | D |
+| FR-DAY-004 | Must | While the day and night layer is shown, the globe view shall move the sun at least once a minute (it moves a quarter of a degree a minute). | Fake timer: the sun's position is asked for again within 60 s. | T |
+| FR-DAY-005 | Must | While the day and night layer is hidden, the day and night button shall show the `day-night` artwork alone with the tooltip and accessible name "Show day and night"; while it is shown, the `day-night` artwork with the `negative` overlay and "Hide day and night" (NFR-UX-004). | Given the layer hidden, the button reads "Show day and night"; one press shows the layer and the button reads "Hide day and night". | T |
+| FR-DAY-006 | Must | When the day and night button is activated, the globe view shall switch the layer between shown and hidden. | T | T |
+| FR-DAY-007 | Must | The settings store shall persist whether the day and night layer is shown; when no saved choice exists, the layer shall start shown. | A first run starts shown; hiding it, closing and reopening starts hidden. | T |
+| FR-DAY-008 | Must | While the day and night layer is hidden, the globe view shall draw the day texture over the whole globe, as before this amendment. | The light factor handed to the globe is 1 everywhere while hidden. | T |
+| FR-DAY-009 | Must | While the day and night layer and the cloud layer are both shown, the globe view shall dim each cloud by its point's light factor, down to a night floor of 25% of its opacity (a target the real window confirms by eye), so no cloud glows white over a dark side. | Light factor 0 gives 25% of the cloud's opacity, 1 gives all of it. | T + D |
+
 ### 3.3 Non-functional requirements
 
 Every performance figure is measured on the reference machine.
@@ -471,11 +495,12 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-002 | Must | While idle-rotating with 2,500 markers, the globe view shall hold a median frame time of 16.7 ms or less and a 99th percentile of 33 ms or less (a target; Phase 0 measures it). 2,500 is the measured USGS all-magnitude week (2,126 on 2026-09-23) plus EONET plus headroom. | Frame-time log over 60 s. |
 | NFR-PERF-003 | Must | While running for 24 h with default settings, the application's working set shall stay below 500 MB (a target). | Process working set sampled hourly. Accepted by the owner unmeasured (amendment 27). |
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
+| NFR-PERF-006 | Must | While idle-rotating with the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over 60 s with both layers shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005 (amendment 27). |
 | NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
 | NFR-UX-001 | Must | The globe area (FR-GLB-013) shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
-| NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 640 pixels, the height that holds the action rail's nine buttons and the donate button (measured at 600: eight buttons of 54 px with 8 px gaps left 33 px above the donate button; a ninth needs 62). | I; the rail's buttons all visible at the minimum size (D). |
+| NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 700 pixels, the height that holds the action rail's ten buttons and the donate button (measured at 600: eight buttons of 54 px with 8 px gaps left 33 px above the donate button; each further button needs 62, so ten need 691; 700 is a target the real window confirms). | I; the rail's buttons all visible at the minimum size (D). |
 | NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
 | NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button, the cloud button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
 | NFR-UX-005 | Must | The main window shall use one dark palette; it shall offer no light theme in V1. The setup program keeps the house light and dark toggle. | I |
@@ -508,7 +533,7 @@ Every performance figure is measured on the reference machine.
 | NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
 | NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
 | NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence and the licence text in full. | `tools/notices.py --check` in `test.ps1`: the file must equal what the shipped Go modules (`go list -deps`) and page packages (`npm ls --omit=dev`) call for. |
-| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images ("Cloud images: EUMETSAT, world cloud map (EUMETView).", ASM-007), without implying endorsement and without the NASA insignia. | I against R5. |
+| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images ("Cloud images: EUMETSAT, world cloud map (EUMETView).", ASM-007), NASA Earth Observatory for the night lights ("Night lights: NASA Earth Observatory (Black Marble 2016)."), without implying endorsement and without the NASA insignia. | I against R5. |
 
 ### 3.4 Data requirements
 
@@ -542,7 +567,7 @@ Every performance figure is measured on the reference machine.
 ### 3.6 Won't this time (recorded so they are not re-proposed)
 
 Timeline playback; NASA FIRMS; storm tracks and polygons drawn as shapes; the
-day and night terminator; night-lights texture; notifications; favourites and
+notifications; favourites and
 home location; screenshots and export; an event list or search view (Plan 16
 allows deferring it; NFR-KBD-004 makes every event reachable from the keyboard
 meanwhile); cross-provider duplicate merging (measured 2026-09-23: EONET holds 15 earthquakes in its whole history, the newest dated 2018-09-28, none in the last 365 days, so an EONET and a USGS marker for the same quake does not arise in practice; revisit if it is ever observed); light theme for the
@@ -661,6 +686,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `settings.png` | Settings |
 | `help-info.png` | About, guide, licences |
 | `zoom-in.png`, `zoom-out.png` | Zoom buttons (FR-RAIL-002) |
+| `day-night.png` | Day and night button (FR-DAY-005), supplied by the owner: shown alone while the layer is hidden. `tools/genicons.py` composites `negative.png` over it to make `day-night-hide.png`, shown while the layer is shown, the default. |
 | `cloud-cover.png` | Cloud button (FR-CLD-001), supplied by the owner: shown alone while the layer is hidden, the default. `tools/genicons.py` composites `negative.png` over it to make `cloud-cover-hide.png`, shown while the layer is shown, as it does for rotation. |
 
 ### D.3 Category markers: emoji, not artwork (decided by the owner 2026-09-23)
@@ -691,6 +717,12 @@ elements moved every frame is a frame-rate risk (a hypothesis; FR-SPK-007
 measures the chosen form).
 
 ### D.4 Not artwork
+
+Night texture: NASA Earth Observatory's Black Marble 2016 (`BlackMarble_2016_3km.jpg`,
+13500 x 6750, 8.1 MB, measured by its headers) resampled once to 5400 x 2700 so it
+matches the day texture pixel for pixel (both equirectangular from 180 degrees west, checked
+side by side), committed as `frontend/src/assets/earth-night.jpg` (1.04 MB) and credited
+(NFR-LEG-002).
 
 Earth texture: NASA Blue Marble Next Generation at 5400 x 2700 (about 7.4 km
 per pixel at the equator), downloaded and credited (R5); the spike reviews

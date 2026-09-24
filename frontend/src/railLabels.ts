@@ -6,6 +6,8 @@ export const RAIL_LABELS = {
     stopRotating: 'Stop rotating',
     showClouds: 'Show clouds',
     hideClouds: 'Hide clouds',
+    showDayNight: 'Show day and night',
+    hideDayNight: 'Hide day and night',
     resetView: 'Reset view',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',

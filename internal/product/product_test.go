@@ -31,7 +31,7 @@ func TestCopyrightUsesTheSymbol(t *testing.T) {
 func TestAttributionsCreditTheSources(t *testing.T) {
 	t.Parallel()
 	all := strings.Join(Attributions(), " ")
-	for _, want := range []string{"NASA Earth Observatory", "EONET", "USGS Earthquake Hazards Program", "endorses"} {
+	for _, want := range []string{"NASA Earth Observatory", "Black Marble", "EONET", "USGS Earthquake Hazards Program", "endorses"} {
 		if !strings.Contains(all, want) {
 			t.Errorf("attributions lack %q: %s", want, all)
 		}

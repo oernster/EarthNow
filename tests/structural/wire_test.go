@@ -39,6 +39,7 @@ var wireShapes = map[string]string{
 	"SettingChoices": "SettingChoicesDTO",
 	"Settings":       "SettingsDTO",
 	"Speed":          "SpeedDTO",
+	"Sun":            "SunDTO",
 	"View":           "ViewDTO",
 }
 

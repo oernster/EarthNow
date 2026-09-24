@@ -19,6 +19,7 @@ import {ProductName} from './product'
 import {useRing} from './ring'
 import type {ChoiceDTO, CloudsDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
 import {REFRESH_TURN_MS, useHeld} from './useHeld'
+import {useSun} from './useSun'
 
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
 
@@ -119,12 +120,16 @@ export default function App() {
     const refreshing = useHeld(view.providers.some(p => p.refreshing), REFRESH_TURN_MS)
     // FR-CLD-011: the cloud service joins the popover while the layer is shown.
     const statusProviders = clouds?.shown ? [...view.providers, clouds.provider] : view.providers
+    const dayNightShown = settings?.dayNightShown ?? false
+    const sun = useSun(dayNightShown, onProblem)
 
     return <ProductName.Provider value={product}><div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
             onToggleRotate={() => change({autoRotate: !settings?.autoRotate})}
             cloudsShown={settings?.cloudsShown ?? false}
             onToggleClouds={() => change({cloudsShown: !settings?.cloudsShown})}
+            dayNightShown={dayNightShown}
+            onToggleDayNight={() => change({dayNightShown: !dayNightShown})}
             attention={needsAttention(statusProviders, view.notice)}
             onResetView={() => globe.current?.resetView()}
             onZoom={zoomIn => globe.current?.zoom(zoomIn)}
@@ -143,6 +148,7 @@ export default function App() {
             {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
                 cloudImage={settings.cloudsShown ? cloudImage : ''}
+                dayNightShown={dayNightShown} sun={sun}
                 onSelect={setSelected} onProblem={onProblem}/>}
             <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}
                 note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds}/>

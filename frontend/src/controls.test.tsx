@@ -10,7 +10,7 @@ import type {SettingChoicesDTO, SettingsDTO} from './types'
 const noop = () => undefined
 
 function rotationButton(autoRotate: boolean) {
-    render(<Rail autoRotate={autoRotate} attention={false} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} onResetView={noop} onZoom={noop}
+    render(<Rail autoRotate={autoRotate} attention={false} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop} onZoom={noop}
         onRefresh={noop} onStatus={noop} onSettings={noop} onHelp={noop} onDonate={noop}/>)
     return document.querySelector<HTMLElement>('.rail-btn')!
 }

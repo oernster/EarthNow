@@ -52,6 +52,7 @@ export function guideSections(product: string): readonly GuideSection[] {
             entries: [
                 {icon: icons.rotate, name: RAIL_LABELS.startRotating, text: 'turns the globe slowly while you are not using it. While it turns, the button shows a cross and stops it.'},
                 {icon: icons.cloudCover, name: RAIL_LABELS.showClouds, text: 'lays the clouds over the globe as weather satellites last saw them. While they show, the button shows a cross and hides them.'},
+                {icon: icons.dayNight, name: RAIL_LABELS.showDayNight, text: 'shades the side of the Earth where it is night and lights its cities. It shows from the first run; while it shows, the button shows a cross and hides it.'},
                 {icon: icons.resetView, name: RAIL_LABELS.resetView, text: 'brings the whole globe back into view.'},
                 {icon: icons.zoomIn, name: RAIL_LABELS.zoomIn, text: 'moves the camera closer; the mouse wheel does the same.'},
                 {icon: icons.zoomOut, name: RAIL_LABELS.zoomOut, text: 'moves the camera further away.'},
@@ -90,6 +91,15 @@ export function guideSections(product: string): readonly GuideSection[] {
                 'An infrared image sees temperature, not colour: the colder a surface, the whiter the cloud drawn. Snow, ice and cold high ground can therefore read as cloud.',
                 'A grey veil marks where no satellite sees, mostly near the poles, so an unseen region never reads as a clear sky.',
                 'The clouds are fetched only while they are shown. The last image is kept, so they still show without a connection, marked with their age.',
+            ],
+        },
+        {
+            heading: 'Day and night',
+            paragraphs: [
+                'The sun\'s place is worked out on this computer from the time, so the layer needs no connection. The line between day and night moves with the real sun, a quarter of a degree a minute.',
+                'Dawn and dusk fade across a band either side of that line rather than cutting off, as twilight does.',
+                'The lights on the night side are NASA\'s Black Marble picture of the Earth at night, a composite from 2016: they show where cities are, not which lights are on now.',
+                'Clouds over the night side are drawn fainter, so they never glow white in the dark.',
             ],
         },
         {

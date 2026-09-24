@@ -7,8 +7,9 @@ for artwork and wrong for a rail that draws them at 48. Each is trimmed to its
 own content then centred on a square canvas, so every icon carries the same
 optical weight, then written small enough to embed.
 
-The stop-rotating and hide-clouds icons have no master. Each is DERIVED here by
-laying negative.png over its button's artwork (rotate.png, cloud-cover.png), so
+The stop-rotating, hide-clouds and hide-day-and-night icons have no master. Each
+is DERIVED here by laying negative.png over its button's artwork (rotate.png,
+cloud-cover.png, day-night.png), so
 the two states of a toggle cannot drift apart: every pixel the overlay does not
 cover is the artwork's own pixel (REQUIREMENTS.md Appendix D.2, NFR-UX-004).
 
@@ -67,11 +68,13 @@ PAD = 2
 # OVERLAY_MASTER is the mark laid over a toggle's artwork to make the icon for
 # the state that switches it off (NFR-UX-004). It is never shown alone, so it is
 # not rendered. DERIVED pairs each such artwork with the icon made from it: the
-# rotation button's stop state and the cloud button's hide state (FR-CLD-001).
+# rotation button's stop state, the cloud button's hide state (FR-CLD-001) and
+# the day and night button's hide state (FR-DAY-005).
 OVERLAY_MASTER = "negative.png"
 DERIVED = (
     ("rotate.png", "rotate-stop.png"),
     ("cloud-cover.png", "cloud-cover-hide.png"),
+    ("day-night.png", "day-night-hide.png"),
 )
 
 # NOT_RAIL are masters with another destination: the application icon (the .ico

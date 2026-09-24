@@ -37,6 +37,7 @@ type App struct {
 	sched  *services.Scheduler
 	prefs  *services.Preferences
 	clouds *services.Clouds
+	sun    *services.Sun
 	help   Help
 	byName map[event.Provider]ports.Provider
 	wake   chan struct{}
@@ -51,12 +52,12 @@ type Help struct {
 }
 
 // NewApp builds the facade.
-func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, help Help, providers []ports.Provider) *App {
+func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, sun *services.Sun, help Help, providers []ports.Provider) *App {
 	byName := map[event.Provider]ports.Provider{}
 	for _, p := range providers {
 		byName[p.Name()] = p
 	}
-	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, help: help, byName: byName, wake: make(chan struct{}, 1)}
+	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, sun: sun, help: help, byName: byName, wake: make(chan struct{}, 1)}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -296,6 +297,9 @@ func (a *App) Clouds() dto.Clouds { return a.clouds.Status() }
 
 // CloudImage answers the held cloud image as a data URL; empty when none.
 func (a *App) CloudImage() string { return a.clouds.Image() }
+
+// Sun answers where the sun stands overhead now (FR-DAY-001).
+func (a *App) Sun() dto.Sun { return a.sun.Position() }
 
 // About answers what the About dialog shows (FR-HLP-001).
 func (a *App) About() dto.About { return a.help.About }

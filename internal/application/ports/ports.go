@@ -41,6 +41,8 @@ type Settings struct {
 	HiddenProviders  []string
 	// CloudsShown is whether the cloud layer is drawn (FR-CLD-003).
 	CloudsShown bool
+	// DayNightShown is whether the day and night layer is drawn (FR-DAY-007).
+	DayNightShown bool
 }
 
 // SettingsStore keeps the settings between runs (FR-SET-004). Load starts from
