@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import {api} from './api'
 import {CLOUD_ALTITUDE, makeCloudSphere, showCloudImage} from './cloudLayer'
 import {Rail} from './components/Rail'
+import {guideSections} from './guide'
 import {StatusLine} from './components/StatusLine'
 import {icons} from './icons'
 import {MARKER_ALTITUDE} from './markers'
@@ -37,6 +38,16 @@ describe('FR-CLD-001 the cloud button', () => {
         rail(true)
         const button = screen.getByLabelText('Hide clouds')
         expect(button.querySelector('img')?.getAttribute('src')).toBe(icons.cloudCoverHide)
+    })
+})
+
+describe('FR-HLP-004 the guide', () => {
+    it('names every rail button, the cloud button included', () => {
+        rail(false)
+        const named = new Set(guideSections('')[0].entries.map(e => e.name))
+        const labels = Array.from(document.querySelectorAll('.rail-btn')).map(b => b.getAttribute('aria-label'))
+        expect(labels).toContain('Show clouds')
+        expect(labels.filter(l => !named.has(l ?? ''))).toEqual([])
     })
 })
 

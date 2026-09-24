@@ -22,8 +22,8 @@
 #      sandbox: Pillow is on the host and not in the SDK. It writes into the gitignored
 #      build/linux/icons; the manifest installs whatever it wrote, so the sizes have one
 #      home, in genicons.py.
-#   3. The finished application keeps --share=network, since fetching three public sources is
-#      the whole of what it does (NFR-PRIV-001). It needs no --filesystem at all: its
+#   3. The finished application keeps --share=network, since fetching three public sources and
+#      the cloud image is the whole of what it does (NFR-PRIV-001). It needs no --filesystem at all: its
 #      settings, cache and log live under the sandbox's own cache folder.
 #   4. The globe needs WebGL. main.go passes options.Linux with the GPU policy set to Always,
 #      since Wails v2 turns acceleration off when that option is absent (RSK-002). Whether the
@@ -131,6 +131,7 @@ cat > "${PACKAGING_DIR}/${APP_ID}.metainfo.xml" << METAINFO
       they happened: earthquakes from the USGS, wildfires, storms, floods and ice from
       NASA EONET and the volcanoes in the Smithsonian and USGS Weekly Volcanic Activity
       Report. Every event names the source that reported it and how old that report is.
+      The clouds from EUMETSAT's world cloud map can be laid over the globe.
       No account, no telemetry and no forecasts.
     </p>
   </description>
@@ -163,7 +164,7 @@ sdk-extensions:
   - ${NODE_EXT}
 command: ${BIN_NAME}
 # finish-args is the permission the FINISHED application runs with: a display, a GPU for the
-# globe and the network for its three sources. No filesystem permission: its settings, cache
+# globe and the network for its three sources and the cloud image. No filesystem permission: its settings, cache
 # and log live in the sandbox's own cache folder. Opening a source page or the donate page
 # hands the address to the desktop portal, so that needs nothing either.
 finish-args:

@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 24.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 25.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -30,6 +30,7 @@ edits.
 | 22 | 2026-09-24 | FR-PRV-010: after every press of Refresh the status area states the local time of the last manual refresh made, in place of when the next becomes available. | The owner read "Refresh available now" after a refused press and could not tell what it meant. The wait was worded in whole minutes, so every wait inside the 30 s cooldown read "now"; the line also stayed up after the cooldown ended. The owner asked for the time of the last refresh instead. |
 | 23 | 2026-09-24 | CON-003 limits "no CGO" to the Windows build. FR-GLB-002 rotates from launch, resuming after the idle delay. FR-MRK-005's tooltip holds the category's emoji, the title and the place line. DATA-004 names GVP's event time. Appendix D.1 says how the release 2 icons are made; D.4 says the space behind the globe is plain black. | The code measured against the document in the final documentation pass: the Linux and macOS builds need cgo; rotation starts at launch; the tooltip carries the emoji rather than the category's name; no starfield is drawn. No behaviour changes. |
 | 24 | 2026-09-24 | The cloud layer (3.2.10, FR-CLD-001 to 016): a rail button showing or hiding EUMETSAT's world cloud map over the globe, its infrared brightness mapped to opacity, a veil where no satellite sees, the image's valid time and age in the status area. It is fetched only while shown and cached for offline use. NFR-UX-002's minimum window rises to 960 by 640. NFR-PRIV-001 allows `view.eumetsat.int`; NFR-LEG-002 credits EUMETSAT; NFR-PERF-005, ASM-007, ASM-008 and RSK-006 added. Scope drops satellite cloud imagery from the out-of-scope list; weather stays out. | Owner request: toggle global cloud cover as satellite imagery shows it, from a free keyless source. Measured: NASA GIBS carries no Meteosat, so Europe and Africa would show none; EUMETSAT's layer covers the whole ring. At the old minimum the rail held 33 px spare against the 62 a ninth button needs; the owner chose the larger window over tighter gaps or a button off the rail, a veil over unseen regions and the layer hidden on a first run. |
+| 25 | 2026-09-24 | 4.1 names EUMETSAT among the sources that never suggest an endorsement. NFR-UX-004 names the cloud button among the toggles it covers. | The code measured against the document in the documentation pass: About credits EUMETSAT and says it does not endorse EarthNow; the cloud button shows the state it switches to, as FR-CLD-001 requires. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -472,7 +473,7 @@ Every performance figure is measured on the reference machine.
 | NFR-UX-001 | Must | The globe area (FR-GLB-013) shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
 | NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 640 pixels, the height that holds the action rail's nine buttons and the donate button (measured at 600: eight buttons of 54 px with 8 px gaps left 33 px above the donate button; a ninth needs 62). | I; the rail's buttons all visible at the minimum size (D). |
 | NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
-| NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
+| NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button, the cloud button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
 | NFR-UX-005 | Must | The main window shall use one dark palette; it shall offer no light theme in V1. The setup program keeps the house light and dark toggle. | I |
 | NFR-UX-006 | Must | The main window's heading shall read "EarthNow"; the event count line (FR-CNT-001) carries the sense of now. | T |
 | NFR-KBD-001 | Must | The main window shall implement the keeb ring: Tab and Right forward, Shift+Tab and Left back, wrapping at both ends. | Vitest ring walk. |
@@ -551,8 +552,8 @@ Windows.
 ### 4.1 Legal
 
 Covered by CON-004, NFR-LEG-001 and NFR-LEG-002. EarthNow names NASA, the
-USGS, the Smithsonian's Global Volcanism Program and Natural Earth only as
-sources; the product name, icon and site never suggest any of them endorses it.
+USGS, the Smithsonian's Global Volcanism Program, EUMETSAT and Natural Earth
+only as sources; the product name, icon and site never suggest any of them endorses it.
 
 ### 4.2 Internationalisation
 

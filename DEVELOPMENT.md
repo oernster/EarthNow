@@ -135,8 +135,9 @@ Both scripts are run by hand; their output is committed.
 `tools/genicons.py` reads the masters in `assets/` and writes:
 
 - the rail icons into `frontend/src/assets/icons`, at 208 pixels, plus
-  `rotate-stop.png`, made by laying `negative.png` over `rotate.png` so the two
-  states of the rotation button cannot drift apart;
+  `rotate-stop.png` and `cloud-cover-hide.png`, made by laying `negative.png`
+  over `rotate.png` and `cloud-cover.png`, so the two states of the rotation and
+  cloud buttons cannot drift apart;
 - `assets/application-icon.ico` at 16, 24, 32, 48, 64, 128 and 256 pixels,
   which `build.ps1` puts on both executables;
 - the setup page's header mark (256 pixels) and its sun and moon (128 pixels)
@@ -229,7 +230,8 @@ bash build_flatpak.sh
   unless told otherwise, so `main.go` passes `options.Linux` with the policy
   set to Always (RSK-002). Whether a given machine then offers WebGL2 is
   measured on that machine.
-- **The Flatpak keeps the network** for the three sources and asks for no
+- **The Flatpak keeps the network** for the three sources and the cloud
+  image; it asks for no
   filesystem access: its settings, cache and log live in the sandbox's own
   cache folder.
 - **The DMG** copies `assets/application-icon.png` to `build/appicon.png`, as

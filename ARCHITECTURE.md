@@ -1,9 +1,10 @@
 # Architecture
 
 EarthNow answers one sentence: open a globe and see what is happening on Earth
-right now. The Go side fetches three public sources, keeps their last good sets
-and decides what falls inside the chosen time window; the page draws the globe
-and reads the answer. This document says how the code is divided, which rules
+right now. The Go side fetches three public sources of events, keeps their last
+good sets and decides what falls inside the chosen time window. While the cloud
+layer is shown it also fetches EUMETSAT's cloud image and draws it. The page
+draws the globe and reads the answer. This document says how the code is divided, which rules
 the tests hold it to and why each design choice was made.
 
 [REQUIREMENTS.md](REQUIREMENTS.md) is the specification; requirement numbers
