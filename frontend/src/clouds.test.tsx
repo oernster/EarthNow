@@ -44,7 +44,7 @@ describe('FR-CLD-001 the cloud button', () => {
 describe('FR-HLP-004 the guide', () => {
     it('names every rail button, the cloud button included', () => {
         rail(false)
-        const named = new Set(guideSections('')[0].entries.map(e => e.name))
+        const named = new Set(guideSections('').flatMap(s => s.entries ?? []).map(e => e.name))
         const labels = Array.from(document.querySelectorAll('.rail-btn')).map(b => b.getAttribute('aria-label'))
         expect(labels).toContain('Show clouds')
         expect(labels.filter(l => !named.has(l ?? ''))).toEqual([])
