@@ -25,7 +25,9 @@ import (
 	"github.com/oernster/EarthNow/internal/application/services"
 	"github.com/oernster/EarthNow/internal/infrastructure/cache"
 	"github.com/oernster/EarthNow/internal/infrastructure/clouds"
+	"github.com/oernster/EarthNow/internal/infrastructure/geo"
 	"github.com/oernster/EarthNow/internal/infrastructure/httpfetch"
+	"github.com/oernster/EarthNow/internal/infrastructure/oslocale"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/eonet"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/gvp"
 	"github.com/oernster/EarthNow/internal/infrastructure/providers/usgs"
@@ -146,7 +148,15 @@ func main() {
 		Licence: licenceText,
 		Notices: noticesText,
 	}
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, services.NewSun(clock), help, providers)
+	// The label table is built into the binary; one that will not load leaves
+	// an empty table, so the globe opens as before and the log says why.
+	labels, err := geo.LoadLabels()
+	if err != nil {
+		log.Printf("Start view: %v", err)
+		labels = &geo.Labels{}
+	}
+	start := services.NewStartView(oslocale.Setting{}, labels)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, services.NewSun(clock), start, help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

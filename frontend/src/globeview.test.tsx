@@ -49,7 +49,7 @@ const IDLE_MS = 10_000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} onSelect={noop} onProblem={noop}/>)
+        secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
 }
 
@@ -102,7 +102,7 @@ describe('the globe', () => {
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
         view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" dayNightShown={false} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 
@@ -112,6 +112,20 @@ describe('the globe', () => {
         await act(async () => { await Promise.resolve() })
         expect(screen.getByText(PLACE)).toBeTruthy()
         expect(document.querySelector('.tip-title')!.textContent).toContain(quake.title)
+    })
+
+    it('FR-GLB-015 opens facing the start view, with rotation to follow from there', () => {
+        render(<GlobeView events={[]} selectedId={null} autoRotate secondsPerRevolution={60} cloudImage=""
+            dayNightShown={false} sun={null} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onProblem={noop}/>)
+        const globe = made[made.length - 1]
+        expect(globe.calls).toContainEqual(['pointOfView', [{lat: 54.4027, lng: -2.1163}]])
+        expect(globe.controls.autoRotate).toBe(true)
+    })
+
+    it('FR-GLB-016 opens as before when there is no start view', () => {
+        const {globe} = draw(true)
+        const facings = globe.calls.filter(([name, args]) => name === 'pointOfView' && 'lat' in (args[0] as object))
+        expect(facings).toEqual([])
     })
 
     it('FR-DAY-003 draws the globe with the day and night material', () => {
@@ -126,7 +140,7 @@ describe('the globe', () => {
         const {view} = draw(false)
         expect(load).not.toHaveBeenCalled()
         const shown = (dayNightShown: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" dayNightShown={dayNightShown} sun={null} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" dayNightShown={dayNightShown} sun={null} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
         shown(true)
         shown(false)
         shown(true)

@@ -72,6 +72,7 @@ below are the ones written beside each floor in `test.ps1` and
 | `infrastructure/providers/gvp` | 100 | |
 | `infrastructure/settings` | 100 | |
 | `infrastructure/httpfetch` | 97.3 | A request-building failure that no valid method and context can produce. |
+| `infrastructure/oslocale` | 85.7 | The region call failing: absent before Windows 10 1709, else answering nothing. Neither happens on a current Windows. |
 | `infrastructure/clouds` | 96.4 | Encoding the drawn image into memory, which cannot fail. |
 | `infrastructure/cache` | 89.8 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
 | `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
@@ -100,10 +101,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 81.26 |
-| Branches | 74.93 |
-| Functions | 77.95 |
-| Lines | 83.78 |
+| Statements | 82.23 |
+| Branches | 75.55 |
+| Functions | 79.61 |
+| Lines | 84.39 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -144,6 +145,9 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   degrees (FR-DAY-002) and the clouds' night floor (FR-DAY-009). On a fake
   clock the sun moves between two readings a minute apart (FR-DAY-004); a
   first run shows the layer and hiding it is kept (FR-DAY-007).
+- **The start view**: region codes and locale names read as a country or as
+  none (FR-GLB-014); the region's label point answered, else no start view
+  with the reason for the log (FR-GLB-015, FR-GLB-016).
 
 ### The adapters
 
@@ -165,6 +169,11 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   and night field starting the layer shown (FR-DAY-007), another
   schema version read as absent, a damaged file, an oversized file and a save
   that cannot be written.
+- **The region and the label table**: this machine's real region setting
+  read as a code (GB on the reference machine) or as none; the embedded table
+  holding one label point per country, the countries whose dependencies share
+  their code among them (FR-GLB-017). The generator's refusal of a code left
+  with two rows was proved by planting one.
 - **The log**: rotation at start and while running with one previous file
   kept. A child process really panics after a rotation; its log is then read.
 - **Setup**: the extraction and its fence against an entry that climbs out, the
@@ -298,6 +307,7 @@ recorded there, in section 3.1.
 | Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001, NFR-PERF-002, NFR-PERF-003, NFR-PERF-004) | The log's timestamps for start and refreshes; frame time as the Phase 0 spike measured it (section 3.1 of REQUIREMENTS.md), since the application keeps no frame-time log. |
 | The cloud layer draws over the texture, turns with it and stays beneath every marker; the veil reads as unseen rather than as cloud; frame time holds with the layer shown (FR-CLD-008, FR-CLD-015, NFR-PERF-005) | Show the clouds, leave the globe turning, look at the poles. With no frame-time log in the application, smoothness is judged by eye; the result and the spike's measured thresholds are in section 3.2.10 of REQUIREMENTS.md. |
 | The lit side faces the sun and the terminator runs through dawn and dusk; the city lights show on the night side only; clouds over the night side dim and never glow white; frame time holds with both layers shown and 2,500 markers (FR-DAY-003, FR-DAY-009, NFR-PERF-006) | Show both layers and compare the terminator with NOAA's or any day and night map for the same minute; leave the globe turning. With no frame-time log in the application, smoothness is judged by eye, as for NFR-PERF-005. |
+| The globe opens facing your country, then turns from there; on a Mac and on Linux the region is read as ASM-010 states (FR-GLB-014, FR-GLB-015) | Launch; the log's "Start view:" line names the region and the point. On a Mac and on Linux, the same line after launch. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 
 ## See also

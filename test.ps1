@@ -84,11 +84,15 @@ try {
 # then at faults the OS will not produce on demand: the log failing to open, to report
 # its size or to close; the runtime refusing a crash file.
 # clouds stops short only at encoding the drawn image into memory, which cannot fail.
+# oslocale stops short at the region call failing: kernel32 lacking it (before Windows
+# 10 1709) or answering nothing. Neither can be produced on a current Windows (measured
+# on Windows only; the macOS and Linux readers are vetted, not run, here).
 $measured = [ordered]@{
     './internal/infrastructure/cache'             = 89.8
     './internal/infrastructure/clouds'            = 96.4
     './internal/infrastructure/geo'               = 100
     './internal/infrastructure/httpfetch'         = 97.3
+    './internal/infrastructure/oslocale'          = 85.7
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100
     './internal/infrastructure/providers/gvp'     = 100

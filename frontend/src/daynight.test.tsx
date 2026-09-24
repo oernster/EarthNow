@@ -10,6 +10,7 @@ import {Rail} from './components/Rail'
 import {dimClouds, lightNights, makeGlobeMaterial, makeUniforms, placeSun, type ShaderParts, showDayNight, sunDirection} from './dayNight'
 import {icons} from './icons'
 import type {SunDTO} from './types'
+import {useGlobeLayers} from './useGlobeLayers'
 import {SUN_POLL_MS, useSun} from './useSun'
 
 const noop = () => undefined
@@ -157,5 +158,51 @@ describe('FR-DAY-004 asking for the sun', () => {
 
     it('reads the sun from the Go side', async () => {
         expect(await api.sun(noop)).toEqual(SUN)
+    })
+
+    it('keeps no sun when the Go side refuses', async () => {
+        App.Sun.mockImplementation(() => Promise.reject(new Error('refused')))
+        const onProblem = vi.fn()
+        const {result} = renderHook(() => useSun(true, onProblem))
+        await act(async () => { await Promise.resolve() })
+        expect(result.current).toBeNull()
+        expect(onProblem).toHaveBeenCalledWith('refused')
+    })
+})
+
+describe('the layers on a globe (FR-DAY-003, FR-CLD-008)', () => {
+    afterEach(() => vi.restoreAllMocks())
+
+    it('attach, then follow the sun and the cloud image as they change', () => {
+        vi.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation((_url, done) => {
+            done?.(new THREE.Texture())
+            return new THREE.Texture()
+        })
+        const setMaterial = vi.fn()
+        const added: THREE.Object3D[] = []
+        const g = {globeMaterial: setMaterial, getGlobeRadius: () => 100, scene: () => ({add: (o: THREE.Object3D) => added.push(o)})}
+        const {result, rerender} = renderHook(({image, sun}) => useGlobeLayers(image, true, sun),
+            {initialProps: {image: '', sun: null as SunDTO | null}})
+        act(() => result.current.attach(g as never))
+        const sphere = added[0] as THREE.Mesh
+        expect(sphere.visible).toBe(false)
+        rerender({image: 'data:image/png;base64,AAAA', sun: SUN})
+        expect(sphere.visible).toBe(true)
+        const shader = compiled(setMaterial.mock.calls[0][0] as THREE.Material, THREE.ShaderLib.phong)
+        const placed = (shader.uniforms.sunDirection as {value: THREE.Vector3}).value
+        expect(placed.equals(sunDirection(SUN.lat, SUN.lng))).toBe(true)
+        act(() => result.current.detach())
+        rerender({image: '', sun: SUN})
+        expect(sphere.visible).toBe(true)
+    })
+})
+
+describe('the start view call (FR-GLB-015)', () => {
+    afterEach(() => { delete (window as unknown as {go?: unknown}).go })
+
+    it('reads the start view from the Go side', async () => {
+        const start = {found: true, lat: 54.4027, lng: -2.1163};
+        (window as unknown as {go: unknown}).go = {main: {App: {StartView: vi.fn(() => Promise.resolve(start))}}}
+        expect(await api.startView(noop)).toEqual(start)
     })
 })

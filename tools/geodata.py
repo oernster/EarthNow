@@ -6,6 +6,11 @@ table (.dbf) directly from their published layouts, so no package is needed.
 Run as `python tools/geodata.py <unpacked layers> <output folder>`: it writes
 places.json.gz, countries.json.gz and shelves.json.gz for whichever of those
 layers it finds unpacked, leaving the rest alone.
+
+With `--labels` it writes only labels.json from the countries layer: each
+country's ISO 3166-1 alpha-2 code to Natural Earth's label point for it, the
+point the globe opens facing (REQUIREMENTS.md FR-GLB-015, FR-GLB-017). The
+borders are left alone, so a label refresh never changes them.
 """
 
 from __future__ import annotations
@@ -97,6 +102,52 @@ def polygons(stem: pathlib.Path, name_field: str) -> list[dict[str, object]]:
     ]
 
 
+# NO_CODE is Natural Earth's mark for an area with no ISO code of its own.
+NO_CODE = "-99"
+
+
+def label_points(rows: list[dict[str, str]]) -> dict[str, list[float]]:
+    """Each ISO_A2_EH code to [LABEL_Y, LABEL_X] (FR-GLB-017).
+
+    A dependency carries its sovereign's code in ISO_A2_EH (the Coral Sea
+    Islands read AU), so a code can name several rows. The row whose own
+    ISO_A2 is the code wins; failing one (France and Norway hold -99 there),
+    the row that is its own sovereign. A code still naming two rows stops the
+    script rather than choosing silently.
+    """
+    by_code: dict[str, list[dict[str, str]]] = {}
+    for row in rows:
+        code = row["ISO_A2_EH"].strip()
+        if code and code != NO_CODE:
+            by_code.setdefault(code, []).append(row)
+    table = {}
+    for code, found in sorted(by_code.items()):
+        if len(found) > 1:
+            found = [r for r in found if r["ISO_A2"].strip() == code] or [
+                r for r in found if r["ADMIN"].strip() == r["SOVEREIGNT"].strip()
+            ]
+        if len(found) != 1:
+            names = ", ".join(r["ADMIN"].strip() for r in by_code[code])
+            sys.exit(f"{code} names {len(found)} rows after the rule: {names}")
+        row = found[0]
+        table[code] = [
+            round(float(row["LABEL_Y"]), COORD_DECIMALS),
+            round(float(row["LABEL_X"]), COORD_DECIMALS),
+        ]
+    return table
+
+
+def write_labels(src: pathlib.Path, out: pathlib.Path) -> None:
+    cc = layer(src, "ne_10m_admin_0_countries")
+    if not cc:
+        sys.exit(f"ne_10m_admin_0_countries is not unpacked under {src}")
+    table = label_points(read_dbf(cc.with_suffix(".dbf")))
+    out.mkdir(parents=True, exist_ok=True)
+    target = out / "labels.json"
+    target.write_text(json.dumps(table, separators=(",", ":")) + "\n", encoding="utf-8")
+    print(f"{target.name}: {len(table)} codes, {target.stat().st_size} bytes")
+
+
 def main(src: pathlib.Path, out: pathlib.Path) -> None:
     """Write each layer whose source is unpacked under src, leaving the others alone.
 
@@ -143,4 +194,7 @@ def main(src: pathlib.Path, out: pathlib.Path) -> None:
 
 
 if __name__ == "__main__":
-    main(pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]))
+    if sys.argv[1] == "--labels":
+        write_labels(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]))
+    else:
+        main(pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]))

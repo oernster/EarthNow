@@ -64,12 +64,14 @@ main.go, app.go          composition root and the Wails facade the page calls
 frontend/src             the page: React, TypeScript, globe.gl
 internal/application/
     ports                what the application needs from outside
-    services             the use cases: globe, store, scheduler, preferences, clouds, sun
+    services             the use cases: globe, store, scheduler, preferences, clouds, sun,
+                         start view
     dto                  the shapes that cross to the page
 internal/domain/
     cloud                the cloud layer's opacity ramp, veil and wording
     event                the provider-neutral event, magnitude bands, links
     freshness            age wording and staleness
+    region               the country a region code or locale name carries
     sun                  where the sun stands overhead and the light it gives
     window               the time windows and what falls inside one
 internal/infrastructure/
@@ -80,7 +82,9 @@ internal/infrastructure/
     clouds               EUMETSAT's world cloud map, drawn for the globe
     cache                each provider's last good set and the cloud image on disk
     settings             settings.json
-    geo                  nearest place and country, from embedded data
+    geo                  nearest place and country, plus each country's label point,
+                         from embedded data
+    oslocale             the operating system's country or region setting
     runlog               the log, plus crash output pointed at it
     window               handing the WebView2 child the keyboard
     setup                the install policy behind the setup program
@@ -104,6 +108,9 @@ Pure Go over values handed in; no clock, no disk, no network.
   and the rule that a source link is a page rather than a data file (FR-SEL-009).
 - `freshness`: age wording (NFR-FRESH-002, FR-SEL-004) and the rule that a
   provider is stale three intervals after its last success (NFR-FRESH-001).
+- `region`: a bare region code or a locale name's territory as an ISO alpha-2
+  code (GB from GB, en_GB.UTF-8, en-GB or macOS's en_US@rg=gbzzzz); none for
+  C, POSIX, a bare language or a UN area such as 001 (FR-GLB-014).
 - `sun`: the subsolar point for a UTC instant by NOAA's solar position
   equations, within 0.1 degrees of NOAA's calculator at 2026's solstices and
   equinoxes (FR-DAY-001); the sun's elevation at a point; the light from 0 at
@@ -116,7 +123,8 @@ Pure Go over values handed in; no clock, no disk, no network.
 
 The use cases, behind the ports in
 [`ports.go`](internal/application/ports/ports.go): `Clock`, `SnapshotCache`,
-`SettingsStore`, `Geocoder`, `Provider`, `CloudSource` and `CloudCache`.
+`SettingsStore`, `Geocoder`, `Provider`, `CloudSource`, `CloudCache`,
+`RegionSource` and `LabelPoints`.
 
 - `Globe` refreshes one provider at a time and answers the view for a window
   and a filter: the events shown, the count per category, each provider's
@@ -144,6 +152,10 @@ The use cases, behind the ports in
 - `Sun` answers where the sun stands overhead by the clock, with the twilight
   limit and the night floor, so the page draws the light without holding a
   figure of its own (FR-DAY-001, FR-DAY-004).
+- `StartView` answers where the globe first faces: the label point of the
+  country the region setting names, else nothing, with a line for the log
+  saying which and why (FR-GLB-015, FR-GLB-016). The page draws the globe only
+  once it has the answer, so the first frame already faces it.
 
 ### Infrastructure
 
@@ -353,6 +365,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |
 | Drawing day and night | three-globe's own lit material kept, the night lights added as its emissive map; one light factor per point, from the world-space normal against a world-space sun, scales the day by it and the lights by what is left (`dayNight.ts`). The cloud sphere dims by the same uniforms. | The example's unlit shader in view space: three-globe's default globe is a Phong material lit by globe.gl's ambient and directional lights (read in source), so an unlit shader would change the day side and hiding the layer would not restore the globe as before (FR-DAY-008). View space also needs the camera's turn fed in every frame, where world space needs nothing while only the camera moves. |
 | The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |
+| Where the globe opens | The operating system's country or region setting, faced at Natural Earth's label point for that country (`tools/geodata.py --labels`, amendment 30) | The time zone: it knows only a band of longitude. The display language: a UK machine often runs an en-US one (owner). The capital or the outline's centre: both can sit at an edge (Washington; the USA pulled north by Alaska). |
 | Cloud times | The layer's own capabilities document, its time dimension's default | The whole service's document: 282 KB against 6.4 KB (measured). |
 | The network | One client with a host allowlist and a size cap; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). |
 | What each source is asked for | Each adapter states the media types it accepts | One `Accept` for all: the Smithsonian feed answers 403 to a request asking only for JSON (measured). |

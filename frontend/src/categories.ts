@@ -1,5 +1,6 @@
 // The category table: the one home of every category's emoji and name
-// (Appendix D.3, FR-KEY-002). The key, the markers and the tooltip all read it.
+// (Appendix D.3, FR-KEY-002). The key, the markers and the tooltip all read it;
+// the tooltip's titles are worded here too.
 // The order is DATA-002's.
 
 export interface CategoryInfo {
@@ -40,4 +41,15 @@ export function categoryCounts(events: readonly {category: string}[]): CategoryC
         counts.set(category, (counts.get(category) ?? 0) + 1)
     })
     return [...counts].map(([category, count]) => ({category, count})).sort((a, b) => b.count - a.count)
+}
+
+/** eventTitle is an event's tooltip title: its category's emoji, then its own. */
+export function eventTitle(e: {category: string; title: string}): string {
+    return `${categoryOf(e.category).emoji} ${e.title}`
+}
+
+/** clusterTitle counts a cluster's members by category, largest first. */
+export function clusterTitle(members: readonly {category: string}[]): string {
+    const parts = categoryCounts(members).map(({category, count}) => `${category.emoji} ${count}`)
+    return `${members.length} events: ${parts.join('  ')}`
 }

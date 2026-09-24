@@ -17,11 +17,13 @@ import {donate} from './donate'
 import {icons} from './icons'
 import {ProductName} from './product'
 import {useRing} from './ring'
-import type {ChoiceDTO, CloudsDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
+import type {ChoiceDTO, CloudsDTO, EventDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, ViewDTO} from './types'
 import {REFRESH_TURN_MS, useHeld} from './useHeld'
 import {useSun} from './useSun'
 
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
+// A refused start view opens the globe as before (FR-GLB-016).
+const NO_START: StartViewDTO = {found: false, lat: 0, lng: 0}
 
 function toggled(list: string[], key: string): string[] {
     return list.includes(key) ? list.filter(k => k !== key) : [...list, key]
@@ -40,6 +42,8 @@ export default function App() {
     const [product, setProduct] = useState('')
     const [clouds, setClouds] = useState<CloudsDTO | null>(null)
     const [cloudImage, setCloudImage] = useState('')
+    // Where the globe first faces (FR-GLB-015); the globe waits for the answer.
+    const [start, setStart] = useState<StartViewDTO | null>(null)
     const globe = useRef<GlobeHandle>(null)
     // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
     const shell = useRef<HTMLDivElement>(null)
@@ -96,6 +100,7 @@ export default function App() {
         void api.windows(onProblem).then(w => { if (w) setWindows(w) })
         void api.settings(onProblem).then(s => { if (s) setSettings(s) })
         void api.settingChoices(onProblem).then(c => { if (c) setChoices(c) })
+        void api.startView(onProblem).then(s => setStart(s ?? NO_START))
         // The product's name has its home on the Go side; About carries it.
         void api.about(onProblem).then(a => { if (a) setProduct(a.name) })
     }, [onProblem])
@@ -145,7 +150,7 @@ export default function App() {
             <div className="top-bar">
                 <TimeWindow windows={windows} selected={windowKey} onChoose={k => change({windowKey: k})}/>
             </div>
-            {speed && settings && <GlobeView ref={globe} events={view.events} selectedId={selected?.id ?? null}
+            {speed && settings && start && <GlobeView ref={globe} start={start} events={view.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
                 cloudImage={settings.cloudsShown ? cloudImage : ''}
                 dayNightShown={dayNightShown} sun={sun}

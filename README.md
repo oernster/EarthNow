@@ -39,8 +39,10 @@ source that reported it and how old that report is.
 ## What it does
 
 - **Draws the globe** with NASA's Blue Marble imagery on a black background. It
-  turns slowly from launch, pauses while you use it and turns again after ten
-  seconds without input. A button or the settings stop it; the settings also
+  opens over your own country, as your computer's country or region setting
+  names it (read on your machine and sent nowhere), then turns slowly from
+  there, pauses while you use it and turns again after ten seconds without
+  input. A button or the settings stop it; the settings also
   offer three speeds. The wheel, the zoom buttons and the plus and minus keys
   zoom; Reset view brings the whole globe back.
 - **Shows the clouds** when asked, from EUMETSAT's world cloud map: a mosaic of

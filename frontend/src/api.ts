@@ -1,7 +1,7 @@
 // The one door to the Go side. Every call takes a refusal handler as its last
 // argument and answers null rather than rejecting, so a call without one does
 // not compile and nothing is left for a console nobody opens (NFR-REL-004).
-import type {AboutDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, SunDTO, ViewDTO} from './types'
+import type {AboutDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, SunDTO, ViewDTO} from './types'
 
 type Refused = (reason: string) => void
 
@@ -17,6 +17,7 @@ interface Bound {
     Clouds(): Promise<CloudsDTO>
     CloudImage(): Promise<string>
     Sun(): Promise<SunDTO>
+    StartView(): Promise<StartViewDTO>
     About(): Promise<AboutDTO>
     Licence(): Promise<string>
     Notices(): Promise<string>
@@ -64,6 +65,8 @@ export const api = {
     cloudImage: (onRefused: Refused) => call(b => b.CloudImage(), onRefused),
     // sun answers where the sun stands overhead now (FR-DAY-001).
     sun: (onRefused: Refused) => call(b => b.Sun(), onRefused),
+    // startView answers where the globe opens (FR-GLB-015).
+    startView: (onRefused: Refused) => call(b => b.StartView(), onRefused),
     about: (onRefused: Refused) => call(b => b.About(), onRefused),
     licence: (onRefused: Refused) => call(b => b.Licence(), onRefused),
     notices: (onRefused: Refused) => call(b => b.Notices(), onRefused),

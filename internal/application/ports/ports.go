@@ -55,6 +55,19 @@ type SettingsStore interface {
 	Path() string
 }
 
+// RegionSource reads the operating system's country or region setting as an
+// ISO 3166-1 alpha-2 code (FR-GLB-014). A setting naming no country answers an
+// error, which is absence rather than a fault.
+type RegionSource interface {
+	Region() (string, error)
+}
+
+// LabelPoints answers the point a country is labelled at (FR-GLB-015,
+// FR-GLB-017); false when it holds none for the code.
+type LabelPoints interface {
+	Label(code string) (event.Point, bool)
+}
+
 // Geocoder words where a point is (FR-GEO-001 to 003).
 type Geocoder interface {
 	Describe(lat, lng float64) string

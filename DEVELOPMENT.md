@@ -191,6 +191,13 @@ with `--check` and fails until the file matches.
   only for each layer it finds there, then the result is copied into `data`
   by hand. Pass only the layer being refreshed: the shapefiles are not kept,
   so a fresh download of the others might not match what is embedded.
+- `internal/infrastructure/geo/data/labels.json` is each country's label
+  point, written from the admin 0 countries layer alone, leaving the borders
+  untouched:
+
+  ```powershell
+  python tools/geodata.py --labels <unpacked layers> internal/infrastructure/geo/data
+  ```
 
 ## Versioning
 
@@ -253,9 +260,9 @@ bash build_flatpak.sh
 | `main.go` | the composition root |
 | `app.go` | the Wails facade the page calls |
 | `binding_pass.go`, `binding_pass_off.go` | the switch that keeps the build's bindings pass out of the user's log |
-| `internal/domain` | `cloud`, `event`, `freshness`, `sun`, `window`: no I/O |
+| `internal/domain` | `cloud`, `event`, `freshness`, `region`, `sun`, `window`: no I/O |
 | `internal/application` | `ports`, `services` and the `dto` wire shapes |
-| `internal/infrastructure` | `cache`, `clouds`, `geo`, `httpfetch`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
+| `internal/infrastructure` | `cache`, `clouds`, `geo`, `httpfetch`, `oslocale`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
 | `internal/product` | the name, slug, licence line, copyright, donate address and credits |
 | `frontend/src` | the page |
 | `installer/` | the setup program, a Wails application of its own |

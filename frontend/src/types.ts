@@ -84,6 +84,14 @@ export interface SunDTO {
     cloudNightFloor: number
 }
 
+// Where the globe opens (FR-GLB-015): facing lat, lng when found; otherwise
+// as it always has (FR-GLB-016).
+export interface StartViewDTO {
+    found: boolean
+    lat: number
+    lng: number
+}
+
 export interface AboutDTO {
     name: string
     version: string

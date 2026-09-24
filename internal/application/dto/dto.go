@@ -106,6 +106,14 @@ type Sun struct {
 	CloudNightFloor float64 `json:"cloudNightFloor"`
 }
 
+// StartView is where the globe opens (FR-GLB-015): facing Lat, Lng when Found;
+// otherwise as it always has (FR-GLB-016).
+type StartView struct {
+	Found bool    `json:"found"`
+	Lat   float64 `json:"lat"`
+	Lng   float64 `json:"lng"`
+}
+
 // About is what the About dialog shows (FR-HLP-001).
 type About struct {
 	Name         string   `json:"name"`
