@@ -12,12 +12,13 @@
     --faint: #5f6778;
     --accent: #34d399;
     --ocean: #1d4f91;
-    --ocean-deep: #0b1d3a;
-    --land: #2f6b3a;
     --on-accent: #06140e;
 
-    /* One turn of the illustrated globe; its markers turn back in the same time. */
+    /* The time the globe takes to turn once. */
     --turn: 60s;
+    /* The globe's largest diameter; tools/genicons.py sizes docs/earth.jpg to
+       twice it (SITE_ORB_PX). */
+    --orb: 380px;
     --radius: 14px;
     --gutter: 16px;
     --max: 1040px;
@@ -150,7 +151,8 @@ h1 .accent { color: var(--accent); }
 .btn-primary:hover,
 .btn-primary:focus-visible { background: color-mix(in srgb, var(--accent) 88%, white); border-color: transparent; }
 
-/* The orb: an illustration of the globe with a few markers, not a screenshot. */
+/* The orb: NASA's Blue Marble, the application's own texture, never drawn
+   (CON-009). The land layer turns; the light stays where it is. */
 
 .orb-stage {
     display: grid;
@@ -158,68 +160,39 @@ h1 .accent { color: var(--accent); }
     padding: 24px;
 }
 
-/* Three layers: the land turns, the light stays where it is and the markers turn
-   with the land above the shading, so they read at full colour. */
 .orb {
     position: relative;
-    width: min(100%, 380px);
+    width: min(100%, var(--orb));
     aspect-ratio: 1;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 38%, var(--ocean), var(--ocean-deep) 72%);
+    overflow: hidden;
+    background: var(--space);
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.06),
         0 0 60px color-mix(in srgb, var(--ocean) 55%, transparent);
 }
 
 .land,
-.shade,
-.marks {
+.shade {
     position: absolute;
     inset: 0;
     border-radius: 50%;
 }
 
+/* The texture is twice as wide as it is tall, so it is drawn at 200% of the
+   orb's width; moving its position by -200% slides it one whole width, west to
+   east as the Earth turns. repeat-x closes the seam. */
 .land {
-    background:
-        radial-gradient(ellipse 30% 22% at 34% 40%, var(--land), transparent 70%),
-        radial-gradient(ellipse 22% 30% at 64% 58%, var(--land), transparent 70%),
-        radial-gradient(ellipse 18% 12% at 70% 26%, var(--land), transparent 70%);
-    animation: drift var(--turn) linear infinite;
+    background: url("earth.jpg") repeat-x 0% 50% / 200% 100%;
+    animation: turn var(--turn) linear infinite;
 }
 
 .shade {
-    background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.24), transparent 38%);
-    box-shadow: inset -28px -34px 60px rgba(0, 0, 0, 0.65);
+    background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.2), transparent 40%);
+    box-shadow: inset -28px -34px 60px rgba(0, 0, 0, 0.7);
 }
 
-.marks { animation: drift var(--turn) linear infinite; }
-
-.mark {
-    position: absolute;
-    left: var(--x);
-    top: var(--y);
-    transform: translate(-50%, -50%);
-    font-size: clamp(1.3rem, 3.4vw, 1.9rem);
-    line-height: 1;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
-    animation: counter var(--turn) linear infinite;
-}
-
-.mark.count {
-    display: grid;
-    place-items: center;
-    width: 1.6em;
-    height: 1.6em;
-    font-size: 0.95rem;
-    font-weight: 700;
-    border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
-}
-
-/* The orb turns and its markers turn back, so they stay upright. */
-@keyframes drift { to { transform: rotate(360deg); } }
-@keyframes counter { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+@keyframes turn { to { background-position: -200% 50%; } }
 
 /* Sections */
 

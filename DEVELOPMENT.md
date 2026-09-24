@@ -140,7 +140,9 @@ Both scripts are run by hand; their output is committed.
   from one render, cropped to its artwork and scaled by height to four times
   the rail's 48-pixel glyph;
 - the application icon, from one call, for the page's own mark and as the
-  site's `docs/icon.png`.
+  site's `docs/icon.png`;
+- `docs/earth.jpg`, the page's NASA texture at 760 pixels high, for the
+  site's turning globe (CON-009: the Earth is never drawn).
 
 ```powershell
 python tools/genicons.py

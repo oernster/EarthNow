@@ -27,7 +27,8 @@ The donate mark: cropped to its artwork and scaled by height to four times the
 rail glyph, never squared, since a wide picture on a square canvas spends its
 height on nothing (FR-DON-002). The same render goes to the site (FR-DON-010).
 
-The GitHub Pages site under docs/ also takes the application's mark as its icon.
+The GitHub Pages site under docs/ also takes the application's mark as its icon
+and a small copy of the page's NASA texture for its turning globe (CON-009).
 
 Run it when a master changes:
 
@@ -113,6 +114,15 @@ DONATE_OUTPUTS = (
 # APP_MARK_OUTPUTS are the application's mark at the rail icon size: beside the
 # heading in the key column and as the site's icon.
 APP_MARK_OUTPUTS = (OUTPUT / APP_MASTER, SITE / "icon.png")
+
+# The site's globe turns the application's own NASA texture (CON-009: Earth
+# imagery is observational data, never drawn), scaled down to twice the height
+# the site draws it at: its orb is at most SITE_ORB_PX across (docs/styles.css).
+EARTH_TEXTURE = REPO / "frontend" / "src" / "assets" / "earth.jpg"
+SITE_EARTH = SITE / "earth.jpg"
+SITE_ORB_PX = 380
+SITE_EARTH_HEIGHT = 2 * SITE_ORB_PX
+SITE_EARTH_QUALITY = 85
 
 # SETUP_ICONS are the theme toggle's pair; each shows the mode it switches TO
 # (NFR-UX-004), so the sun shows while the page is dark.
@@ -236,6 +246,21 @@ def render_donate() -> None:
         print(f"{DONATE_MASTER:<22} {source:>9,} -> {size:>7,} bytes  ({drawn})")
 
 
+def render_site_earth() -> None:
+    """Write the site's copy of the NASA texture, keeping its aspect ratio."""
+    if not EARTH_TEXTURE.exists():
+        sys.exit(f"no {EARTH_TEXTURE.name} beside the page; the site's globe wears it")
+    texture = Image.open(EARTH_TEXTURE).convert("RGB")
+    width = round(texture.width * SITE_EARTH_HEIGHT / texture.height)
+    SITE.mkdir(parents=True, exist_ok=True)
+    texture.resize((width, SITE_EARTH_HEIGHT), Image.LANCZOS).save(
+        SITE_EARTH, "JPEG", quality=SITE_EARTH_QUALITY, optimize=True
+    )
+    source, size = EARTH_TEXTURE.stat().st_size, SITE_EARTH.stat().st_size
+    drawn = f"{width} x {SITE_EARTH_HEIGHT}"
+    print(f"{EARTH_TEXTURE.name:<22} {source:>9,} -> {size:>7,} bytes  ({drawn}, site)")
+
+
 def main() -> int:
     masters = sorted(p for p in MASTERS.glob("*.png") if p.name not in NOT_RAIL)
     if not masters:
@@ -264,6 +289,7 @@ def main() -> int:
 
     render_setup()
     render_donate()
+    render_site_earth()
 
     # The front end wants the application icon too, beside the heading in the key
     # column (and as the About crest to come), as the reference writes it. The
