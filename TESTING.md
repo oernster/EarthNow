@@ -1,0 +1,254 @@
+# Testing
+
+How EarthNow is tested, what the gate checks and what a person has to check.
+Every command is PowerShell, run from the repository root.
+
+## The gate
+
+```powershell
+./test.ps1
+```
+
+`build.ps1` runs it before building anything and cannot skip it. In order:
+
+1. `go list ./...` names the packages, leaving out any Go package an npm
+   dependency ships under `node_modules`.
+2. `gofmt -l internal tests installer` must list nothing.
+3. `go vet` over those packages must pass.
+4. staticcheck, at the version pinned in `test.ps1`, run through `go run`, must
+   report nothing.
+5. `go test` over those packages: the whole Go suite, structural tests
+   included.
+6. Coverage of `internal/domain` and `internal/application` together must reach
+   100%. When it does not, every function short of it is named.
+7. Each gated infrastructure package must reach its own floor (below).
+8. In `frontend`: `npm run lint` (ESLint), `npx tsc --noEmit`, then `npm test`,
+   which is `vitest run --coverage` held to the floors in
+   `frontend/vite.config.ts`.
+9. `python tools/notices.py --check`: `THIRD_PARTY_NOTICES` must be exactly
+   what the tool would write from the dependencies shipped now.
+
+It ends with `All green.`
+
+### Reading the result
+
+Trust the exit code, never the text. A failing step throws, which stops the
+script with the reason. Run in the current session, a throw leaves
+`$LASTEXITCODE` holding whatever the last native command returned, which can be
+`0` (measured). Run the gate as its own process to read a verdict:
+
+```powershell
+pwsh -NoProfile -File ./test.ps1
+```
+
+```powershell
+$LASTEXITCODE
+```
+
+`0` means every step passed; `1` means one failed.
+
+`-Floor` changes the domain and application floor for a deliberate check,
+never for a release:
+
+```powershell
+./test.ps1 -Floor 95
+```
+
+### The coverage floors
+
+The domain and the application are held at 100% because they are pure: no
+network, no disk, no window, so nothing in them is out of a test's reach. Every
+other floor is the figure that package measured, never a target: it fails the
+moment cover is lost and is raised when cover rises (NFR-MNT-001). The reasons
+below are the ones written beside each floor in `test.ps1` and
+`frontend/vite.config.ts`.
+
+| Package | Floor | Why not 100 |
+|---|---|---|
+| `internal/domain`, `internal/application` | 100 | |
+| `infrastructure/geo` | 100 | |
+| `infrastructure/providers/eonet` | 100 | |
+| `infrastructure/providers/usgs` | 100 | |
+| `infrastructure/providers/gvp` | 100 | |
+| `infrastructure/settings` | 100 | |
+| `infrastructure/httpfetch` | 96.6 | A request-building failure that no valid method and context can produce. |
+| `infrastructure/cache` | 84.2 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
+| `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
+| `infrastructure/setup` | 59.9 | What acts on the machine itself: the uninstall entry's registry writes, creating a shortcut through the Windows Script Host, then finding, ending, launching or scheduling the removal of a process. A test must not change the machine it runs on. |
+
+`infrastructure/setup` reads 61.4% on a machine where EarthNow is installed:
+the installed-version read then runs three statements past its early return,
+121 of 197 against 118 (measured). The floor is the figure for a machine
+without it; raising it to 61.4 would fail the gate on any machine that has never
+installed the product.
+
+Not gated, deliberately: `internal/infrastructure/window` (Win32 focus
+handling) and `installer` (the setup program's Wails facade over acts that
+change the machine). Neither has anything a test can reach without the platform
+behind it, so a floor over either would be a floor at zero. The root package
+(`main.go`, `app.go`) has no tests: it is the composition root and the Wails
+facade. Running it would be running the application.
+
+The page is measured with istanbul over `src/**`, leaving out the tests,
+`test-setup.ts` and the page's composition root, `main.tsx` and `App.tsx`,
+which wire the parts together and are checked by eye:
+
+| Page measure | Floor |
+|---|---|
+| Statements | 54.37 |
+| Branches | 54.21 |
+| Functions | 58.9 |
+| Lines | 55.09 |
+
+These are measured figures too. The components that draw the globe and the
+window (`GlobeView.tsx` among them) need WebGL and real layout, which jsdom does
+not have; they are exercised by eye, in the checks below.
+
+## What the tests prove
+
+### The domain and the application
+
+- **Freshness wording** at every boundary of NFR-FRESH-002, day precision
+  worded in days (FR-SEL-004) and staleness at three intervals (NFR-FRESH-001).
+- **The time window**: membership; the newest observation inside a window as
+  the event time and position; the `ClockSkew` bound, both at it and one
+  second past it.
+- **The scheduler** on a fake clock: each provider on its own interval, the
+  backoff doubling to its ceiling, recovery after a success, the manual refresh
+  and its cooldown.
+- **The globe and the store** over hand-written fake providers: a failed
+  provider leaving the others' events standing, a not-modified answer keeping
+  the stored set, the cache restored before any fetch, the notices when there
+  is no cache or no settings file. The https rule for source links is tested
+  there as well.
+
+### The adapters
+
+- **Each provider** parses a feed captured from the real source (in its
+  `testdata`), through a fake fetcher: the request URL, the categories mapped,
+  malformed items dropped and counted, withdrawn earthquakes left out, GDACS
+  polygons read latitude first and the volcano report's Latin-1 decoded. Which
+  source link counts as a page is tested in the domain.
+- **`httpfetch`** against a local test server: the host allowlist, the size
+  cap, the status check, `If-Modified-Since` and a 304.
+- **The cache and the settings** in temporary folders: round trips, another
+  schema version read as absent, a damaged file, an oversized file and a save
+  that cannot be written.
+- **The log**: rotation at start and while running with one previous file
+  kept. A child process really panics after a rotation; its log is then read.
+- **Setup**: the extraction and its fence against an entry that climbs out, the
+  paths, sizes, copies, versions, the step log, the shortcut boxes over
+  redirected folders and the registry reads.
+
+### The structure
+
+`tests/structural` parses the repository and fails on a layer violation, an
+impure domain, a second composition root, a provider named outside its own
+package, a file over 400 lines or in the danger band, an undocumented exported
+type, the product's name or the donate address written outside
+`internal/product` and a wire shape that differs between the Go DTOs and
+`frontend/src/types.ts`. [ARCHITECTURE.md](ARCHITECTURE.md) lists each test
+beside the invariant it guards.
+
+### The page
+
+Vitest under jsdom, with `src/test-setup.ts` supplying an inert
+`ResizeObserver`; nothing there invents a measurement. The suites cover the
+clustering and the altitude at which a cluster's members separate, the keyboard
+cursor's walk, the category table, the auto-scroll machine driven tick by tick,
+the keyboard repair shared with the setup page, the keyboard ring (with the
+page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
+the Help surfaces with the rail's order. The noborderfocus rule has two guards,
+each proved by planting the defect back.
+
+## What the tests never do
+
+- **Write to the registry.** The registry writes in
+  `internal/infrastructure/setup` are not exercised at all; only the reads are,
+  since a read cannot damage anything.
+- **Touch real shortcuts.** The shortcut tests redirect `USERPROFILE` and
+  `APPDATA` into temporary folders and fail if the redirection did not take.
+- **Launch, find or end EarthNow.** No test calls the process functions in
+  setup; the root package that runs the application has no tests.
+- **Reach a provider.** The adapters read captured fixtures through fakes;
+  `httpfetch` talks to a server on this machine.
+- **Read or write the real settings, cache or log.** Every such test works in
+  `t.TempDir()`.
+- **Open a browser.** The call that hands a link to the desktop is in the
+  untested facade.
+
+The gate itself can reach the network once: the first `go run` of the pinned
+staticcheck on a machine fetches it.
+
+## Running part of the suite
+
+```powershell
+go test ./internal/domain/...
+```
+
+```powershell
+go test -run TestFRPRV014_OnlyTheCompositionRootNamesAProvider -v ./tests/structural
+```
+
+```powershell
+go test -cover ./internal/infrastructure/cache
+```
+
+```powershell
+npm --prefix frontend test
+```
+
+```powershell
+python tools/notices.py --check
+```
+
+## Before a first run on Windows
+
+- **Install the page's packages.** The gate stops at its front-end step without
+  `frontend/node_modules`; `tools/notices.py` also reads the page's production
+  tree through `npm ls`:
+
+  ```powershell
+  npm --prefix frontend install
+  ```
+
+- **Put Python on the path as `python`.** The last step runs
+  `tools/notices.py`, which needs only the standard library.
+- **Let the antivirus leave test binaries alone.** `go test` builds each test
+  binary in Go's scratch directory and runs it from there; the runlog tests
+  also start that binary again as a child. Where an antivirus holds or removes
+  those files, exclude the directory this prints. When it prints nothing, Go
+  uses the default temporary folder instead:
+
+  ```powershell
+  go env GOTMPDIR
+  ```
+
+## Checked by a person
+
+Some requirements need a real window, a real GPU, the network or a person
+looking. They are verified by demonstration (D) or inspection (I) in
+[REQUIREMENTS.md](REQUIREMENTS.md). The Phase 0 spike's measured results are
+recorded there, in section 3.1.
+
+| Check | How |
+|---|---|
+| The globe draws with its texture, turns after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, 002, 005, 007) | Leave it, drag it, select an event on the far side. |
+| Reset view returns to the fit altitude; the whole globe fits the globe area (FR-GLB-008, 013) | Zoom, reset, resize the window. |
+| Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, 005, 006, 009) | Look. |
+| A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |
+| Activating a marker opens its detail (FR-SEL-001) | Click one. |
+| The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 600 (NFR-UX-002). |
+| The keyboard works with no click at start (NFR-KBD-003) | Launch, press Tab; the log records each focus attempt. |
+| The guide names every button and category (FR-HLP-004); categories differ by emoji alone (NFR-A11Y-001) | Read the guide. |
+| Credits and notices (NFR-LEG-002, FR-GEO-008) | Read About and `THIRD_PARTY_NOTICES`. |
+| A panic leaves a record (NFR-REL-002) | A planted panic in a debug build; read the log. |
+| Start time, frame time, memory over a day, refreshes without a stall (NFR-PERF-001 to 004) | The log and the frame-time log on the reference machine. |
+| Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
+
+## See also
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants the structural tests
+  enforce and the design decisions.
+- [DEVELOPMENT.md](DEVELOPMENT.md) for the tools, the build and the release
+  steps.

@@ -7,7 +7,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,7 +35,7 @@ func TestTheProductIsNamedOnce(t *testing.T) {
 		}
 		checkGoLiterals(t, root, path)
 	}
-	pages := append(pageFiles(t, root), filepath.Join(root, "frontend", "index.html"))
+	pages := append(pageFiles(t), filepath.Join(root, "frontend", "index.html"))
 	for _, path := range append(pages, setupFrontendFiles(t)...) {
 		raw, err := os.ReadFile(path)
 		if err != nil {
@@ -46,21 +45,14 @@ func TestTheProductIsNamedOnce(t *testing.T) {
 	}
 }
 
-// pageFiles answers the application page's shipped source.
-func pageFiles(t *testing.T, root string) []string {
+// pageFiles answers the application page's shipped source: its tree less tests.
+func pageFiles(t *testing.T) []string {
 	t.Helper()
 	var found []string
-	err := filepath.WalkDir(filepath.Join(root, "frontend", "src"), func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() && sourceExtensions[filepath.Ext(path)] && !isTest(d.Name()) {
+	for _, path := range pageTree(t) {
+		if !isTest(filepath.Base(path)) {
 			found = append(found, path)
 		}
-		return nil
-	})
-	if err != nil || len(found) == 0 {
-		t.Fatalf("walking the page source found %d files: %v", len(found), err)
 	}
 	return found
 }

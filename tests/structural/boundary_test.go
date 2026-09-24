@@ -257,10 +257,32 @@ func setupFrontendFiles(t *testing.T) []string {
 	return found
 }
 
-// sizedFiles is every file the size rule governs: the Go and the setup page.
+// pageTree answers every source file of the application's page, tests included.
+// The Go walk skips every directory called frontend, so without this the page sat
+// outside the size rule: style.css reached 402 lines with nothing to say so.
+func pageTree(t *testing.T) []string {
+	t.Helper()
+	root := repoRoot(t)
+	var found []string
+	err := filepath.WalkDir(filepath.Join(root, "frontend", "src"), func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && sourceExtensions[filepath.Ext(path)] {
+			found = append(found, path)
+		}
+		return nil
+	})
+	if err != nil || len(found) == 0 {
+		t.Fatalf("walking the page source found %d files: %v", len(found), err)
+	}
+	return found
+}
+
+// sizedFiles is every file the size rule governs: the Go, the page and the setup page.
 func sizedFiles(t *testing.T) []string {
 	t.Helper()
-	return append(goFiles(t), setupFrontendFiles(t)...)
+	return append(append(goFiles(t), pageTree(t)...), setupFrontendFiles(t)...)
 }
 
 func TestCON008_NoFileExceedsTheLineLimit(t *testing.T) {
