@@ -53,7 +53,7 @@ func Attributions() []string {
 		"Volcanoes: Global Volcanism Program, Smithsonian Institution (https://volcano.si.edu/) " +
 			"with the USGS Volcano Hazards Program, Weekly Volcanic Activity Report.",
 		"Place names and borders: Natural Earth.",
-		// NFR-LEG-002: provisional wording until ASM-007 confirms EUMETSAT's terms.
+		// NFR-LEG-002: the wording the owner confirmed (ASM-007).
 		"Cloud images: EUMETSAT, world cloud map (EUMETView).",
 		"Neither NASA, the USGS, the Smithsonian nor EUMETSAT endorses " + Name + ".",
 	}

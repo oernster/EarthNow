@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 25.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 26.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -31,6 +31,7 @@ edits.
 | 23 | 2026-09-24 | CON-003 limits "no CGO" to the Windows build. FR-GLB-002 rotates from launch, resuming after the idle delay. FR-MRK-005's tooltip holds the category's emoji, the title and the place line. DATA-004 names GVP's event time. Appendix D.1 says how the release 2 icons are made; D.4 says the space behind the globe is plain black. | The code measured against the document in the final documentation pass: the Linux and macOS builds need cgo; rotation starts at launch; the tooltip carries the emoji rather than the category's name; no starfield is drawn. No behaviour changes. |
 | 24 | 2026-09-24 | The cloud layer (3.2.10, FR-CLD-001 to 016): a rail button showing or hiding EUMETSAT's world cloud map over the globe, its infrared brightness mapped to opacity, a veil where no satellite sees, the image's valid time and age in the status area. It is fetched only while shown and cached for offline use. NFR-UX-002's minimum window rises to 960 by 640. NFR-PRIV-001 allows `view.eumetsat.int`; NFR-LEG-002 credits EUMETSAT; NFR-PERF-005, ASM-007, ASM-008 and RSK-006 added. Scope drops satellite cloud imagery from the out-of-scope list; weather stays out. | Owner request: toggle global cloud cover as satellite imagery shows it, from a free keyless source. Measured: NASA GIBS carries no Meteosat, so Europe and Africa would show none; EUMETSAT's layer covers the whole ring. At the old minimum the rail held 33 px spare against the 62 a ninth button needs; the owner chose the larger window over tighter gaps or a button off the rail, a veil over unseen regions and the layer hidden on a first run. |
 | 25 | 2026-09-24 | 4.1 names EUMETSAT among the sources that never suggest an endorsement. NFR-UX-004 names the cloud button among the toggles it covers. | The code measured against the document in the documentation pass: About credits EUMETSAT and says it does not endorse EarthNow; the cloud button shows the state it switches to, as FR-CLD-001 requires. No behaviour changes. |
+| 26 | 2026-09-24 | ASM-007 is confirmed: the owner accepts the credit "Cloud images: EUMETSAT, world cloud map (EUMETView)." with EUMETSAT named in the non-endorsement line. NFR-LEG-002 states that wording. | The owner's ruling; the wording was provisional until then. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -213,7 +214,7 @@ Every assumption has an owner and a confirm-by point.
 | ASM-004 | NASA Blue Marble imagery may ship inside the installer with a credit line, under the NASA media terms (R5). GPL compatibility of bundling public-domain-like imagery is an inference, unconfirmed. | Oliver | Before first public release |
 | ASM-005 | WebView2 on the reference machine provides WebGL2. | Implementer | Phase 0 exit (measured, FR-SPK-002) |
 | ASM-006 | The GitHub repository `oernster/EarthNow` is the release surface. | Oliver | Phase 4 |
-| ASM-007 | EUMETSAT's terms allow a free application to fetch and display the world cloud map with a credit line. EUMETView's capabilities state no fees and no access constraints (read 2026-09-24); the licence page carries no readable terms without a script, so the credit wording and any condition are unconfirmed. | Oliver | Before the release carrying the cloud layer |
+| ASM-007 | EUMETSAT's terms allow a free application to fetch and display the world cloud map with a credit line. EUMETView's capabilities state no fees and no access constraints (read 2026-09-24); the licence page carries no readable terms without a script, so the credit wording and any condition are unconfirmed. | Oliver | Confirmed by the owner on 2026-09-24 (amendment 26) |
 | ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
 
 ---
@@ -504,7 +505,7 @@ Every performance figure is measured on the reference machine.
 | NFR-MNT-003 | Must | The Go DTOs and the hand-written TypeScript interfaces shall be compared by a structural test. | Planted field rename fails the test. |
 | NFR-MNT-004 | Must | The repository shall carry README.md, ARCHITECTURE.md, TESTING.md and DEVELOPMENT.md, each ported in shape from the nearest house reference. | I |
 | NFR-LEG-001 | Must | Each bundled third-party component shall appear in `THIRD_PARTY_NOTICES` with its licence and the licence text in full. | `tools/notices.py --check` in `test.ps1`: the file must equal what the shipped Go modules (`go list -deps`) and page packages (`npm ls --omit=dev`) call for. |
-| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images (in the wording ASM-007 confirms), without implying endorsement and without the NASA insignia. | I against R5. |
+| NFR-LEG-002 | Must | The About dialog shall credit "NASA Earth Observatory" for the imagery, NASA EONET and the USGS Earthquake Hazards Program for event data, EUMETSAT for the cloud images ("Cloud images: EUMETSAT, world cloud map (EUMETView).", ASM-007), without implying endorsement and without the NASA insignia. | I against R5. |
 
 ### 3.4 Data requirements
 
