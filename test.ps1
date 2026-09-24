@@ -85,7 +85,7 @@ try {
 $measured = [ordered]@{
     './internal/infrastructure/cache'             = 84.2
     './internal/infrastructure/geo'               = 100
-    './internal/infrastructure/httpfetch'         = 96.6
+    './internal/infrastructure/httpfetch'         = 97.3
     './internal/infrastructure/providers/eonet'   = 100
     './internal/infrastructure/providers/usgs'    = 100
     './internal/infrastructure/providers/gvp'     = 100

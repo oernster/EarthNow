@@ -111,7 +111,9 @@ The use cases, behind the ports in
   set; the others are unaffected (FR-PRV-008).
 - `Scheduler` decides when each provider is next due, with the backoff that
   doubles up to 30 minutes after a failure (FR-PRV-006) and the 30-second
-  cooldown between manual refreshes (FR-PRV-010). It holds no timer: the facade
+  cooldown between manual refreshes (FR-PRV-010), answering when the last one
+  was made. It also marks which providers are refreshing, fetching with events
+  already held (FR-STS-007). It holds no timer: the facade
   asks what is due and when to wake, so every timing rule runs on a fake clock
   in its tests.
 - `Preferences` loads, normalises and saves the settings, telling the USGS
@@ -214,11 +216,12 @@ tests read, so it belongs to no layer.
 When Wails starts, the facade starts two goroutines, each with a recover at
 its top that logs the stack and tells the page (NFR-REL-003): one loads the
 gazetteer; the other drives the scheduler. The driver starts every provider
-that is due, each fetch in a guarded goroutine of its own, then sleeps until
-the next provider falls due, a fetch finishes or a manual refresh arrives.
-Each fetch logs its start and its outcome, with the status, the event count
-and the dropped count (NFR-OBS-001), then emits `events-changed`; the page
-answers by asking for the view.
+that is due, each fetch in a guarded goroutine of its own, emits
+`events-changed` so the page can show them refreshing (FR-STS-007), then sleeps
+until the next provider falls due, a fetch finishes or a manual refresh
+arrives. Each fetch logs its start and its outcome, with the status, the event
+count and the dropped count (NFR-OBS-001), then emits `events-changed` again;
+the page answers each by asking for the view.
 
 When the page's DOM is ready, the facade focuses the WebView2 child directly,
 falling back to asking Wails to show the window. The page calls

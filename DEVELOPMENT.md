@@ -14,13 +14,14 @@ this is for someone building it.
 | Wails CLI v2.12.0, the version of the Wails module `go.mod` requires | building the application and the setup program | `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0` |
 | WebView2 runtime | running either program | [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/) |
 | Python 3, as `python` on the path | the notices check the gate ends with, standard library only | [python.org](https://www.python.org/downloads/) |
-| Pillow | regenerating the icons only | `python -m pip install pillow` |
+| Pillow | regenerating the icons, plus the Linux Flatpak's icon sizes | `python -m pip install pillow` |
 
 staticcheck is not installed: `test.ps1` runs it at a pinned version through
 `go run`, so a new release of it cannot change the result for unchanged code.
 The first run on a machine fetches it, so that run needs the network.
 
-cgo is not used. `build.ps1` pins `CGO_ENABLED=0` for the gate and the build,
+cgo is not used on Windows; the Linux and macOS builds need it, since Wails
+renders there through a C web view. `build.ps1` pins `CGO_ENABLED=0` for the gate and the build,
 so no C compiler is needed. `./test.ps1` run on its own does not set it, so on a
 machine with a C compiler the gate runs as you run it with the Go default.
 

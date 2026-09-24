@@ -40,8 +40,8 @@ it and how old that report is.
 - **Draws the globe** with NASA's Blue Marble imagery on a black background. It
   turns slowly from launch, pauses while you use it and turns again after ten
   seconds without input. A button or the settings stop it; the settings also
-  offer three speeds. The wheel, the zoom buttons and the plus and minus keys zoom; Reset
-  view brings the whole globe back.
+  offer three speeds. The wheel, the zoom buttons and the plus and minus keys
+  zoom; Reset view brings the whole globe back.
 - **Places every event** with its category's emoji: earthquake, volcano,
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
@@ -61,13 +61,14 @@ it and how old that report is.
   which also counts the events shown in each category. The time window picks
   1 h, 6 h, 24 h, 3 days or 7 days. An event dated more than 15 minutes ahead
   of your clock waits until its time arrives.
-- **Remembers your choices:** the time window, the filters, rotation and the
-  smallest earthquake shown: every one, else 1.0, 2.5, 3.0 or 4.5 and above.
+- **Remembers your choices:** the time window, the filters, rotation with its
+  speed plus the smallest earthquake shown (every one, else 1.0, 2.5, 3.0 or
+  4.5 and above).
 - **Keeps itself fresh.** USGS is asked every minute, EONET every ten minutes
   and the volcano report every hour. A source that fails is retried with a
   growing delay while the others carry on. Refresh asks again at once, no more
   than once every 30 seconds; its icon turns and the status line says which
-  sources are refreshing until they answer.
+  sources are refreshing until they answer, then the time of the last refresh.
 - **Survives being offline.** Each source's last good set is kept on disk, so
   the globe opens on it and says how old it is.
 - **Is honest about age.** Nothing is labelled live. A source that has not

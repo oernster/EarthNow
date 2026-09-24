@@ -71,7 +71,7 @@ below are the ones written beside each floor in `test.ps1` and
 | `infrastructure/providers/usgs` | 100 | |
 | `infrastructure/providers/gvp` | 100 | |
 | `infrastructure/settings` | 100 | |
-| `infrastructure/httpfetch` | 96.6 | A request-building failure that no valid method and context can produce. |
+| `infrastructure/httpfetch` | 97.3 | A request-building failure that no valid method and context can produce. |
 | `infrastructure/cache` | 84.2 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
 | `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
 | `infrastructure/setup` | 59.9 | What acts on the machine itself: the uninstall entry's registry writes, creating a shortcut through the Windows Script Host, then finding, ending, launching or scheduling the removal of a process. A test must not change the machine it runs on. |
@@ -99,10 +99,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 77.5 |
-| Branches | 70.83 |
-| Functions | 73.63 |
-| Lines | 80.14 |
+| Statements | 78.71 |
+| Branches | 73.33 |
+| Functions | 75.55 |
+| Lines | 81.22 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -120,7 +120,8 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   second past it.
 - **The scheduler** on a fake clock: each provider on its own interval, the
   backoff doubling to its ceiling, recovery after a success, the manual refresh
-  and its cooldown.
+  and its cooldown with the time of the last one (FR-PRV-010); which
+  providers count as refreshing (FR-STS-007).
 - **The globe and the store** over hand-written fake providers: a failed
   provider leaving the others' events standing, a not-modified answer keeping
   the stored set, the cache restored before any fetch, the notices when there
@@ -135,8 +136,8 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   GDACS polygon read in the order its own coordinates prove (else the order the
   feed's proven polygons show) and the volcano report's Latin-1 decoded. Which
   source link counts as a page is tested in the domain.
-- **`httpfetch`** against a local test server: the host allowlist, the size
-  cap, the status check, `If-Modified-Since` and a 304.
+- **`httpfetch`** against a local test server: the host allowlist, a redirect
+  held to the allowed hosts, the size cap, the status check, `If-Modified-Since` and a 304.
 - **The cache and the settings** in temporary folders: round trips, another
   schema version read as absent, a damaged file, an oversized file and a save
   that cannot be written.
@@ -169,7 +170,9 @@ clustering and the altitude at which a cluster's members separate, the keyboard
 cursor's walk, the category table, the auto-scroll machine driven tick by tick,
 the keyboard repair shared with the setup page, the keyboard ring (with the
 page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
-the Help surfaces with the rail's order. The noborderfocus rule has two guards,
+the Help surfaces with the rail's order. The refresh indicator is covered too:
+the status line's wording, the turning Refresh button held for one turn and
+the last refresh time. The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
 ## What the tests never do
@@ -245,7 +248,7 @@ recorded there, in section 3.1.
 | Check | How |
 |---|---|
 | The Phase 0 spike (FR-SPK-001, FR-SPK-002, FR-SPK-003, FR-SPK-004, FR-SPK-005, FR-SPK-006, FR-SPK-007) | Its measured results, section 3.1 of REQUIREMENTS.md. |
-| The globe draws with its texture, turns after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, FR-GLB-002, FR-GLB-005, FR-GLB-007) | Leave it, drag it, select an event on the far side. |
+| The globe draws with its texture, turns from launch and again after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, FR-GLB-002, FR-GLB-005, FR-GLB-007) | Leave it, drag it, select an event on the far side. |
 | Reset view returns to the fit altitude; the whole globe fits the globe area; the focus animation looks like one second (FR-GLB-008, FR-GLB-013, NFR-UX-003) | Zoom, reset, resize the window. |
 | Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look. |
 | A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |

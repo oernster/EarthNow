@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 22.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 23.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -28,6 +28,7 @@ edits.
 | 20 | 2026-09-24 | RSK-003 states the real ceiling of EONET use: 6 scheduled requests an hour, up to 120 with manual refresh pressed at every chance. FR-PRV-006 states that a provider whose interval exceeds the backoff ceiling retries at the ceiling. CON-008's danger band reads 381 to 400. | Measured in the code: a manual refresh marks every provider due and its cooldown is 30 s; GVP's 60 min interval is cut to the 30 min ceiling on its first failure; the danger band test flags 381 to 400 inclusive, one line stricter than the house rule's 381 to 399; a file at the cap is no further from breaking it than one a line below, so the stricter reading stands. The owner accepted the first two as they stand and left the third to be settled. No behaviour changes. |
 | 21 | 2026-09-24 | FR-STS-007 added: while a provider with events held is fetching, the status area says it is refreshing and the Refresh button's icon turns for at least one turn. | The owner pressed Refresh and saw nothing happen. The page learned of a fetch only when it finished, while the status line read "retrieved under a minute ago" before and after, so a refresh that worked looked like one that did nothing. |
 | 22 | 2026-09-24 | FR-PRV-010: after every press of Refresh the status area states the local time of the last manual refresh made, in place of when the next becomes available. | The owner read "Refresh available now" after a refused press and could not tell what it meant. The wait was worded in whole minutes, so every wait inside the 30 s cooldown read "now"; the line also stayed up after the cooldown ended. The owner asked for the time of the last refresh instead. |
+| 23 | 2026-09-24 | CON-003 limits "no CGO" to the Windows build. FR-GLB-002 rotates from launch, resuming after the idle delay. FR-MRK-005's tooltip holds the category's emoji, the title and the place line. DATA-004 names GVP's event time. Appendix D.1 says how the release 2 icons are made; D.4 says the space behind the globe is plain black. | The code measured against the document in the final documentation pass: the Linux and macOS builds need cgo; rotation starts at launch; the tooltip carries the emoji rather than the category's name; no starfield is drawn. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -156,7 +157,7 @@ network request of its own (NFR-SEC-002).
 |---|---|---|
 | CON-001 | Backend in Go; desktop shell Wails v2; frontend React with TypeScript built by Vite. | Owner decision. |
 | CON-002 | Architecture `UI → Application → Domain ← Infrastructure` under `internal/`, enforced by `tests/structural`. | House invariant. |
-| CON-003 | No CGO. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
+| CON-003 | No CGO in the Windows build; the release 2 builds need it, since Wails renders there through a C web view. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
 | CON-004 | Licence GPL-3.0 for EarthNow's own code (the `LICENSE` already committed). Every bundled dependency and data asset must carry a licence compatible with shipping inside a GPL-3.0 application, recorded in a third-party notices file. | Owner's committed licence. |
 | CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
 | CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
@@ -254,7 +255,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
 | FR-GLB-001 | Must | The globe view shall render Earth with the bundled daytime texture on a black space background. | Screenshot inspection. | D |
-| FR-GLB-002 | Must | While no user input has arrived for the idle delay (10 s), the globe view shall rotate eastward at the idle speed (one revolution per 240 s). | Given no input for 10 s, rotation starts; measured period 240 s plus or minus 5%. | T (application idle timer) + D |
+| FR-GLB-002 | Must | The globe view shall rotate eastward at the idle speed (one revolution per 240 s) from launch; once input has stopped it (FR-GLB-003), it shall rotate again when no user input has arrived for the idle delay (10 s). | Rotation runs at launch; after a drag, rotation resumes 10 s after the last input; measured period 240 s plus or minus 5%. | T (application idle timer) + D |
 | FR-GLB-003 | Must | When pointer drag, wheel or keyboard input targets the globe, the globe view shall stop idle rotation. | Rotation halts on the first input event. | T |
 | FR-GLB-004 | Must | While auto-rotate is switched off in settings, the globe view shall not rotate on idle. | Toggle off, wait 30 s, no rotation. | T |
 | FR-GLB-005 | Must | When the user drags on the globe, the globe view shall rotate the globe with the drag. | D | D |
@@ -275,7 +276,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-MRK-002 | Must | The globe view shall draw each marker with its category's emoji from the category table (Appendix D.3). | Each of the ten categories renders its own glyph. | D |
 | FR-MRK-003 | Must | The globe view shall size an earthquake marker by magnitude band (bands: below 3.0, 3.0 to 4.5, 4.5 to 6, 6 and above). | Fixture quakes of 1.8, 3.1, 5.0 and 6.7 draw at four distinct sizes. | T |
 | FR-MRK-004 | Must | The globe view shall draw every non-earthquake marker at one fixed size. | EONET markers carry equal size whatever their magnitude value. | T |
-| FR-MRK-005 | Must | When the pointer hovers a marker, the globe view shall show a tooltip holding the event title and category name. | D | D |
+| FR-MRK-005 | Must | When the pointer hovers a marker, the globe view shall show a tooltip holding the category's emoji and the event title, with the place line beneath (FR-GEO-001). | D | D |
 | FR-MRK-006 | Must | While an event is selected, the globe view shall draw that event's marker with the selection treatment (a ring around the emoji in the selection colour). | D | D |
 | FR-MRK-007 | Must | Where markers overlap on screen at the current zoom, the globe view shall draw them as one cluster marker showing their count. | Two fixture events 1 km apart at launch altitude draw as one cluster reading 2. | T (clustering) + D |
 | FR-MRK-008 | Must | When a cluster marker is activated, the globe view shall zoom toward the cluster until its members separate or maximum zoom is reached. | D | D |
@@ -447,7 +448,7 @@ Every performance figure is measured on the reference machine.
 | DATA-001 | Must | The domain shall define `Event` with: provider and provider event id (together its id), category, title, description (source text only), status, updated at, source URL, extras (a closed set of named provider details: source category, depth in kilometres, tsunami flag, magnitude type) and its observations, oldest first, every source point retained, each with its time, that time's precision, its position and its measurement (value and unit) where the source gave one. The retrieved-at instant belongs to the provider's snapshot in the store, not to each event. Absent source fields stay absent; none is defaulted to a plausible value. |
 | DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
 | DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the mean of its outer ring's vertices. A GDACS polygon holding a vertex value beyond 90 is read in the order that value proves (only a longitude exceeds 90); any other GDACS polygon is read in the order the feed's proven GDACS polygons more often show, latitude first when they show none or tie. |
-| DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window. |
+| DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window; GVP the report's issue day (FR-PRV-015). |
 | DATA-005 | Must | An EONET event whose every geometry date is exactly 00:00:00Z shall have all its observations marked day precision; an event with any other time of day keeps instant precision throughout. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z; wildfire times carried minutes; Hurricane Polo's 6-hourly track held a genuine 00:00Z fix beside 06:00, 12:00 and 18:00. A single-point event reported at exactly midnight is still read as a date; the error falls on the side of less claimed precision. |
 | DATA-012 | Must | A USGS feature shall map to EARTHQUAKE only when its `type` is `earthquake`; any other type (quarry blast, explosion, ice quake) shall map to OTHER with the type kept as the source category. A feature whose status is `deleted` shall not be shown. |
 | DATA-006 | Must | EONET categories shall map: earthquakes to EARTHQUAKE, volcanoes to VOLCANO, wildfires to WILDFIRE, severeStorms to SEVERE_STORM, floods to FLOOD, landslides to LANDSLIDE, drought to DROUGHT, dustHaze to DUST, seaLakeIce to ICE; snow, tempExtremes, waterColor, manmade and any unknown id to OTHER, the original id kept in metadata. The 13 source ids were read from `/api/v3/categories` on 2026-09-23. |
@@ -571,7 +572,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 
 | File | Used for | Notes |
 |---|---|---|
-| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render); in release 2, Linux hicolor 16 to 512 and macOS `.icns` via `build/appicon.png` (1024 px) | Must read at 16 px. |
+| `assets/application-icon.png` | the `.ico` on both executables, the setup header mark (256 px), the page's mark and the site's icon (`docs/icon.png`, 208 px, one render); in release 2, Linux hicolor 16 to 512 (`genicons.py --hicolor`) and the macOS `.icns`, which Wails makes from the master copied to `build/appicon.png` | Must read at 16 px. |
 | `assets/light-mode.png` | theme toggle in the setup program (shown while dark, per the installer skill) | Sun. |
 | `assets/dark-mode.png` | same, shown while light | Moon. |
 | `assets/donate.png` | the donate button (FR-DON) and the site's donate button | Not squared like an icon: `genicons.py` crops to the artwork and scales by height to four times the drawn glyph height, writing every destination in one loop so they cannot drift: `frontend/src/assets/donate.png` for the rail and `docs/donate.png` for the site (FR-DON-010). |
@@ -622,4 +623,4 @@ measures the chosen form).
 
 Earth texture: NASA Blue Marble Next Generation at 5400 x 2700 (about 7.4 km
 per pixel at the equator), downloaded and credited (R5); the spike reviews
-the sharpness at maximum zoom before the size is fixed. The starfield behind the globe is drawn procedurally; no image is needed.
+the sharpness at maximum zoom before the size is fixed. The space behind the globe is plain black (FR-GLB-001); no image is needed.
