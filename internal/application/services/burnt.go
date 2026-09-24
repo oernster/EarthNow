@@ -50,8 +50,8 @@ type BurntAreas struct {
 	composed    string
 }
 
-// NewBurntAreas builds the use case over the default window, hidden until told
-// otherwise (FR-BA-011); SetWindow follows the reader's.
+// NewBurntAreas builds the use case over the default window, hidden until the
+// saved or default setting shows it (FR-BA-011); SetWindow follows the reader's.
 func NewBurntAreas(clock ports.Clock, source ports.BurntSource, cache ports.BurntCache) *BurntAreas {
 	return &BurntAreas{clock: clock, source: source, cache: cache, win: window.Default, held: map[int64]ports.BurntDay{}}
 }

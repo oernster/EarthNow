@@ -62,7 +62,8 @@ func NewPreferences(store ports.SettingsStore, applyMinimum func(float64)) *Pref
 
 // Defaults are the settings of a first run: rotating at the normal speed,
 // minimum 2.5, the 24 h window, nothing filtered out and the day and night
-// layer shown (FR-DAY-007) with storm trails (FR-TRL-005).
+// layer shown (FR-DAY-007) with storm trails (FR-TRL-005) and burnt areas
+// (FR-BA-011).
 func Defaults() ports.Settings {
 	return ports.Settings{
 		AutoRotate:    true,
@@ -71,6 +72,7 @@ func Defaults() ports.Settings {
 		Window:        window.Default.Key,
 		DayNightShown: true,
 		TrailsShown:   true,
+		BurntShown:    true,
 	}
 }
 
