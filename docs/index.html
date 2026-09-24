@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EarthNow: see what the Earth is doing right now</title>
+    <meta name="description" content="EarthNow puts the past week's earthquakes, volcanoes, wildfires, storms and floods on a turning globe, each one traced to the public source that reported it. Free for Windows.">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="EarthNow: see what the Earth is doing right now">
+    <meta property="og:description" content="The planet's week on a globe: earthquakes, volcanoes, wildfires, storms and floods, straight from USGS, NASA and the Smithsonian. Free for Windows.">
+    <meta property="og:image" content="https://oernster.github.io/EarthNow/icon.png">
+    <meta property="og:url" content="https://oernster.github.io/EarthNow/">
+    <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "EarthNow",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Windows",
+        "description": "A globe showing the natural events of the past week, each traced to the public source that reported it.",
+        "author": {"@type": "Person", "name": "Oliver Ernster", "url": "https://ernster.dev"},
+        "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+    }
+    </script>
+</head>
+<body>
+
+<header class="wrap site-head">
+    <a class="brand" href="#top"><img src="icon.png" alt="" width="34" height="34"> EarthNow</a>
+    <nav aria-label="Sections">
+        <a href="#see" class="hide-sm">What you see</a>
+        <a href="#trust">Sources</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/oernster/EarthNow">GitHub</a>
+    </nav>
+</header>
+
+<main id="top">
+
+    <div class="wrap hero">
+        <div>
+            <p class="eyebrow">
+                <span class="pill">Windows</span>
+                <span class="pill">Free and open source</span>
+                <span class="pill">No account</span>
+            </p>
+            <h1>See what the Earth is doing <span class="accent">right now</span>.</h1>
+            <p class="lead">Open a globe and the planet's week is on it: the earthquakes,
+                the eruptions, the wildfires, the storms and the floods, each at the place
+                it happened. <strong>Spin it, zoom in, hover and you know what, where and
+                how long ago.</strong></p>
+            <div class="cta">
+                <a class="btn btn-primary" href="https://github.com/oernster/EarthNow/releases/latest">Download for Windows</a>
+                <a class="btn" href="#see">Take a look</a>
+            </div>
+        </div>
+
+        <div class="orb-stage" aria-hidden="true">
+            <div class="orb">
+                <div class="land"></div>
+                <div class="shade"></div>
+                <div class="marks">
+                    <span class="mark" style="--x: 30%; --y: 34%;">🌋</span>
+                    <span class="mark" style="--x: 62%; --y: 28%;">〰️</span>
+                    <span class="mark" style="--x: 48%; --y: 58%;">🔥</span>
+                    <span class="mark" style="--x: 72%; --y: 62%;">🌀</span>
+                    <span class="mark" style="--x: 24%; --y: 66%;">🌊</span>
+                    <span class="mark count" style="--x: 56%; --y: 80%;">3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="wrap" id="see">
+        <p class="kicker">What you see</p>
+        <h2>The whole planet's week, in one glance.</h2>
+        <div class="prose">
+            <p>News tells you about the disaster everyone is talking about. EarthNow
+                shows you everything else as well: the swarm of small quakes off Japan,
+                the fire season moving across a continent, the volcano that has been
+                quietly grumbling all week. It is the Earth as it actually is today.</p>
+        </div>
+        <div class="features">
+            <div class="feature">
+                <span class="glyph">🌍</span>
+                <h3>A globe you can hold</h3>
+                <p>NASA's Blue Marble on a black sky. Leave it alone and it turns slowly
+                    by itself; grab it and it is yours to spin and zoom.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">📍</span>
+                <h3>Every event where it happened</h3>
+                <p>Each one wears its own emoji, so the map reads at a glance. Earthquakes
+                    grow with their magnitude. Crowded spots gather into a count; click it
+                    and the globe zooms in until they separate.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">🧭</span>
+                <h3>Names the place</h3>
+                <p>Hover a marker for the nearest town, its country, how far away and in
+                    which direction. No more squinting at an ocean wondering where that is.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">🔎</span>
+                <h3>The detail, one click away</h3>
+                <p>Open an event for its time, its position, its measurement and a link to
+                    the source's own page, which opens in your browser.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">⏱️</span>
+                <h3>The last hour or the last week</h3>
+                <p>Pick 1 hour, 6 hours, 24 hours, 3 days or 7 days. Turn categories and
+                    sources on and off from the key, which counts what is showing.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">⌨️</span>
+                <h3>Works from the keyboard</h3>
+                <p>Every button and every event on the globe can be reached without a
+                    mouse.</p>
+            </div>
+        </div>
+        <div class="kinds" role="list" aria-label="The kinds of event EarthNow shows">
+            <span role="listitem">〰️ Earthquakes</span>
+            <span role="listitem">🌋 Volcanoes</span>
+            <span role="listitem">🔥 Wildfires</span>
+            <span role="listitem">🌀 Severe storms</span>
+            <span role="listitem">🌊 Floods</span>
+            <span role="listitem">🪨 Landslides</span>
+            <span role="listitem">🏜️ Drought</span>
+            <span role="listitem">💨 Dust and haze</span>
+            <span role="listitem">🧊 Ice</span>
+        </div>
+    </section>
+
+    <section class="wrap" id="trust">
+        <p class="kicker">Straight from the source</p>
+        <h2>Nothing made up. Nothing dressed up as live.</h2>
+        <div class="prose">
+            <p>Every marker says who reported it and how old that report is. EarthNow
+                does not guess, predict or embellish; it shows what the people who
+                measure the planet have published, then tells you plainly when it heard.</p>
+        </div>
+        <div class="sources">
+            <div class="source">
+                <h3>USGS</h3>
+                <p>Earthquakes from the United States Geological Survey, checked every
+                    minute.</p>
+            </div>
+            <div class="source">
+                <h3>NASA EONET</h3>
+                <p>Wildfires, storms, floods, ice and more from NASA's Earth Observatory
+                    Natural Event Tracker, checked every ten minutes.</p>
+            </div>
+            <div class="source">
+                <h3>Smithsonian</h3>
+                <p>The volcanoes in the Weekly Volcanic Activity Report, from the
+                    Smithsonian's Global Volcanism Program with the USGS, checked every
+                    hour.</p>
+            </div>
+        </div>
+        <p class="note">Neither NASA, the USGS nor the Smithsonian endorses EarthNow. It
+            simply shows their public reports, credited.</p>
+    </section>
+
+    <section class="wrap" id="calm">
+        <p class="kicker">Calm by design</p>
+        <h2>It keeps quiet and keeps working.</h2>
+        <div class="two-col">
+            <div class="card">
+                <h3>What you can count on</h3>
+                <ul>
+                    <li><strong>Offline? Still useful.</strong> It opens on the last
+                        events it received and tells you how old they are.</li>
+                    <li><strong>One source down?</strong> The others carry on while it
+                        quietly tries again.</li>
+                    <li><strong>Honest about age.</strong> A source that has gone quiet is
+                        marked stale rather than passed off as current.</li>
+                    <li><strong>Private.</strong> No account, no sign-in, no telemetry. It
+                        talks to the three sources above and nobody else.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>What it is not</h3>
+                <ul>
+                    <li><strong>A warning system.</strong> No alerts, no forecasts. For
+                        warnings, listen to your local authorities.</li>
+                    <li><strong>An archive.</strong> A week is as far back as it looks.</li>
+                    <li><strong>A mapping tool.</strong> No layers, no measurements, no
+                        satellite imagery, no weather.</li>
+                    <li><strong>Everywhere.</strong> Windows only.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="wrap" id="install">
+        <p class="kicker">Install</p>
+        <h2>Three steps to the whole world.</h2>
+        <ol class="steps">
+            <li><strong>Download</strong> <code>EarthNowSetup.exe</code> from the
+                <a href="https://github.com/oernster/EarthNow/releases/latest">latest
+                release</a>.</li>
+            <li><strong>Run it</strong> and choose Install. It installs for your account
+                only, so Windows never asks for administrator rights.</li>
+            <li><strong>Open EarthNow</strong> from the Start Menu and watch the planet
+                turn.</li>
+        </ol>
+        <div class="prose after-steps">
+            <p>For Windows 10 and 11. It needs a graphics driver able to draw in 3D; on
+                a machine without one, EarthNow says so rather than showing an empty
+                window. To remove it, uninstall from Settings, then Apps.</p>
+        </div>
+    </section>
+
+    <section class="wrap support" id="support">
+        <p class="kicker">Supporting EarthNow</p>
+        <h2>Free. It stays free.</h2>
+        <div class="prose">
+            <p>There is no paid tier, no licence key and no feature held back behind a
+                donation. If EarthNow has given you a better sense of the planet you live
+                on, a contribution supports its maintenance and continued development. The
+                same link sits at the foot of the button rail in the app itself.</p>
+        </div>
+        <div class="cta">
+            <a class="btn btn-donate" href="https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE">
+                <img src="donate.png" alt="">
+                Donate
+            </a>
+        </div>
+    </section>
+
+</main>
+
+<footer class="wrap site-foot">
+    <span>&copy; Oliver Ernster. GPL-3.0.
+        <a href="https://ernster.dev/commercial-licensing.html">Commercial licences</a> available.</span>
+    <span><a href="https://github.com/oernster/EarthNow">Source</a> &middot;
+        <a href="https://ernster.dev">ernster.dev</a></span>
+</footer>
+
+</body>
+</html>

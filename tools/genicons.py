@@ -25,7 +25,9 @@ would put a megabyte and more behind one badge.
 
 The donate mark: cropped to its artwork and scaled by height to four times the
 rail glyph, never squared, since a wide picture on a square canvas spends its
-height on nothing (FR-DON-002).
+height on nothing (FR-DON-002). The same render goes to the site (FR-DON-010).
+
+The GitHub Pages site under docs/ also takes the application's mark as its icon.
 
 Run it when a master changes:
 
@@ -97,10 +99,20 @@ DONATE_MASTER = "donate.png"
 RAIL_GLYPH_PX = 48
 DONATE_HEIGHT = 4 * RAIL_GLYPH_PX
 
+# SITE is the GitHub Pages site. It has no build step, so it carries its own
+# small copies of the artwork, written here beside the application's.
+SITE = REPO / "docs"
+
 # DONATE_OUTPUTS receive the same render in one loop, so no copy can drift from
-# another. The site's copy (docs/donate.png, FR-DON-010) joins this list when the
-# site is built.
-DONATE_OUTPUTS = (REPO / "frontend" / "src" / "assets" / DONATE_MASTER,)
+# another: the rail's button and the site's (FR-DON-010).
+DONATE_OUTPUTS = (
+    REPO / "frontend" / "src" / "assets" / DONATE_MASTER,
+    SITE / DONATE_MASTER,
+)
+
+# APP_MARK_OUTPUTS are the application's mark at the rail icon size: beside the
+# heading in the key column and as the site's icon.
+APP_MARK_OUTPUTS = (OUTPUT / APP_MASTER, SITE / "icon.png")
 
 # SETUP_ICONS are the theme toggle's pair; each shows the mode it switches TO
 # (NFR-UX-004), so the sun shows while the page is dark.
@@ -254,10 +266,14 @@ def main() -> int:
     render_donate()
 
     # The front end wants the application icon too, beside the heading in the key
-    # column (and as the About crest to come), as the reference writes it.
-    app = MASTERS / APP_MASTER
-    written = render_image(Image.open(app).convert("RGBA"), OUTPUT / APP_MASTER)
-    print(f"{APP_MASTER:<22} {'':>9} -> {written:>7,} bytes  (page mark)")
+    # column (and as the About crest to come), as the reference writes it. The
+    # site wears the same mark, rendered by the same call.
+    app = Image.open(MASTERS / APP_MASTER).convert("RGBA")
+    for target in APP_MARK_OUTPUTS:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        written = render_image(app, target)
+        where = target.relative_to(REPO).as_posix()
+        print(f"{APP_MASTER:<22} {'':>9} -> {written:>7,} bytes  ({where})")
     return 0
 
 

@@ -136,9 +136,11 @@ Both scripts are run by hand; their output is committed.
   which `build.ps1` puts on both executables;
 - the setup page's header mark (256 pixels) and its sun and moon (128 pixels)
   into `installer/frontend/dist`;
-- the donate mark into `frontend/src/assets/donate.png`, cropped to its
-  artwork and scaled by height to four times the rail's 48-pixel glyph;
-- the application icon for the page's own mark.
+- the donate mark into `frontend/src/assets/donate.png` and `docs/donate.png`
+  from one render, cropped to its artwork and scaled by height to four times
+  the rail's 48-pixel glyph;
+- the application icon, from one call, for the page's own mark and as the
+  site's `docs/icon.png`.
 
 ```powershell
 python tools/genicons.py
@@ -207,6 +209,7 @@ what users see.
 | `tests/structural` | the tests that hold the architecture in place |
 | `tools/` | `genicons.py`, `notices.py` and the spike's `geodata.py` |
 | `assets/` | the master artwork |
+| `docs/` | the GitHub Pages site: one hand-written page, no build step |
 
 ## Standing rules
 
