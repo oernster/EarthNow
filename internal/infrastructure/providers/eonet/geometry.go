@@ -65,8 +65,19 @@ func swapped(ring [][]float64) [][]float64 {
 	return out
 }
 
+// Degrees of longitude in half a turn and in a whole one.
+const (
+	halfTurn = 180.0
+	fullTurn = 2 * halfTurn
+)
+
 // centroid is the vertex mean of a ring, which is where the marker goes. The
-// closing vertex repeats the first, so it is left out of the mean.
+// closing vertex repeats the first, so it is left out of the mean. Every vertex
+// is validated before it counts, since a vertex outside the Earth could
+// otherwise average into range. Longitudes are measured the short way from the
+// first vertex, so a ring across 180 degrees is averaged across the line rather
+// than around the world (DATA-003); a ring that does not cross it keeps its
+// plain mean exactly.
 func centroid(ring [][]float64) (event.Point, bool) {
 	vertices := ring
 	if n := len(ring); n > 1 && len(ring[0]) >= 2 && len(ring[n-1]) >= 2 &&
@@ -76,15 +87,46 @@ func centroid(ring [][]float64) (event.Point, bool) {
 	if len(vertices) == 0 {
 		return event.Point{}, false
 	}
-	var lat, lng float64
-	for _, v := range vertices {
+	var lat, lng, first float64
+	for i, v := range vertices {
 		if len(v) < 2 {
 			return event.Point{}, false
 		}
-		lng += v[0]
-		lat += v[1]
+		p, err := event.NewPoint(v[1], v[0])
+		if err != nil {
+			return event.Point{}, false
+		}
+		if i == 0 {
+			first = p.Lng
+		}
+		lng += nearest(p.Lng, first)
+		lat += p.Lat
 	}
 	count := float64(len(vertices))
-	p, err := event.NewPoint(lat/count, lng/count)
+	p, err := event.NewPoint(lat/count, wrapped(lng/count))
 	return p, err == nil
+}
+
+// nearest moves lng by a whole turn when that brings it within half a turn of
+// ref, so the two are compared the short way round.
+func nearest(lng, ref float64) float64 {
+	switch {
+	case lng-ref > halfTurn:
+		return lng - fullTurn
+	case ref-lng > halfTurn:
+		return lng + fullTurn
+	}
+	return lng
+}
+
+// wrapped folds a longitude that nearest carried past 180 degrees back onto
+// the Earth's range.
+func wrapped(lng float64) float64 {
+	switch {
+	case lng > halfTurn:
+		return lng - fullTurn
+	case lng < -halfTurn:
+		return lng + fullTurn
+	}
+	return lng
 }

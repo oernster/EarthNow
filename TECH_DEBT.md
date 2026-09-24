@@ -4,25 +4,19 @@ A standing reference to what is still open, what is deliberately left and what o
 
 ---
 
-## 1. A polygon crossing the antimeridian is placed on the far side of the world
-
-`internal/infrastructure/providers/eonet/geometry.go` places a polygon event at the plain mean of its vertices' longitudes and latitudes (DATA-003). For a polygon straddling 180 degrees, vertices at 179 and -179 average to 0, so the marker lands on the Greenwich meridian rather than in the Pacific. No such polygon has arrived yet; Fiji, Kamchatka, the Aleutians and Chukotka are where one would.
-
-Fixing it means averaging on the sphere (the mean of unit vectors, as `frontend/src/clusters.ts` already does for cluster positions) and changes where such an event is drawn. It needs a fixture straddling the line to prove the fix bites.
-
-## 2. A point on the Ross Ice Shelf reads "At sea"
+## 1. A point on the Ross Ice Shelf reads "At sea"
 
 `internal/infrastructure/geo/geo.go` words a point as at sea when the Natural Earth country polygons contain it nowhere. Antarctic ice shelves are not land in that data set, so an event on the Ross Ice Shelf reads "At sea; ..." although it is on ice (seen on a sea-ice event in the session that built the place line, 2026-09-23).
 
 Fixing it means a second source of land for Antarctica (Natural Earth publishes ice shelves as their own layer) or a wording that does not claim sea where the data only says "not a country"; either changes the place line.
 
-## 3. The GDACS latitude-first rule rests on one week's polygons
+## 2. The GDACS latitude-first rule rests on one week's polygons
 
 EONET passes GDACS flood polygons on with each vertex as [lat, lng], against GeoJSON's [lng, lat], while GDACS points arrive in GeoJSON order (all 14 GDACS polygons of the week to 2026-09-23, measured; REQUIREMENTS amendment 12). `internal/infrastructure/providers/eonet/eonet.go` reads every GDACS polygon latitude first on that evidence.
 
 **Blocked on time.** This is a verification gap rather than a known defect. If EONET or GDACS corrects the order, every GDACS polygon will be drawn swapped, flood markers moving to impossible places (the week that found the rule put Honduras in Antarctica). The item closes when a later week's GDACS polygons are measured again and still arrive latitude first. Replacing the rule with one that decides per polygon would close it too.
 
-## 4. Appendix C's traceability test does not exist yet
+## 3. Appendix C's traceability test does not exist yet
 
 REQUIREMENTS.md Appendix C promises a structural test that lists every Must and fails when no test names it. Measured on 2026-09-24: 64 of the 134 Musts are named by no test; 31 of those are marked T, the rest D, I or a timing measurement. The count is a little high, since a test named "FR-DON-001 and 005" covers 005 without spelling the full ID.
 

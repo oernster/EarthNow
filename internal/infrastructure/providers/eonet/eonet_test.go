@@ -159,6 +159,58 @@ func TestDATA003_PolygonIsPlacedAtItsCentroid(t *testing.T) {
 	}
 }
 
+// DATA-003: a polygon straddling 180 degrees is placed between its vertices,
+// in the Pacific, not at the plain mean of their longitudes on the far side of
+// the world. 178 and -176 lie 6 degrees apart across the line; their centre is
+// -179, where a plain mean would say 1.
+func TestDATA003_PolygonAcrossTheAntimeridianStaysInThePacific(t *testing.T) {
+	t.Parallel()
+	body := `{"events":[
+	 {"id":"F","title":"across the line","geometry":[{"date":"2026-09-20T01:00:00Z","type":"Polygon","coordinates":[[[178,0],[-176,0],[-176,2],[178,2],[178,0]]]}]}
+	]}`
+	events, dropped, err := Parse([]byte(body))
+	if err != nil || dropped != 0 {
+		t.Fatalf("Parse: dropped %d, %v", dropped, err)
+	}
+	if f := byID(t, events, "F").Observations[0].Where; f.Lng != -179 || f.Lat != 1 {
+		t.Errorf("antimeridian centroid = %+v, want lat 1, lng -179", f)
+	}
+}
+
+// NFR-SEC-003: a polygon vertex outside the Earth drops the event, even where
+// the vertices would average into range (-300 and 300 average to 0).
+func TestDATA003_PolygonVertexOutsideTheEarthIsDropped(t *testing.T) {
+	t.Parallel()
+	body := `{"events":[
+	 {"id":"X","title":"vertex off the Earth","geometry":[{"date":"2026-09-20T01:00:00Z","type":"Polygon","coordinates":[[[-300,0],[300,0],[0,2]]]}]}
+	]}`
+	events, dropped, err := Parse([]byte(body))
+	if err != nil || dropped != 1 || len(events) != 0 {
+		t.Errorf("Parse: %d events, dropped %d, %v; want the event dropped", len(events), dropped, err)
+	}
+}
+
+// DATA-003: longitudes further than half a turn apart are compared the short
+// way round in both directions; a mean past 180 is folded back.
+func TestDATA003_LongitudesAreComparedTheShortWayRound(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ lng, ref, want float64 }{
+		{-176, 178, 184},
+		{178, -176, -182},
+		{10, 20, 10},
+	}
+	for _, c := range cases {
+		if got := nearest(c.lng, c.ref); got != c.want {
+			t.Errorf("nearest(%v, %v) = %v, want %v", c.lng, c.ref, got, c.want)
+		}
+	}
+	for in, want := range map[float64]float64{181: -179, -181: 179, 180: 180, -12: -12} {
+		if got := wrapped(in); got != want {
+			t.Errorf("wrapped(%v) = %v, want %v", in, got, want)
+		}
+	}
+}
+
 type fakeFetcher struct {
 	resp httpfetch.Response
 	err  error
