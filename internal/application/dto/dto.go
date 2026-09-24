@@ -28,11 +28,13 @@ type Event struct {
 
 // Provider is one source's state for the status area.
 type Provider struct {
-	Name      string `json:"name"`
-	Loading   bool   `json:"loading"`
-	Stale     bool   `json:"stale"`
-	Retrieved string `json:"retrieved"`
-	Problem   string `json:"problem"`
+	Name    string `json:"name"`
+	Loading bool   `json:"loading"`
+	// Refreshing is true while a fetch runs with events already held (FR-STS-007).
+	Refreshing bool   `json:"refreshing"`
+	Stale      bool   `json:"stale"`
+	Retrieved  string `json:"retrieved"`
+	Problem    string `json:"problem"`
 	// NextAttempt is filled only while Problem is: "next attempt in 4 min".
 	NextAttempt string `json:"nextAttempt"`
 }

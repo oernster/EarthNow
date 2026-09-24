@@ -66,7 +66,8 @@ it and how old that report is.
 - **Keeps itself fresh.** USGS is asked every minute, EONET every ten minutes
   and the volcano report every hour. A source that fails is retried with a
   growing delay while the others carry on. Refresh asks again at once, no more
-  than once every 30 seconds.
+  than once every 30 seconds; its icon turns and the status line says which
+  sources are refreshing until they answer.
 - **Survives being offline.** Each source's last good set is kept on disk, so
   the globe opens on it and says how old it is.
 - **Is honest about age.** Nothing is labelled live. A source that has not

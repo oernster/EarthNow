@@ -10,6 +10,7 @@ interface Props {
 
 function providerLine(p: ProviderDTO): string {
     if (p.loading) return `${p.name}: loading`
+    if (p.refreshing) return `${p.name}: refreshing`
     const state = p.retrieved ? `${p.name}: ${p.retrieved.toLowerCase()}${p.stale ? ' (stale)' : ''}` : p.name
     return p.problem ? `${state}; last attempt failed, ${p.nextAttempt}` : state
 }

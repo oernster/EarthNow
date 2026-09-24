@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 20.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 21.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -26,6 +26,7 @@ edits.
 | 18 | 2026-09-24 | NFR-SEC-002 states its purpose, no network origin, rather than `'self'` on every fetch directive. DATA-001 describes the domain as built: an `Event` holding its sightings as observations, with the retrieved-at instant on the provider's snapshot. | The page's `img-src` allows `data:` and `blob:` beside `'self'`; neither reaches the network. The code grouped each sighting's time, position and measurement into an observation and kept one retrieved-at per provider, so occurred at and observed at are one time. The owner chose to bring both requirements to the code. |
 | 19 | 2026-09-24 | 1.4 and 2.1 name three providers; the time window reads "3 days" and "7 days"; day precision covers a volcano dated by its report; `EarthEvent` reads `Event`. FR-GEO-001's example carries the region. FR-PRV-008 reads "any other provider's". FR-STS-005 and NFR-REL-005 state the checks the tests make. DATA-003 places a polygon at the mean of its outer ring's vertices. 4.1 names every source. RSK-001 reads the 2.5 default; RSK-002 the Wails version in use. Appendix A names the GVP adapter; Appendix C the real test and table names; Appendix D the two masters that are not square, the macOS and Linux icons as release 2 and the zoom icons as FR-RAIL-002's. | The code measured against the document during the documentation pass: each statement was stale or read differently in the tree. No behaviour changes. |
 | 20 | 2026-09-24 | RSK-003 states the real ceiling of EONET use: 6 scheduled requests an hour, up to 120 with manual refresh pressed at every chance. FR-PRV-006 states that a provider whose interval exceeds the backoff ceiling retries at the ceiling. CON-008's danger band reads 381 to 400. | Measured in the code: a manual refresh marks every provider due and its cooldown is 30 s; GVP's 60 min interval is cut to the 30 min ceiling on its first failure; the danger band test flags 381 to 400 inclusive, one line stricter than the house rule's 381 to 399; a file at the cap is no further from breaking it than one a line below, so the stricter reading stands. The owner accepted the first two as they stand and left the third to be settled. No behaviour changes. |
+| 21 | 2026-09-24 | FR-STS-007 added: while a provider with events held is fetching, the status area says it is refreshing and the Refresh button's icon turns for at least one turn. | The owner pressed Refresh and saw nothing happen. The page learned of a fetch only when it finished, while the status line read "retrieved under a minute ago" before and after, so a refresh that worked looked like one that did nothing. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -353,6 +354,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-STS-004 | Must | When the application starts with cached events, the globe view shall draw them before the first fetch completes, marked with their retrieved-at freshness. | Start offline with a populated cache; markers appear; status says "retrieved 3 h ago (stale)". | T + D |
 | FR-STS-005 | Must | If the cache cannot be opened, then the application shall run with an in-memory store and state in the status popover that events will not survive a restart. | A globe built with no cache states the notice. | T |
 | FR-STS-006 | Must | The application shall label no data as "live". | Structural test: the word `live` appears in no user-facing wording table. | T (structural) |
+| FR-STS-007 | Must | While a provider's fetch is in progress and its events are held, the status area shall show that provider as refreshing and the Refresh button's icon shall turn. The icon shall complete at least one turn (1 s), so a fetch faster than that is still seen; under the reduced-motion setting it does not turn and the status area alone says so. | Go: a running provider with events held reads refreshing, one loading or idle does not. Vitest: the status line reads "USGS: refreshing"; the button turns while any provider refreshes and for one turn after a fast one. | T |
 
 #### 3.2.7 Settings
 

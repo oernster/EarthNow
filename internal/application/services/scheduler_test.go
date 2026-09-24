@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oernster/EarthNow/internal/application/dto"
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/domain/event"
 )
@@ -106,6 +107,28 @@ func TestFRPRV009_FRPRV010_ManualRefreshWithCooldown(t *testing.T) {
 	}
 	if got := names(s.Due()); got != "USGS " {
 		t.Errorf("a still-running EONET was made due: %q", got)
+	}
+}
+
+func TestFRSTS007_ARunningProviderWithEventsHeldIsRefreshing(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	s := schedulerFor(clock)
+	s.Due()
+	s.Succeeded(event.EONET)
+	providers := []dto.Provider{
+		{Name: string(event.USGS)},
+		{Name: string(event.EONET)},
+		{Name: "NONE"},
+	}
+	s.MarkRefreshing(providers)
+	if !providers[0].Refreshing || providers[1].Refreshing || providers[2].Refreshing {
+		t.Errorf("running USGS, idle EONET, unknown: %+v", providers)
+	}
+	loading := []dto.Provider{{Name: string(event.USGS), Loading: true}}
+	s.MarkRefreshing(loading)
+	if loading[0].Refreshing {
+		t.Error("a provider loading its first set also reads refreshing")
 	}
 }
 

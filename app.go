@@ -116,9 +116,15 @@ func (a *App) loadGazetteer() {
 // timing rule lives in the scheduler (FR-PRV-005 to 010).
 func (a *App) drive() {
 	for {
-		for _, name := range a.sched.Due() {
+		due := a.sched.Due()
+		for _, name := range due {
 			p := a.byName[name]
 			go a.guard("refresh "+string(name), func() { a.fetch(p) })
+		}
+		// FR-STS-007: the page hears that fetches have started, not only that
+		// they have finished, so it can say they are under way.
+		if len(due) > 0 {
+			wruntime.EventsEmit(a.ctx, changedEvent)
 		}
 		var timer *time.Timer
 		var fire <-chan time.Time
@@ -205,6 +211,7 @@ func (a *App) View(windowKey string, hiddenCategories, hiddenProviders []string)
 			view.Providers[i].NextAttempt = "next attempt " + freshness.Until(a.sched.NextAttempt(event.Provider(p.Name)), now)
 		}
 	}
+	a.sched.MarkRefreshing(view.Providers)
 	view.Notice = services.JoinNotices(view.Notice, a.prefs.Notice())
 	return view
 }

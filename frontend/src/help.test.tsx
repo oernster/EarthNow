@@ -23,7 +23,7 @@ import type {ProviderDTO} from './types'
 const key = (k: string) => fireEvent.keyDown(document.activeElement ?? document.body, {key: k})
 
 const provider = (over: Partial<ProviderDTO> = {}): ProviderDTO =>
-    ({name: 'USGS', loading: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', ...over})
+    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', ...over})
 
 describe('a reading body', () => {
     beforeEach(layOut)

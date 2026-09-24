@@ -283,6 +283,14 @@ html, body, #root {
     transform: none;
 }
 
+/* FR-STS-007: the Refresh button's icon turns while a fetch runs. The turn's
+   length arrives from the page as --refresh-turn. */
+@keyframes refresh-turn { to { transform: rotate(360deg); } }
+.rail-btn.busy img { animation: refresh-turn var(--refresh-turn) linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .rail-btn.busy img { animation: none; }
+}
+
 /* A rail button with something waiting to be read carries a dot. */
 .rail-btn.attention::before {
     content: "";

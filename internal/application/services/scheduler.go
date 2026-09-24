@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/oernster/EarthNow/internal/application/dto"
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/domain/event"
 )
@@ -142,6 +143,19 @@ func (s *Scheduler) NextAttempt(p event.Provider) time.Time {
 		return st.nextDue
 	}
 	return time.Time{}
+}
+
+// MarkRefreshing sets Refreshing on each provider whose fetch is running while
+// its events are held (FR-STS-007). One still loading its first set says
+// loading instead, so it is left alone.
+func (s *Scheduler) MarkRefreshing(providers []dto.Provider) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, p := range providers {
+		if st, ok := s.states[event.Provider(p.Name)]; ok && st.running && !p.Loading {
+			providers[i].Refreshing = true
+		}
+	}
 }
 
 // Manual makes every idle provider due now (FR-PRV-009), unless the last

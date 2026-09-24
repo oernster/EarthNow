@@ -18,6 +18,7 @@ import {icons} from './icons'
 import {ProductName} from './product'
 import {useRing} from './ring'
 import type {ChoiceDTO, EventDTO, SettingChoicesDTO, SettingsDTO, ViewDTO} from './types'
+import {REFRESH_TURN_MS, useHeld} from './useHeld'
 
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
 
@@ -93,6 +94,7 @@ export default function App() {
     const current = selected ? view.events.find(e => e.id === selected.id) : undefined
     const shownDetail = current ?? selected
     const speed = choices?.speeds.find(s => s.key === settings?.speed)
+    const refreshing = useHeld(view.providers.some(p => p.refreshing), REFRESH_TURN_MS)
 
     return <ProductName.Provider value={product}><div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
@@ -101,6 +103,7 @@ export default function App() {
             onResetView={() => globe.current?.resetView()}
             onZoom={zoomIn => globe.current?.zoom(zoomIn)}
             onRefresh={refresh}
+            refreshing={refreshing}
             onStatus={() => setStatusOpen(true)}
             onSettings={() => setSettingsOpen(true)}
             onHelp={setHelp}

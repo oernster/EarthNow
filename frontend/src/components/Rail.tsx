@@ -2,9 +2,11 @@
 // FR-RAIL-002's: the view first (rotation, Reset view, zoom), then the data
 // (Refresh, provider status), then Settings and Help. The donate button sits at
 // the rail's foot (FR-DON-001). Every name is read from railLabels.
+import type {CSSProperties} from 'react'
 import {icons} from '../icons'
 import {useProductName} from '../product'
 import {donateLabel, RAIL_LABELS} from '../railLabels'
+import {REFRESH_TURN_MS} from '../useHeld'
 import type {HelpKind} from './HelpDialogs'
 import {HelpMenu} from './HelpMenu'
 import {RailButton} from './RailButton'
@@ -17,6 +19,8 @@ interface Props {
     onResetView: () => void
     onZoom: (zoomIn: boolean) => void
     onRefresh: () => void
+    // refreshing turns the Refresh button's icon while a fetch runs (FR-STS-007).
+    refreshing?: boolean
     onStatus: () => void
     onSettings: () => void
     onHelp: (kind: HelpKind) => void
@@ -30,13 +34,16 @@ export function Rail(p: Props) {
     const rotation = p.autoRotate
         ? {label: RAIL_LABELS.stopRotating, icon: icons.rotateStop}
         : {label: RAIL_LABELS.startRotating, icon: icons.rotate}
-    return <nav className="rail" aria-label="Actions">
+    // The turn's length has its one home in useHeld; the stylesheet reads it here.
+    const turn = {'--refresh-turn': `${REFRESH_TURN_MS}ms`} as CSSProperties
+    return <nav className="rail" aria-label="Actions" style={turn}>
         <div className="rail-actions">
             <RailButton {...rotation} onClick={p.onToggleRotate}/>
             <RailButton label={RAIL_LABELS.resetView} icon={icons.resetView} onClick={p.onResetView}/>
             <RailButton label={RAIL_LABELS.zoomIn} icon={icons.zoomIn} onClick={() => p.onZoom(true)}/>
             <RailButton label={RAIL_LABELS.zoomOut} icon={icons.zoomOut} onClick={() => p.onZoom(false)}/>
-            <RailButton label={RAIL_LABELS.refresh} icon={icons.refresh} onClick={p.onRefresh}/>
+            <RailButton label={RAIL_LABELS.refresh} icon={icons.refresh} onClick={p.onRefresh}
+                className={p.refreshing ? 'busy' : undefined} aria-busy={p.refreshing}/>
             <RailButton label={p.attention ? RAIL_LABELS.statusAttention : RAIL_LABELS.status} icon={icons.status}
                 attention={p.attention} onClick={p.onStatus}/>
             <RailButton label={RAIL_LABELS.settings} icon={icons.settings} onClick={p.onSettings}/>

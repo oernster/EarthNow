@@ -24,6 +24,8 @@ export interface EventDTO {
 export interface ProviderDTO {
     name: string
     loading: boolean
+    // refreshing: a fetch is running with events already held (FR-STS-007).
+    refreshing: boolean
     stale: boolean
     retrieved: string
     problem: string
