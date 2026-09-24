@@ -60,3 +60,13 @@
 
 .tip-place { color: var(--muted); margin-top: 2px; }
 .tip-keys { color: var(--muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+
+/* FR-GLB-009: the statement shown in place of the globe where WebGL2 is missing. */
+.globe-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15%;
+    text-align: center;
+    color: var(--warn);
+}

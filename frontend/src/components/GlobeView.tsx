@@ -30,6 +30,13 @@ const TIP_OFFSET_PX = 14
 const GLOBE_KEYS = 'Up and Down walk the events, Enter opens one, plus and minus zoom.'
 // NO_EVENTS is what the cursor says when the window holds nothing to walk.
 const NO_EVENTS = 'No events in this time window'
+// FR-GLB-009: said in place of the globe where WebGL2 is missing.
+export const NO_WEBGL2 = 'The globe needs WebGL2, which this computer does not offer. Updating the graphics driver usually adds it; the rest of the window still works.'
+
+// hasWebGL2 reports whether the page can draw the globe at all.
+export function hasWebGL2(): boolean {
+    return document.createElement('canvas').getContext('webgl2') !== null
+}
 
 interface Props {
     events: EventDTO[]
@@ -72,6 +79,7 @@ function clusterTitle(members: readonly EventDTO[]): string {
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     {events, selectedId, autoRotate, secondsPerRevolution, onSelect, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
+    const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
     const hovered = useRef<MarkerItem | null>(null)
     const pointer = useRef({x: 0, y: 0})
@@ -205,7 +213,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
 
     useEffect(() => {
         const el = host.current
-        if (!el) return
+        if (!el || !webgl2) return
         const g = new Globe(el)
             .globeImageUrl(earthTexture)
             .backgroundColor('#000000')
@@ -287,7 +295,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             g._destructor()
             globe.current = null
         }
-    }, [])
+    }, [webgl2])
 
     // The setting is the only switch (FR-GLB-004, FR-GLB-012). Switching it on
     // starts rotation at once unless input is still inside its idle delay.
@@ -313,6 +321,8 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     // Focus once per selection, not on every refresh of the same event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedId])
+
+    if (!webgl2) return <div className="globe globe-missing" role="alert">{NO_WEBGL2}</div>
 
     // globe.gl owns the host's children, so the tooltip sits beside it.
     return <>
