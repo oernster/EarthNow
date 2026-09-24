@@ -42,7 +42,7 @@ const {GlobeView} = await import('./components/GlobeView')
 const quake: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
     lat: 61.899, lng: -150.919, at: '', dayOnly: false, reported: '', retrievedAt: '', retrieved: '',
-    measurement: '', band: 2, sourceUrl: '', sourceText: '', ended: false,
+    measurement: '', depth: '', band: 2, sourceUrl: '', sourceText: '', ended: false,
 }
 const noop = () => undefined
 const IDLE_MS = 10_000

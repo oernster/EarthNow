@@ -15,6 +15,8 @@ export interface EventDTO {
     retrievedAt: string
     retrieved: string
     measurement: string
+    // The Depth row, worded on the Go side (FR-SEL-010 to 012); empty when none.
+    depth: string
     band: number
     sourceUrl: string
     sourceText: string

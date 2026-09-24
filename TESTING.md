@@ -102,7 +102,7 @@ which wire the parts together and are checked by eye:
 | Page measure | Floor |
 |---|---|
 | Statements | 82.23 |
-| Branches | 75.55 |
+| Branches | 75.66 |
 | Functions | 79.61 |
 | Lines | 84.39 |
 
@@ -129,6 +129,12 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   the stored set, the cache restored before any fetch, the notices when there
   is no cache or no settings file. The https rule for source links is tested
   there as well.
+- **Earthquake depth**: the wording at each band edge and either side of it,
+  a value rounding across an edge taking the band it shows, a negative depth
+  above sea level, -0.04 reading 0.0 rather than -0.0 (proved by planting the
+  sign back), exactly 10 km marked as often fixed while 10.04 is not, the
+  wording reaching the wire and no depth leaving the row empty (FR-SEL-010
+  to 013).
 - **The cloud layer**: the brightness ramp at both thresholds and between them
   (FR-CLD-006), the veil for a pixel with no data (FR-CLD-007), the status
   wording and its staleness mark (FR-CLD-009, FR-CLD-010). On a fake clock and
@@ -203,7 +209,9 @@ clustering and the altitude at which a cluster's members separate, the keyboard
 cursor's walk, the category table, the auto-scroll machine driven tick by tick,
 the keyboard repair shared with the setup page, the keyboard ring (with the
 page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
-the Help surfaces with the rail's order. The refresh indicator is covered too:
+the Help surfaces with the rail's order, the detail panel's Depth row shown
+or left out and the guide's note on the fixed depth (FR-SEL-010, FR-SEL-013,
+FR-SEL-014). The refresh indicator is covered too:
 the status line's wording, the turning Refresh button held for one turn and
 the last refresh time. So is the cloud layer: the button's name and artwork in
 each state, the press, the cloud line shown, marked or absent; also the sphere

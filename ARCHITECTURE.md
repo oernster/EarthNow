@@ -106,6 +106,10 @@ Pure Go over values handed in; no clock, no disk, no network.
 - `event`: `Event` and its observations, the provider and category
   vocabularies (DATA-001, DATA-002), the earthquake size bands of FR-MRK-003
   and the rule that a source link is a page rather than a data file (FR-SEL-009).
+  It also words an earthquake's depth: one decimal with USGS's band (shallow
+  below 70 km, intermediate below 300, deep beyond), a negative depth as
+  that far above sea level and exactly 10 km marked as often USGS's fixed
+  depth (FR-SEL-010 to 012).
 - `freshness`: age wording (NFR-FRESH-002, FR-SEL-004) and the rule that a
   provider is stale three intervals after its last success (NFR-FRESH-001).
 - `region`: a bare region code or a locale name's territory as an ISO alpha-2

@@ -285,7 +285,7 @@ describe('FR-PRV-001 an ended event', () => {
         ;(window as unknown as {go: unknown}).go = {main: {App: {Place: () => Promise.resolve('')}}}
         const e = {id: 'EONET:1', provider: 'EONET', category: 'WILDFIRE', title: 'Fire', description: '', lat: 1, lng: 2,
             at: '2026-09-20T00:00:00Z', dayOnly: true, reported: 'r', retrievedAt: '2026-09-23T00:00:00Z', retrieved: 'x',
-            measurement: '', band: 0, sourceUrl: '', sourceText: '', ended: true}
+            measurement: '', depth: '', band: 0, sourceUrl: '', sourceText: '', ended: true}
         const {unmount} = render(<DetailPanel event={e} inView onClose={() => undefined} onProblem={() => undefined}/>)
         await act(async () => undefined)
         expect(screen.getByText('EONET has marked this event as ended.')).toBeTruthy()

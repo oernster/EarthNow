@@ -19,9 +19,11 @@ type Event struct {
 	RetrievedAt string  `json:"retrievedAt"`
 	Retrieved   string  `json:"retrieved"`
 	Measurement string  `json:"measurement"`
-	Band        int     `json:"band"`
-	SourceURL   string  `json:"sourceUrl"`
-	SourceText  string  `json:"sourceText"`
+	// Depth is the Depth row, worded (FR-SEL-010 to 012); empty when none.
+	Depth      string `json:"depth"`
+	Band       int    `json:"band"`
+	SourceURL  string `json:"sourceUrl"`
+	SourceText string `json:"sourceText"`
 	// Ended is true when the source has closed the event (FR-PRV-001).
 	Ended bool `json:"ended"`
 }

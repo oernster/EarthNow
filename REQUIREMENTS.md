@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 30.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 31.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -36,6 +36,7 @@ edits.
 | 28 | 2026-09-24 | The Linux Flatpak, its cleanup script and the macOS DMG move from release 2 into the released product: 1.3 takes them out of scope's exclusions, 2.3 lists the three platforms side by side, DEL-005 to DEL-007 read release 1, CON-003 and D.1 drop "release 2" and RSK-002 is closed. | The owner released v1.0.0 with `EarthNowSetup.exe`, `EarthNow.dmg` and `earthnow.flatpak` (the release's assets, read) and tested the notarised Apple Silicon DMG and the Flatpak on the latest Ubuntu LTS, where the globe drew with WebGL2. Emoji coverage under Linux and macOS fonts stays unmeasured (D.3). No behaviour changes. |
 | 29 | 2026-09-24 | The day and night layer (3.2.11, FR-DAY-001 to 009): the globe lit by the real sun, NASA's Black Marble city lights on the night side, a rail button after the clouds, shown on a first run. The day and night terminator and the night-lights texture leave the out-of-scope list and the Won't list. NFR-UX-002's minimum window rises to 960 by 700; NFR-PERF-006, ASM-009 and the Black Marble credit (NFR-LEG-002) added. | Owner request: show where it is daytime on Earth now, from astronomy alone with no service. The owner chose city lights over a plain darkened side, a rail button over a setting and the layer on by default. The rail's own figures (54 px buttons, 8 px gaps, about 11 px spare at 640) leave a tenth button 51 px short. |
 | 30 | 2026-09-24 | The start view (FR-GLB-014 to 017): at launch the globe opens facing the country the operating system's country or region setting names, at Natural Earth's label point for it, before idle rotation begins; with no usable region it opens as before and logs why. ASM-010 added. The Won't "favourites and home location" stands: nothing is chosen or kept inside EarthNow; the region is the operating system's own setting, read on the machine and sent nowhere. | Owner request: open over the reader's own part of the world. The owner chose the country or region setting over the time zone and the display language (measured on the reference machine: all three read the United Kingdom there; a UK machine often runs an en-US display language). It chose Natural Earth's label point over the capital or the outline's centre, with 1.0.0's view as the fallback. The owner also set the order of the work before the next release: this, then earthquake depth, recent-event trails and Replay the Earth, each its own amendment; no release is cut until all four are in. |
+| 31 | 2026-09-24 | Earthquake depth (FR-SEL-010 to 014): the detail panel gains a Depth row for an event whose source gives one, to one decimal with USGS's band word; a depth above sea level is worded as such; exactly 10 km is marked as often a fixed depth. Nothing changes on the globe or in the tooltip. R10 and R11 added. | Owner request, the detail panel only: "I'd resist turning the globe into a Christmas tree." DATA-010 already keeps USGS depth in kilometres (measured: `Extras.DepthKm`); nothing carried it past the domain. Measured over the cached week of 244 USGS quakes at 2.5 and above: 165 shallow, 62 intermediate, 17 deep, 77 at exactly 10 km. USGS states that 10 km is a fixed depth assigned when the data are too poor to compute one (R11); its summary feed does not say which ones, so the row says often rather than claiming this one is. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -121,6 +122,8 @@ One term, one meaning, throughout.
 | R7 | House skills: `installer`, `scroll`, `keeb`, `noborderfocus` |
 | R8 | ED Voyage Companion (Go + Wails Windows delivery reference) |
 | R9 | PigeonPost, SymDiary (Go + Wails flatpak and DMG script references) |
+| R10 | USGS, Determining the Depth of an Earthquake, https://www.usgs.gov/programs/earthquake-hazards/determining-depth-earthquake |
+| R11 | USGS FAQ, Why do so many earthquakes occur at a depth of 10km?, https://www.usgs.gov/faqs/why-are-so-many-earthquakes-located-10-km-deep |
 
 ---
 
@@ -363,6 +366,11 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-SEL-005 | Must | When the source link is activated, the application shall open it in the system browser. | T (fake opener receives the URL) | T |
 | FR-SEL-006 | Must | If an event's source URL is not an absolute `https` URL, then the detail panel shall show it as text rather than a link. | `javascript:` and `http:` fixtures render as plain text. | T |
 | FR-SEL-009 | Must | Where a provider gives several sources for an event, the detail panel shall link the first that names a page (no file ending; else a web page ending such as `.html` or `.shtml`); if none does, it shall show the first source as text rather than as a link. | Polo's fixture (JTWC `.tcw` then NHC `.shtml`) links the NHC page; a `.tcw` alone renders as text. | T |
+| FR-SEL-010 | Must | Where the selected event carries a depth (DATA-010), the detail panel shall show a Depth row: the depth in kilometres to one decimal, then USGS's band for that value (R10): shallow below 70 km, intermediate from 70 to below 300 km, deep from 300 km. | 18.44 reads "18.4 km, shallow"; 70 reads "70.0 km, intermediate"; 583.682 reads "583.7 km, deep"; 69.96 reads "70.0 km, intermediate" (the band follows the value shown). | T |
+| FR-SEL-011 | Must | Where the depth is below 0 km (USGS measures depth from the geoid, so a quake beneath high ground can read negative), the Depth row shall read the distance above sea level instead: "1.2 km above sea level, shallow". | -1.2 reads "1.2 km above sea level, shallow"; 0 reads "0.0 km, shallow". | T |
+| FR-SEL-012 | Must | Where the depth is exactly 10 km, the Depth row shall add "often a fixed depth: USGS assigns 10 km when it cannot compute one" (R11). | 10 reads "10.0 km, shallow (often a fixed depth: USGS assigns 10 km when it cannot compute one)"; 10.04 reads "10.0 km, shallow" with no note. | T |
+| FR-SEL-013 | Must | Where the selected event carries no depth, the detail panel shall show no Depth row. | An EONET event and a USGS event with no third coordinate show none. | T |
+| FR-SEL-014 | Must | The guide shall say that USGS assigns 10 km as a fixed depth when it cannot compute one (R11), so a depth of 10 km may not be measured. | The guide names the fixed depth of 10 km. | T |
 | FR-SEL-007 | Must | When the detail panel is dismissed, the application shall clear the selection and return focus to the opener (NFR-KBD-006). | T | T |
 | FR-SEL-008 | Must | If the selected event leaves the displayed set on refresh or filtering, then the detail panel shall stay open with a line stating the event is no longer in the current view. | T | T |
 

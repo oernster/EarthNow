@@ -3,6 +3,7 @@
 import {act, fireEvent, render, screen} from '@testing-library/react'
 import {describe, expect, it, vi} from 'vitest'
 import {useState} from 'react'
+import {guideSections} from './guide'
 import type {EventDTO} from './types'
 
 const PLACE = '49 km SW of Montana, Alaska, United States of America'
@@ -15,7 +16,7 @@ const RETRIEVED_AT = '2026-09-20T10:05:00Z'
 const full: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
     lat: 61.899, lng: -150.919, at: AT, dayOnly: false, reported: 'Reported 2 h ago', retrievedAt: RETRIEVED_AT,
-    retrieved: 'Retrieved 1 h ago', measurement: 'Magnitude 3.1', band: 2, sourceUrl: 'https://earthquake.usgs.gov/e',
+    retrieved: 'Retrieved 1 h ago', measurement: 'Magnitude 3.1', depth: '18.4 km, shallow', band: 2, sourceUrl: 'https://earthquake.usgs.gov/e',
     sourceText: '', ended: false,
 }
 const noop = () => undefined
@@ -43,6 +44,21 @@ describe('the detail panel', () => {
     it('FR-SEL-002 leaves out the measurement row where there is none', async () => {
         await show({...full, measurement: ''})
         expect(row('Measurement')).toBeNull()
+    })
+
+    it('FR-SEL-010 shows the depth as the Go side words it', async () => {
+        await show(full)
+        expect(row('Depth')).toBe('18.4 km, shallow')
+    })
+
+    it('FR-SEL-014 has the guide explain the fixed depth of 10 km', () => {
+        const words = guideSections('').flatMap(s => s.paragraphs ?? []).join(' ')
+        expect(words).toContain('assigns 10 km, a fixed depth')
+    })
+
+    it('FR-SEL-013 leaves out the depth row where there is none', async () => {
+        await show({...full, depth: ''})
+        expect(row('Depth')).toBeNull()
     })
 
     it('FR-SEL-003 gives each time as freshness wording, exact UTC and local time', async () => {

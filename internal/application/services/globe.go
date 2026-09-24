@@ -254,6 +254,9 @@ func toDTO(s Shown, now time.Time) dto.Event {
 			out.Measurement += " " + m.Unit
 		}
 	}
+	if d := s.Event.Extras.DepthKm; d != nil {
+		out.Depth = event.DepthWording(*d)
+	}
 	return out
 }
 

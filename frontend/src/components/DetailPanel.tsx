@@ -61,6 +61,7 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
                 <dt>Position</dt><dd>{event.lat.toFixed(COORD_DECIMALS)}, {event.lng.toFixed(COORD_DECIMALS)}</dd>
                 <dt>Event time</dt><dd>{event.reported}<br/>{utc(event.at, event.dayOnly)}{eventLocal && <><br/>{eventLocal} local</>}</dd>
                 {event.measurement && <><dt>Measurement</dt><dd>{event.measurement}</dd></>}
+                {event.depth && <><dt>Depth</dt><dd>{event.depth}</dd></>}
                 {event.description && <><dt>Source text</dt><dd>{event.description}</dd></>}
                 <dt>Provider</dt><dd>{event.provider}</dd>
                 <dt>Retrieved</dt><dd>{event.retrieved}<br/>{utc(event.retrievedAt, false)}<br/>{local(event.retrievedAt, false)} local</dd>

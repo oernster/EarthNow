@@ -67,8 +67,9 @@ source that reported it and how old that report is.
   out on your own machine from embedded Natural Earth data.
 - **Opens the detail** of an event: title, category, provider, position, the
   event time and the retrieval time (each as an age, in UTC and in local time;
-  an event its source dates by day alone has no local time), any measurement
-  and a link to the source page, which opens in your browser. An event its
+  an event its source dates by day alone has no local time), any measurement,
+  an earthquake's depth with USGS's shallow, intermediate or deep band, then a
+  link to the source page, which opens in your browser. An event its
   source has closed is marked as ended.
 - **Walks the events from the keyboard:** Up and Down move between them, Enter
   opens one.
