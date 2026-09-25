@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EarthNow: see what the Earth is doing right now</title>
-    <meta name="description" content="EarthNow puts the past week's earthquakes, volcanoes, wildfires, storms and floods on a turning globe, each one traced to the public source that reported it, with the clouds as satellites last saw them. Free for Windows, macOS and Linux.">
+    <meta name="description" content="EarthNow puts the past week's earthquakes, volcanoes, wildfires, storms and floods on a turning globe, each one traced to the public source that reported it, lit by the real sun, with the clouds and the burnt ground laid over it and a replay of the whole week. Free for Windows, macOS and Linux.">
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <meta property="og:type" content="website">
     <meta property="og:title" content="EarthNow: see what the Earth is doing right now">
-    <meta property="og:description" content="The planet's week on a globe: earthquakes, volcanoes, wildfires, storms and floods, straight from USGS, NASA and the Smithsonian, with EUMETSAT's clouds on top. Free for Windows, macOS and Linux.">
+    <meta property="og:description" content="The planet's week on a globe: earthquakes, volcanoes, wildfires, storms and floods, straight from USGS, NASA and the Smithsonian, with EUMETSAT's clouds on top and a replay at the press of Play. Free for Windows, macOS and Linux.">
     <meta property="og:image" content="https://earthnow.world/icon.png">
     <meta property="og:url" content="https://earthnow.world/">
     <link rel="stylesheet" href="styles.css">
@@ -45,7 +45,7 @@
     <div class="wrap hero">
         <div>
             <p class="eyebrow">
-                <span class="pill">v<!--VERSION-->1.0.0<!--/VERSION--></span>
+                <span class="pill">v<!--VERSION-->2.0.0<!--/VERSION--></span>
                 <span class="pill">Windows, macOS, Linux</span>
                 <span class="pill">Free and open source</span>
                 <span class="pill">No account</span>
@@ -79,16 +79,16 @@
                 quietly grumbling all week. It is the Earth as it actually is today.</p>
         </div>
         <figure class="shot">
-            <img src="screenshots/main-ui.png" width="1262" height="785" loading="lazy"
-                 alt="EarthNow showing Africa and South America across the Atlantic with a week of earthquakes, wildfires, storms, floods and ice on the globe, the action buttons down the left and the key of categories with their counts down the right.">
+            <img src="screenshots/main-ui.png" width="1259" height="788" loading="lazy"
+                 alt="EarthNow showing Europe, Africa and the Middle East with a week of earthquakes, wildfires, storms and floods on the globe and burnt ground marked in red, the action buttons down the left, the time window with Play and its slider along the top and the key of categories with their counts down the right.">
             <figcaption>A week on the globe, with the key counting what is showing.</figcaption>
         </figure>
         <div class="features">
             <div class="feature">
                 <span class="glyph">🌍</span>
                 <h3>A globe you can hold</h3>
-                <p>NASA's Blue Marble on a black sky. Leave it alone and it turns slowly
-                    by itself; grab it and it is yours to spin and zoom.</p>
+                <p>NASA's Blue Marble on a black sky. It opens over your own country, then
+                    turns slowly by itself; grab it and it is yours to spin and zoom.</p>
             </div>
             <div class="feature">
                 <span class="glyph">☁️</span>
@@ -105,11 +105,25 @@
                     machine from the time.</p>
             </div>
             <div class="feature">
+                <span class="glyph">🔥</span>
+                <h3>Where the fires have burnt</h3>
+                <p>Burnt ground glows red across the globe, mapped from satellites day by
+                    day. Pick a week and you see a week of it.</p>
+            </div>
+            <div class="feature">
+                <span class="glyph">▶️</span>
+                <h3>Replay the week</h3>
+                <p>Press Play and the whole window runs past in thirty seconds: quakes
+                    popping up, storms tracking across the ocean, the sun sweeping round
+                    and the clouds on the move. Or drag the slider to any moment.</p>
+            </div>
+            <div class="feature">
                 <span class="glyph">📍</span>
                 <h3>Every event where it happened</h3>
                 <p>Each one wears its own emoji, so the map reads at a glance. Earthquakes
-                    grow with their magnitude. Crowded spots gather into a count; click it
-                    and the globe zooms in until they separate.</p>
+                    grow with their magnitude and storms trail the path they took. Crowded
+                    spots gather into a count; click it and the globe zooms in until they
+                    separate. Too close to part? It lists them instead.</p>
             </div>
             <div class="feature">
                 <span class="glyph">🧭</span>
@@ -120,8 +134,9 @@
             <div class="feature">
                 <span class="glyph">🔎</span>
                 <h3>The detail, one click away</h3>
-                <p>Open an event for its time, its position, its measurement and a link to
-                    the source's own page, which opens in your browser.</p>
+                <p>Open an event for its time, its position, its measurement, an
+                    earthquake's depth and a link to the source's own page, which opens in
+                    your browser.</p>
             </div>
             <div class="feature">
                 <span class="glyph">⏱️</span>
@@ -137,8 +152,13 @@
             </div>
         </div>
         <figure class="shot">
-            <img src="screenshots/cloud-cover.png" width="1259" height="786" loading="lazy"
-                 alt="The same week with the clouds shown: white cloud over the Atlantic, central Africa and the Southern Ocean, the event markers drawn above it and the line beneath the globe giving the cloud image's time and age.">
+            <img src="screenshots/day-night.png" width="1258" height="785" loading="lazy"
+                 alt="The same week by night: the dark side of the globe over Europe, North Africa and the Middle East with the city lights showing through, daylight still on Asia to the east and the event markers drawn above it all.">
+            <figcaption>The same week with night falling, the city lights coming up.</figcaption>
+        </figure>
+        <figure class="shot">
+            <img src="screenshots/cloud-cover.png" width="1260" height="783" loading="lazy"
+                 alt="The same week with the clouds shown: white cloud over northern Europe, the Mediterranean and much of Africa, the event markers drawn above it and the line beneath the globe giving the cloud image's time and age.">
             <figcaption>The same week under the clouds, as the weather satellites last saw them.</figcaption>
         </figure>
         <div class="kinds" role="list" aria-label="The kinds of event EarthNow shows">
@@ -163,8 +183,8 @@
                 measure the planet have published, then tells you plainly when it heard.</p>
         </div>
         <figure class="shot">
-            <img src="screenshots/detail.png" width="1259" height="784" loading="lazy"
-                 alt="A wildfire in Brazil opened in the detail panel: EONET's note that the event has ended, its nearest town, position, event time, burned area, the provider EONET, when it was retrieved and a link to the source page.">
+            <img src="screenshots/detail.png" width="1259" height="787" loading="lazy"
+                 alt="An earthquake in Ukraine opened in the detail panel over the night side of the globe: its nearest town, position, event time, magnitude, its depth with the note that USGS often assigns 10 km, the provider USGS, when it was retrieved and a link to the source page.">
             <figcaption>One event in full, traced to the source that reported it.</figcaption>
         </figure>
         <div class="sources">
@@ -190,10 +210,17 @@
                     ring of weather satellites every three hours, fetched only while the
                     clouds are showing.</p>
             </div>
+            <div class="source">
+                <h3>GWIS</h3>
+                <p>The burnt ground, from the Global Wildfire Information System of the
+                    Copernicus Emergency Management Service, mapped a day at a time and
+                    fetched only while the burnt areas are showing.</p>
+            </div>
         </div>
         <p class="note">The globe is NASA's Blue Marble imagery, on this page as in the
-            app; its night lights are NASA's Black Marble. Neither NASA, the USGS, the Smithsonian nor EUMETSAT endorses EarthNow. It
-            simply shows their public reports, credited.</p>
+            app; its night lights are NASA's Black Marble. None of NASA, the USGS, the
+            Smithsonian, EUMETSAT or GWIS endorses EarthNow. It simply shows their
+            public reports, credited.</p>
     </section>
 
     <section class="wrap" id="calm">
@@ -218,7 +245,8 @@
                 <ul>
                     <li><strong>A warning system.</strong> No alerts, no forecasts. For
                         warnings, listen to your local authorities.</li>
-                    <li><strong>An archive.</strong> A week is as far back as it looks.</li>
+                    <li><strong>An archive.</strong> A week is as far back as it looks or
+                        replays.</li>
                     <li><strong>A weather service.</strong> The clouds show where cloud
                         lay; there is no rain, wind, temperature or forecast.</li>
                     <li><strong>A mapping tool.</strong> No measurements, no projections.</li>

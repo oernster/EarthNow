@@ -20,9 +20,9 @@ staticcheck is not installed: `test.ps1` runs it at a pinned version through
 `go run`, so a new release of it cannot change the result for unchanged code.
 The first run on a machine fetches it, so that run needs the network.
 
-cgo is not used on Windows; the Linux and macOS builds need it, since Wails
-renders there through a C web view. `build.ps1` pins `CGO_ENABLED=0` for the gate and the build,
-so no C compiler is needed. `./test.ps1` run on its own does not set it, so on a
+cgo is not used on Windows; the macOS and Linux builds need it, since Wails
+renders there through a C web view. `build.ps1` pins `CGO_ENABLED=0` for the
+gate and the build, so no C compiler is needed. `./test.ps1` run on its own does not set it, so on a
 machine with a C compiler the gate runs as you run it with the Go default.
 
 `wails.exe` lands in `%USERPROFILE%\go\bin`. If this is not found, that folder
@@ -134,8 +134,10 @@ Both scripts are run by hand; their output is committed.
 
 `tools/genicons.py` reads the masters in `assets/` and writes:
 
-- the rail icons into `frontend/src/assets/icons`, at 208 pixels, plus
-  `rotate-stop.png`, `cloud-cover-hide.png` and `day-night-hide.png`, made by
+- every action master into `frontend/src/assets/icons`, at 208 pixels: the
+  rail's, `play.png` and `pause.png` for Replay, plus `filter.png` and
+  `time-window.png`, which Appendix D.2 lists though no control draws them;
+  also `rotate-stop.png`, `cloud-cover-hide.png` and `day-night-hide.png`, made by
   laying `negative.png` over `rotate.png`, `cloud-cover.png` and
   `day-night.png`, so the two states of the rotation, cloud and day and night
   buttons cannot drift apart;
@@ -221,7 +223,7 @@ how the next setup program decides between update, go back and repair.
 The README's install instructions point at the Releases page, so step 5 is
 what users see.
 
-## Linux and macOS builds
+## macOS and Linux builds
 
 Three bash scripts, ported from PigeonPost with SymDiary's hardening, build
 EarthNow for the other two platforms (DEL-005 to DEL-007). Each has run on its
@@ -231,9 +233,9 @@ files beside the Windows setup program.
 
 | Script | Runs on | What it makes |
 |---|---|---|
+| `builddmg.sh` | an Apple Silicon Mac | `EarthNow.dmg`, signed and notarised; `ALLOW_UNNOTARIZED=1` for a local test build only |
 | `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow`, on the GNOME 50 runtime with webkit2gtk-4.1 |
 | `cleanup_flatpak.sh` | Linux | uninstalls it and removes only the flatpak artefacts; the user's settings and cache stay |
-| `builddmg.sh` | an Apple Silicon Mac | `EarthNow.dmg`, signed and notarised; `ALLOW_UNNOTARIZED=1` for a local test build only |
 
 ```bash
 bash build_flatpak.sh
@@ -243,9 +245,9 @@ bash build_flatpak.sh
   unless told otherwise, so `main.go` passes `options.Linux` with the policy
   set to Always (RSK-002). With it, the globe draws on the latest Ubuntu LTS;
   a machine whose driver offers no WebGL2 gets FR-GLB-009's message instead.
-- **The Flatpak keeps the network** for the three sources and the cloud
-  image. It asks for no filesystem access: its settings, cache and log live in
-  the sandbox's own cache folder.
+- **The Flatpak keeps the network** for the three sources, the cloud images
+  and the burnt-area maps. It asks for no filesystem access: its settings,
+  cache and log live in the sandbox's own cache folder.
 - **The DMG** copies `assets/application-icon.png` to `build/appicon.png`, as
   `build.ps1` does; Wails makes the bundle's icon from it. Notarisation
   needs a keychain profile named `EarthNow` (the script prints how to make one)
@@ -259,17 +261,18 @@ bash build_flatpak.sh
 |---|---|
 | `main.go` | the composition root |
 | `app.go` | the Wails facade the page calls |
+| `layers.go`, `replay.go` | the image layers' and Replay's part of that facade |
 | `binding_pass.go`, `binding_pass_off.go` | the switch that keeps the build's bindings pass out of the user's log |
-| `internal/domain` | `cloud`, `event`, `freshness`, `region`, `sun`, `window`: no I/O |
+| `internal/domain` | `burnt`, `cloud`, `event`, `freshness`, `region`, `sun`, `window`: no I/O |
 | `internal/application` | `ports`, `services` and the `dto` wire shapes |
-| `internal/infrastructure` | `cache`, `clouds`, `geo`, `httpfetch`, `oslocale`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
+| `internal/infrastructure` | `cache`, `clouds`, `geo`, `gwis`, `httpfetch`, `oslocale`, `pngcheck`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
 | `internal/product` | the name, slug, licence line, copyright, donate address and credits |
 | `frontend/src` | the page |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
 | `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
 | `stamp_version.py` | stamps `VERSION` into the site's version pill; `build.ps1` runs it first |
-| `build_flatpak.sh`, `cleanup_flatpak.sh`, `builddmg.sh` | the Linux and macOS builds |
+| `builddmg.sh`, `build_flatpak.sh`, `cleanup_flatpak.sh` | the macOS and Linux builds |
 | `assets/` | the master artwork |
 | `docs/` | the GitHub Pages site: one hand-written page, no build step |
 

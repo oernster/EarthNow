@@ -29,12 +29,13 @@ source that reported it and how old that report is.
 
 - Anyone who needs warnings. EarthNow sends no notifications and makes no
   forecast; it shows what the sources have already published.
-- Anyone who wants history. The widest time window is seven days; there is no
-  archive and no playback.
+- Anyone who wants history. The widest time window is seven days. Replay plays
+  that window back; there is no archive beyond it.
 - Anyone after a GIS tool or a weather service. There are no measurements or
-  projections. There are two layers. The clouds show where cloud lay when the
-  image was made; day and night shows where the sun is up now. There is no
-  rain, wind, temperature or forecast.
+  projections. There are three layers. The clouds show where cloud lay when the
+  image was made; the burnt areas show ground mapped as burnt; day and night
+  shows where the sun is up now. There is no rain, wind, temperature or
+  forecast.
 
 ## What it does
 
@@ -57,11 +58,19 @@ source that reported it and how old that report is.
   The sun's place is worked out on your machine from the time, with no
   request. Clouds over the night side are drawn fainter. The layer shows from
   the first run; a button hides it.
+- **Shows burnt areas** in red, worldwide, from the Global Wildfire Information
+  System (GWIS), which maps burnt ground from satellites one UTC day at a time.
+  Every day the time window touches is drawn, so 7 days shows eight days of
+  maps; a short window may have none mapped yet, which the line beneath the
+  globe says. The layer lies beneath the clouds and the markers. It shows from
+  the first run; Settings hides it. The maps are fetched only while shown and
+  kept for use offline.
 - **Places every event** with its category's emoji: earthquake, volcano,
   wildfire, severe storm, flood, landslide, drought, dust, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
   one cluster with its count; activating a cluster zooms in until its members
-  separate. A storm draws a faint track through the positions its source gave
+  separate. One still together at the closest zoom lists its members instead;
+  choosing one opens its detail. A storm draws a faint track through the positions its source gave
   inside the time window, fading with age; Settings can hide it.
 - **Names where it is.** Hovering a marker shows the event with its nearest
   populated place, its country, the distance and the compass direction, worked
@@ -78,9 +87,17 @@ source that reported it and how old that report is.
   which also counts the events shown in each category. The time window picks
   1 h, 6 h, 24 h, 3 days or 7 days. An event dated more than 15 minutes ahead
   of your clock waits until its time arrives.
+- **Replays the window.** Play, beside the time window, plays the chosen
+  window from its start in 30 seconds: events appear at their own times, storm
+  tracks grow, the sun sweeps round, the burnt days build up and the clouds
+  move. The slider beside it moves through the window by hand; its right end
+  is now. Replay's clouds are smaller images fetched for it, held in memory and
+  let go when it ends. It shows what the sources hold now about those days,
+  which may since have been revised.
 - **Remembers your choices:** the time window, the filters, rotation with its
-  speed plus the smallest earthquake shown (every one, else 1.0, 2.5, 3.0 or
-  4.5 and above).
+  speed, the smallest earthquake shown (every one, else 1.0, 2.5, 3.0 or
+  4.5 and above) plus whether the clouds, day and night, storm tracks and
+  burnt areas show.
 - **Keeps itself fresh.** USGS is asked every minute, EONET every ten minutes
   and the volcano report every hour. A source that fails is retried with a
   growing delay while the others carry on. Refresh asks again at once, no more
@@ -98,9 +115,11 @@ source that reported it and how old that report is.
 
 - **No account and no telemetry.** EarthNow's own code contacts three hosts:
   `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov` and `volcano.si.edu`. While
-  the clouds are shown it also contacts `view.eumetsat.int`; it contacts no
-  others. The HTTP client refuses any other host. What the platform's web
-  view itself contacts (WebView2, WebKitGTK or WKWebView) is its maker's.
+  the clouds are shown or a replay fetches its clouds it also contacts
+  `view.eumetsat.int`; while the burnt areas are shown,
+  `maps.effis.emergency.copernicus.eu`. It contacts no others: the HTTP client
+  refuses any other host. What the platform's web view itself contacts
+  (WebView2, WKWebView or WebKitGTK) is its maker's.
 - **No request from the page.** Every fetch is made by the Go side; the page's
   Content-Security-Policy allows it no other origin.
 - **No update check, no tray icon, no start with Windows.**
@@ -144,7 +163,7 @@ Uninstall open the same program.
 |---|---|
 | The program | `%LOCALAPPDATA%\Programs\EarthNow` |
 | Settings | `%LOCALAPPDATA%\EarthNow\settings.json` |
-| Each source's last good set and the last cloud image | `%LOCALAPPDATA%\EarthNow\cache` |
+| Each source's last good set, the last cloud image and the burnt-area maps | `%LOCALAPPDATA%\EarthNow\cache` |
 | The log | `%LOCALAPPDATA%\EarthNow\Log.txt`, with one previous file kept |
 | The window's web view data | `%LOCALAPPDATA%\EarthNow\webview` |
 | The setup log | `%TEMP%\EarthNowSetup.log` |

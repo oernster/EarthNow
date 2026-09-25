@@ -4,10 +4,11 @@ EarthNow answers one sentence: open a globe and see what is happening on Earth
 right now. The Go side fetches three public sources of events, keeps their last
 good sets and decides what falls inside the chosen time window. While the cloud
 layer is shown it also fetches EUMETSAT's cloud image and draws it; while the
-burnt-area layer is shown, GWIS's burnt areas for every day the window touches. For the
-day and night layer it works out where the sun stands, from the time alone.
-The page draws the globe and reads the answer. This document says how the code is divided, which rules
-the tests hold it to and why each design choice was made.
+burnt-area layer is shown, GWIS's burnt areas for every day the window
+touches. For the day and night layer it works out where the sun stands, from
+the time alone. The page draws the globe and reads the answer. This document
+says how the code is divided, which rules the tests hold it to and why each
+design choice was made.
 
 [REQUIREMENTS.md](REQUIREMENTS.md) is the specification; requirement numbers
 below (FR-PRV-005 and so on) refer to it.
@@ -140,7 +141,7 @@ Pure Go over values handed in; no clock, no disk, no network.
 The use cases, behind the ports in
 [`ports.go`](internal/application/ports/ports.go): `Clock`, `SnapshotCache`,
 `SettingsStore`, `Geocoder`, `Provider`, `CloudSource`, `CloudCache`,
-`RegionSource` and `LabelPoints`.
+`BurntSource`, `BurntCache`, `RegionSource` and `LabelPoints`.
 
 - `Globe` refreshes one provider at a time and answers the view for a window
   and a filter: the events shown, the count per category, each provider's
@@ -193,8 +194,9 @@ Each package implements a port or a piece of setup policy against the real
 machine.
 
 - `httpfetch` is the only network client. It makes a GET to an allowed host,
-  follows a redirect only to an allowed host, refuses a body over the cap, sends `If-Modified-Since` where a validator is
-  held and asks each source for the media types it serves.
+  follows a redirect only to an allowed host, refuses a body over the cap,
+  sends `If-Modified-Since` where a validator is held and asks each source for
+  the media types it serves.
 - The three providers each own their source's schema; nothing outside the
   package knows it. Each names its one host and its refresh interval: USGS
   every minute, EONET every ten minutes, the volcano report every hour.
@@ -203,10 +205,11 @@ machine.
   2048 by 1024 PNG. It refuses anything that is not a PNG of that size, since
   the service reports errors as XML with status 200 (FR-CLD-012), then draws
   every pixel by the domain's ramp and veil. Measured on the real image: 238 ms,
-  1.6 MB in and 652 KB out, once per new image.
+  1.6 MB in and 652 KB out, once per new image. A replay asks for the same
+  layer at 1024 by 512 (FR-RPL-015).
 - `gwis` asks for one UTC day's 2048 by 1024 PNG per request, since a range
-  answers an empty body; it also says whether each drew anything. Composing a window
-  keeps each pixel at its highest opacity in the source's red. Measured against
+  answers an empty body; it also says whether each drew anything. Composing a
+  window keeps each pixel at its highest opacity in the source's red. Measured against
   the live service: 0.2 to 0.4 s a day, 376 ms to compose seven days into
   96 KB.
 - `pngcheck` is the one check both map adapters make: a PNG, of the size asked
@@ -216,6 +219,12 @@ machine.
   leaves the previous set whole (NFR-REL-005, CON-003). The cloud image and its
   valid time are kept the same way in `cloud.json`, through the same reader and
   writer (FR-CLD-014); so are the burnt-area days in `burnt.json` (FR-BA-014).
+- `settings` reads and writes `settings.json` with its own capped read and
+  write-then-rename; a file from before a setting existed gives that setting
+  its default.
+- `oslocale` reads the operating system's country or region setting: the
+  user's home location on Windows, the region of `AppleLocale` on macOS, the
+  territory of `LC_ALL`, else of `LANG`, on Linux (FR-GLB-014).
 - `geo` loads the embedded Natural Earth places, country outlines and Antarctic
   ice shelves and words the nearest place, its distance and its direction
   (FR-GEO-001 to 005). A point on an ice shelf lies in Antarctica, since
@@ -263,7 +272,7 @@ tests read, so it belongs to no layer.
             +--------------------+------------------+
             |            infrastructure             |
             | httpfetch, providers, clouds, cache,  |
-            | gwis, pngcheck, settings,             |
+            | gwis, pngcheck, settings, oslocale,   |
             | geo, runlog, window, setup            |
             +---------------------------------------+
 ```
@@ -280,8 +289,8 @@ tests read, so it belongs to no layer.
    standard error, so a build never writes to the user's log.
 2. **The client and the providers.** One `httpfetch` client with a 30-second
    timeout and the 16 MB response cap of FR-PRV-011, allowed the three
-   providers' hosts plus EUMETSAT's and no others; then the EONET, USGS and GVP
-   adapters over it.
+   providers' hosts plus EUMETSAT's and GWIS's and no others; then the EONET,
+   USGS and GVP adapters over it.
 3. **The globe and the cache.** `Globe` over a `Store` and the system clock,
    with the cache under `%LOCALAPPDATA%\EarthNow\cache`. With no data folder
    the run carries on in memory and says so (FR-STS-005).
@@ -399,6 +408,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The globe library | globe.gl on three.js, with the Blue Marble texture bundled (REQUIREMENTS.md 2.5) | CesiumJS: several times the shipped size, default imagery from a network service with an evaluation token and a GIS engine where one calm globe is wanted. |
 | Marker size across zoom | Each marker keeps its launch size on screen: it is drawn at the altitude over the fit altitude times its fit-altitude size (`markers.ts`, `rescale`). | A fixed size in globe units: two overlapping markers would grow with the gap between them and never separate (FR-MRK-008). |
 | Clustering | Written in `clusters.ts`, pure, from positions, sizes and the scale | A library's: globe.gl and three-globe offer none (Phase 0, their typings checked). |
+| A cluster the closest zoom cannot part | Its members listed in a dialog, each opening its detail (`ClusterList.tsx`, amendment 35) | Fanning the markers out: the owner chose the list. Zooming alone: two quakes 2.0 km apart stayed one cluster at the minimum altitude, so neither could be opened by pointer. |
 | Markers | Emoji drawn to sprite textures, one table as their home (Appendix D.3) | 2,500 page elements moved every frame. The spike measured 2,501 sprites at a median frame of 10.00 ms. |
 | The page's coverage provider | istanbul (`frontend/vite.config.ts`) | v8: it reported `GlobeView.tsx` at 100% with no test importing it; istanbul read it at 0%. |
 | The page's composition root | `App.tsx` and `main.tsx` excluded from the coverage floors, checked by eye | Counting them: they wire the parts together, as `main.go` does on the Go side. |

@@ -161,6 +161,25 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 - **The start view**: region codes and locale names read as a country or as
   none (FR-GLB-014); the region's label point answered, else no start view
   with the reason for the log (FR-GLB-015, FR-GLB-016).
+- **The burnt areas**: every UTC day a window touches, whatever the clock's
+  zone (FR-BA-001); the union keeping each pixel's highest opacity (FR-BA-006);
+  the status wording in UTC with its age, else none mapped yet (FR-BA-008,
+  FR-BA-009). On a fake clock and fake source: one request per day, every day
+  again each interval, only the days a new window lacks, nothing while hidden,
+  a failed day leaving the others drawn, a refused answer counted as a failed
+  day, the maps said to be unavailable when nothing is held, held days drawn
+  offline with old ones discarded and the image composed once per key
+  (FR-BA-002 to FR-BA-006, FR-BA-012 to FR-BA-014, FR-BA-017).
+- **Replay**: the instant a position names along the span (FR-RPL-001); a
+  frame showing what had happened by its instant, a storm's trail growing
+  with it and the burnt days building up (FR-RPL-009, FR-RPL-010,
+  FR-RPL-013); the count and status lines naming the instant (FR-RPL-011,
+  FR-RPL-019); an event from after the span's end waiting for the return
+  (FR-RPL-022). The replay's clouds on a fake source: the span's three-hourly
+  times fetched one a round at the replay's size, the image drawn the latest
+  at or before the instant, play not waiting for them, a missing one named,
+  a failed listing retried and the images released on the return
+  (FR-RPL-014 to FR-RPL-018).
 
 ### The adapters
 
@@ -174,12 +193,20 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   EUMETSAT (in its `testdata`) and draws images made in the test: the newest
   valid time, the GetMap query, the drawn pixels against the domain's ramp and
   the refusal of an XML exception served with 200, a PNG of another size and a
-  PNG cut short (FR-CLD-012).
+  PNG cut short (FR-CLD-012); a replay's image asked for at half the size
+  (FR-RPL-015).
+- **The GWIS adapter** against images made in the test: one day asked for at
+  the size and the day, a day counted as drawn only when a pixel is burnt, the
+  refusal of anything but the PNG asked for and the composed window keeping
+  the highest opacity in red (FR-BA-002, FR-BA-006, FR-BA-009, FR-BA-013).
+  `pngcheck`, which both map adapters share, decodes only a PNG of the size
+  asked for (FR-CLD-012, FR-BA-013).
 - **`httpfetch`** against a local test server: the host allowlist, a redirect
   held to the allowed hosts, the size cap, the status check, `If-Modified-Since` and a 304.
 - **The cache and the settings** in temporary folders: round trips (the cloud
-  image with its valid time among them), a 1.0.0 settings file with no day
-  and night field starting the layer shown (FR-DAY-007), another
+  image with its valid time and the burnt-area days among them), a settings
+  file from before the day and night layer starting it shown (FR-DAY-007),
+  another
   schema version read as absent, a damaged file, an oversized file and a save
   that cannot be written.
 - **The region and the label table**: this machine's real region setting
@@ -242,6 +269,9 @@ animation frames to its end and back to now, pause and seek, another window
 returning to now, each image asked for once its key names one, the lines and
 the guide (FR-RPL-002 to FR-RPL-008, FR-RPL-013, FR-RPL-014, FR-RPL-019,
 FR-RPL-021, FR-RPL-023, NFR-KBD-009).
+So is the cluster list: two quakes 2.0 km apart staying one cluster at the
+minimum altitude, the list opening within half a zoom step of it and
+choosing a member opening that event (FR-MRK-011, FR-MRK-012).
 The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
@@ -254,8 +284,9 @@ each proved by planting the defect back.
   `APPDATA` into temporary folders and fail if the redirection did not take.
 - **Launch, find or end EarthNow.** No test calls the process functions in
   setup; the root package that runs the application has no tests.
-- **Reach a provider, EUMETSAT or GWIS.** The adapters read captured fixtures or built images through fakes;
-  `httpfetch` talks to a server on this machine.
+- **Reach a provider, EUMETSAT or GWIS.** The adapters read captured fixtures
+  or built images through fakes; `httpfetch` talks to a server on this
+  machine.
 - **Read or write the real settings, cache or log.** Every such test works in
   `t.TempDir()`.
 - **Open a browser.** The call that hands a link to the desktop is in the
