@@ -228,12 +228,51 @@ h3 { margin: 0 0 8px; font-size: 1.12rem; }
 
 .features,
 .sources,
-.platforms {
+/* Downloads: the house card per platform (SymDiary, BridgeTalk). Each card is a
+   column, so the parts line up across the row however much each has to say. */
+
+.dl-version {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 14px;
+}
+
+.downloads {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
     margin-top: 28px;
 }
+
+.dl-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dl-card .ico { font-size: 30px; }
+
+.dl-card h3 { margin: 4px 0 0; }
+
+.dl-card .req { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* One button per card and all three the same: the platform is the choice. */
+.dl-card .btn { align-self: center; margin: 14px 0 4px; }
+
+.dl-card .meta { color: var(--muted); font-size: 0.8rem; min-height: 1.2em; margin: 0; }
+
+.dl-card .how { color: var(--muted); font-size: 0.85rem; margin: 8px 0 0; }
+
+.dl-links { text-align: center; margin-top: 20px; font-size: 0.9rem; }
 
 .feature,
 .source,
