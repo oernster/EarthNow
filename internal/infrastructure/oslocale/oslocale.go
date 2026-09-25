@@ -1,8 +1,7 @@
 // Package oslocale reads the operating system's country or region setting
 // (REQUIREMENTS.md FR-GLB-014): the user's home location on Windows, the region
-// of AppleLocale on macOS, the territory of LC_ALL or LANG elsewhere. Only the
-// Windows reading is measured; the other two rest on ASM-010. Nothing read here
-// leaves the machine.
+// of AppleLocale on macOS, the territory of LC_ALL or LANG elsewhere. All three
+// readings are measured (ASM-010). Nothing read here leaves the machine.
 package oslocale
 
 import (

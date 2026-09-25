@@ -39,6 +39,7 @@ func TestFRGLB014_TheTerritoryComesOutOfALocale(t *testing.T) {
 		{"en_US@rg=z", "US", true},
 		{"en_US@rg=1bzzzz", "US", true},
 		{"de_DE", "DE", true},
+		{"en_GB", "GB", true}, // a Mac's AppleLocale, measured (ASM-010)
 		{"C.UTF-8", "", false},
 		{"POSIX", "", false},
 		{"C", "", false},
