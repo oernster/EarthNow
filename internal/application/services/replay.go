@@ -56,6 +56,5 @@ func (r *Replay) BurntImage(windowKey string, end time.Time, position float64) s
 	return r.burnt.ImageAt(w, end, w.At(end, position))
 }
 
-// End releases the replay's cloud images as the scrubber returns to its end
-// (FR-RPL-018).
+// End releases the replay's cloud images as the replay ends (FR-RPL-018).
 func (r *Replay) End() { r.replay.Stop() }

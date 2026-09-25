@@ -49,6 +49,7 @@ type stored struct {
 	DayNightShown    bool     `json:"dayNightShown"`
 	TrailsShown      bool     `json:"trailsShown"`
 	BurntShown       bool     `json:"burntShown"`
+	ReplaySpeed      string   `json:"replaySpeed"`
 }
 
 // File reads and writes the settings file.
@@ -109,6 +110,7 @@ func (f *File) Load(defaults ports.Settings) (ports.Settings, bool, error) {
 		DayNightShown:    held.DayNightShown,
 		TrailsShown:      held.TrailsShown,
 		BurntShown:       held.BurntShown,
+		ReplaySpeed:      held.ReplaySpeed,
 	}, true, nil
 }
 
@@ -150,5 +152,6 @@ func toStored(s ports.Settings) stored {
 		DayNightShown:    s.DayNightShown,
 		TrailsShown:      s.TrailsShown,
 		BurntShown:       s.BurntShown,
+		ReplaySpeed:      s.ReplaySpeed,
 	}
 }

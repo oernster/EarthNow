@@ -121,7 +121,14 @@ export default function App() {
     const liveSun = useSun(dayNightShown, onProblem)
     // Replay (3.2.14): while the scrubber is off its end, the frame stands in for
     // the live view, sun and images.
-    const replay = useReplay(windowKey, settings?.hiddenCategories ?? NONE, settings?.hiddenProviders ?? NONE, onProblem)
+    // FR-RPL-025: the chosen speed with the one a press of the speed button moves
+    // to, in the order the Go side offers them.
+    const replaySpeeds = choices?.replaySpeeds ?? []
+    const speedAt = replaySpeeds.findIndex(s => s.key === settings?.replaySpeed)
+    const replaySpeed = replaySpeeds[speedAt] ?? null
+    const nextSpeed = replaySpeed ? replaySpeeds[(speedAt + 1) % replaySpeeds.length] : null
+    const replay = useReplay(windowKey, settings?.hiddenCategories ?? NONE, settings?.hiddenProviders ?? NONE,
+        replaySpeed?.passSeconds ?? null, onProblem)
     const frame = replay.replaying ? replay.frame : null
     const shown = frame?.view ?? view
     const sun = frame?.sun ?? liveSun
@@ -156,8 +163,10 @@ export default function App() {
                 meets them in reading order, top to bottom (keeb invariant 1). */}
             <div className="top-bar">
                 <TimeWindow windows={windows} selected={windowKey} onChoose={k => change({windowKey: k})}/>
-                <ReplayControls position={replay.position} playing={replay.playing}
-                    onPlay={replay.play} onPause={replay.pause} onSeek={replay.seek}/>
+                <ReplayControls position={replay.position} playing={replay.playing} replaying={replay.replaying}
+                    speed={replaySpeed} next={nextSpeed}
+                    onPlay={replay.play} onPause={replay.pause} onSeek={replay.seek} onNow={replay.toNow}
+                    onSpeed={() => { if (nextSpeed) change({replaySpeed: nextSpeed.key}) }}/>
             </div>
             {speed && settings && start && <GlobeView ref={globe} start={start} events={shown.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}

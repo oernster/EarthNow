@@ -354,6 +354,9 @@ input:enabled:focus-visible {
 .replay-btn { padding: 2px 6px; line-height: 0; }
 .replay-btn img { width: var(--replay-glyph-size); height: var(--replay-glyph-size); }
 .scrubber { width: 180px; accent-color: var(--ring); }
+/* Now and the speed (FR-RPL-024, FR-RPL-025): text buttons as wide as their
+   widest wording, so a change of speed does not shift the bar. */
+.replay-text { min-width: 3.5em; }
 
 .segment.current {
     background: var(--border);

@@ -91,14 +91,16 @@ source that reported it and how old that report is.
   1 h, 6 h, 24 h, 3 days or 7 days. An event dated more than 15 minutes ahead
   of your clock waits until its time arrives.
 - **Replays the window.** Play, beside the time window, plays the chosen
-  window from its start in 30 seconds: events appear at their own times, storm
-  tracks grow, the sun sweeps round, the burnt days build up and the clouds
-  move. The slider beside it moves through the window by hand; its right end
-  is now. Replay's clouds are smaller images fetched for it, held in memory and
+  window from its start in 30 seconds at normal speed: events appear at their
+  own times, storm tracks grow, the sun sweeps round, the burnt days build up
+  and the clouds move. The slider beside it moves through the window by hand.
+  The replay holds at the end of the window until Now returns to the
+  present; the speed button beside Now plays at half, normal or double speed.
+  Replay's clouds are smaller images fetched for it, held in memory and
   let go when it ends. It shows what the sources hold now about those days,
   which may since have been revised.
 - **Remembers your choices:** the time window, the filters, rotation with its
-  speed, the smallest earthquake shown (every one, else 1.0, 2.5, 3.0 or
+  speed, the replay's speed, the smallest earthquake shown (every one, else 1.0, 2.5, 3.0 or
   4.5 and above) plus whether the clouds, day and night, storm tracks and
   burnt areas show.
 - **Keeps itself fresh.** USGS is asked every minute, EONET every ten minutes

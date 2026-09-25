@@ -57,6 +57,13 @@ export interface SpeedDTO {
     secondsPerRevolution: number
 }
 
+// One replay speed (FR-RPL-025) with how long one pass of the span takes.
+export interface ReplaySpeedDTO {
+    key: string
+    label: string
+    passSeconds: number
+}
+
 export interface SettingsDTO {
     autoRotate: boolean
     magnitude: string
@@ -68,6 +75,7 @@ export interface SettingsDTO {
     dayNightShown: boolean
     trailsShown: boolean
     burntShown: boolean
+    replaySpeed: string
 }
 
 // The burnt-area layer's state (FR-BA-008, FR-BA-009, FR-BA-017). The image is
@@ -134,4 +142,5 @@ export interface AboutDTO {
 export interface SettingChoicesDTO {
     magnitudes: ChoiceDTO[]
     speeds: SpeedDTO[]
+    replaySpeeds: ReplaySpeedDTO[]
 }

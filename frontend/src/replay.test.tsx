@@ -8,14 +8,20 @@ import {StatusLine} from './components/StatusLine'
 import {TimeWindow} from './components/TimeWindow'
 import {guideSections} from './guide'
 import {icons} from './icons'
-import type {ReplayFrameDTO} from './types'
-import {REPLAY_PASS_MS, useReplay} from './useReplay'
+import type {ReplayFrameDTO, ReplaySpeedDTO} from './types'
+import {useReplay} from './useReplay'
 
 const noop = () => undefined
 const NOW = Date.UTC(2026, 8, 24, 12)
 // Steady values, as App passes: a fresh list each render would ask for a frame each render.
 const NONE: string[] = []
 const now = () => NOW
+// The speeds as the Go side offers them (FR-RPL-025).
+const HALF: ReplaySpeedDTO = {key: 'half', label: '0.5x', passSeconds: 60}
+const NORMAL: ReplaySpeedDTO = {key: 'normal', label: '1x', passSeconds: 30}
+const DOUBLE: ReplaySpeedDTO = {key: 'double', label: '2x', passSeconds: 15}
+const MS_PER_SECOND = 1000
+const PASS_MS = NORMAL.passSeconds * MS_PER_SECOND
 
 function frame(patch: Partial<ReplayFrameDTO> = {}): ReplayFrameDTO {
     return {
@@ -27,9 +33,12 @@ function frame(patch: Partial<ReplayFrameDTO> = {}): ReplayFrameDTO {
     }
 }
 
-function controls(playing: boolean, handlers: Partial<{onPlay: () => void, onPause: () => void, onSeek: (p: number) => void}> = {}) {
-    return render(<ReplayControls position={0.5} playing={playing} onPlay={handlers.onPlay ?? noop}
-        onPause={handlers.onPause ?? noop} onSeek={handlers.onSeek ?? noop}/>)
+interface Handlers { onPlay: () => void, onPause: () => void, onSeek: (p: number) => void, onNow: () => void, onSpeed: () => void }
+
+function controls(playing: boolean, handlers: Partial<Handlers> = {}, replaying = true, speed: ReplaySpeedDTO | null = NORMAL) {
+    return render(<ReplayControls position={0.5} playing={playing} replaying={replaying} speed={speed} next={speed && DOUBLE}
+        onPlay={handlers.onPlay ?? noop} onPause={handlers.onPause ?? noop} onSeek={handlers.onSeek ?? noop}
+        onNow={handlers.onNow ?? noop} onSpeed={handlers.onSpeed ?? noop}/>)
 }
 
 describe('FR-RPL-008 the Play/Pause button', () => {
@@ -54,9 +63,11 @@ describe('NFR-KBD-009 the replay on the ring and the keys', () => {
         const onPause = vi.fn()
         const onSeek = vi.fn()
         render(<div><TimeWindow windows={[{key: '24h', label: '24 h'}, {key: '7d', label: '7 days'}]} selected="7d" onChoose={noop}/>
-            <ReplayControls position={0.5} playing onPlay={noop} onPause={onPause} onSeek={onSeek}/></div>)
+            <ReplayControls position={0.5} playing replaying speed={NORMAL} next={DOUBLE} onPlay={noop} onPause={onPause}
+                onSeek={onSeek} onNow={noop} onSpeed={noop}/></div>)
         const stops = Array.from(document.querySelectorAll('[data-stop]')).map(e => e.getAttribute('aria-label') ?? e.textContent)
-        expect(stops).toEqual(['24 h', REPLAY_LABELS.pause, REPLAY_LABELS.position])
+        expect(stops).toEqual(['24 h', REPLAY_LABELS.pause, REPLAY_LABELS.position, REPLAY_LABELS.nowName,
+            REPLAY_LABELS.speed('1x', '2x')])
         const scrubber = screen.getByLabelText(REPLAY_LABELS.position) as HTMLInputElement
         expect(scrubber.step).toBe('10')
         fireEvent.keyDown(scrubber, {key: ' '})
@@ -64,6 +75,36 @@ describe('NFR-KBD-009 the replay on the ring and the keys', () => {
         fireEvent.keyDown(scrubber, {key: 'a'})
         fireEvent.change(scrubber, {target: {value: '250'}})
         expect(onSeek).toHaveBeenCalledWith(0.25)
+    })
+})
+
+describe('FR-RPL-024 the Now button', () => {
+    it('reads Now, is disabled outside a replay and returns to the present while replaying', () => {
+        const onNow = vi.fn()
+        const {unmount} = controls(false, {onNow}, false)
+        const idle = screen.getByLabelText(REPLAY_LABELS.nowName) as HTMLButtonElement
+        expect(idle.textContent).toBe(REPLAY_LABELS.now)
+        expect(idle.disabled).toBe(true)
+        unmount()
+        controls(true, {onNow})
+        fireEvent.click(screen.getByLabelText(REPLAY_LABELS.nowName))
+        expect(onNow).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('FR-RPL-025 the speed button', () => {
+    it('reads the chosen speed, names the next and asks for it on a press', () => {
+        const onSpeed = vi.fn()
+        controls(false, {onSpeed})
+        const button = screen.getByLabelText(REPLAY_LABELS.speed('1x', '2x'))
+        expect(button.textContent).toBe('1x')
+        fireEvent.click(button)
+        expect(onSpeed).toHaveBeenCalledTimes(1)
+    })
+
+    it('is not shown until the speeds are known', () => {
+        controls(false, {}, true, null)
+        expect(screen.queryByText('1x')).toBeNull()
     })
 })
 
@@ -81,6 +122,12 @@ describe('FR-RPL-023 the guide', () => {
         expect(text).toContain('what the sources hold now')
         expect(text).toContain('revised or withdrawn')
         expect(text).toContain('softer images')
+    })
+
+    it('FR-RPL-024 FR-RPL-025 says the replay holds until Now and names the speeds', () => {
+        const text = guideSections('').find(s => s.heading === 'Replay')?.paragraphs?.join(' ') ?? ''
+        expect(text).toContain('holds at the end of the window until Now returns to the present')
+        expect(text).toContain('half, normal or double speed')
     })
 })
 
@@ -122,7 +169,8 @@ describe('useReplay, the replay on the page', () => {
         act(() => queued.forEach(cb => cb(clock)))
     }
     const settle = () => act(async () => { await Promise.resolve(); await Promise.resolve() })
-    const hook = (windowKey = '7d') => renderHook(({w}) => useReplay(w, NONE, NONE, noop, now), {initialProps: {w: windowKey}})
+    const hook = (windowKey = '7d', passSeconds: number | null = NORMAL.passSeconds) =>
+        renderHook(({w}) => useReplay(w, NONE, NONE, passSeconds, noop, now), {initialProps: {w: windowKey}})
 
     it('FR-RPL-002 rests at now, asking for no frame', async () => {
         const {result} = hook()
@@ -132,37 +180,82 @@ describe('useReplay, the replay on the page', () => {
         expect(App.ReplayFrame).not.toHaveBeenCalled()
     })
 
-    it('FR-RPL-003 FR-RPL-004 FR-RPL-005 plays the span from its start in 30 s, then is now again', async () => {
+    it('FR-RPL-003 FR-RPL-004 FR-RPL-005 plays the span from its start in 30 s, then holds at its end', async () => {
         const {result} = hook()
         act(() => result.current.play())
         await settle()
         expect(result.current.replaying).toBe(true)
         expect(App.ReplayFrame).toHaveBeenLastCalledWith('7d', [], [], NOW, 0)
         advance(0)
-        advance(REPLAY_PASS_MS / 2)
+        advance(PASS_MS / 2)
         expect(result.current.position).toBeCloseTo(0.5)
-        advance(REPLAY_PASS_MS / 2)
+        advance(PASS_MS / 2)
         await settle()
         expect(result.current.playing).toBe(false)
         expect(result.current.position).toBe(1)
-        expect(result.current.replaying).toBe(false)
-        expect(App.EndReplay).toHaveBeenCalled()
+        expect(result.current.replaying).toBe(true)
+        expect(App.ReplayFrame).toHaveBeenLastCalledWith('7d', [], [], NOW, 1)
+        expect(App.EndReplay).not.toHaveBeenCalled()
+        // Play at the span's end starts the same span again.
+        act(() => result.current.play())
+        expect(result.current.position).toBe(0)
     })
 
-    it('FR-RPL-006 FR-RPL-007 pause holds; a seek pauses and moves; a seek to the end is now', async () => {
+    it('FR-RPL-024 Now stops play and returns to the ordinary view', async () => {
         const {result} = hook()
         act(() => result.current.play())
         advance(0)
-        advance(REPLAY_PASS_MS / 3)
+        advance(PASS_MS / 4)
+        act(() => result.current.toNow())
+        await settle()
+        expect(result.current.playing).toBe(false)
+        expect(result.current.replaying).toBe(false)
+        expect(result.current.position).toBe(1)
+        expect(App.EndReplay).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([[HALF, 0.25], [DOUBLE, 1]])('FR-RPL-025 at %o a quarter-minute of play reaches %s', async (speed, reached) => {
+        const {result} = hook('7d', speed.passSeconds)
+        act(() => result.current.play())
+        advance(0)
+        advance(PASS_MS / 2)
+        expect(result.current.position).toBeCloseTo(reached)
+    })
+
+    it('FR-RPL-025 before the speeds are known play waits while a seek still shows its frame', async () => {
+        const {result} = hook('7d', null)
+        act(() => result.current.play())
+        advance(0)
+        advance(PASS_MS)
+        expect(result.current.position).toBe(0)
+        act(() => result.current.seek(0.25))
+        await settle()
+        expect(App.ReplayFrame).toHaveBeenLastCalledWith('7d', [], [], NOW, 0.25)
+    })
+
+    it('FR-RPL-006 FR-RPL-007 pause holds; a seek pauses and moves; the right end is the span\'s end', async () => {
+        const {result} = hook()
+        act(() => result.current.play())
+        advance(0)
+        advance(PASS_MS / 3)
         act(() => result.current.pause())
-        advance(REPLAY_PASS_MS)
+        advance(PASS_MS)
         expect(result.current.position).toBeCloseTo(1 / 3)
         act(() => result.current.seek(0.25))
         expect(result.current.position).toBe(0.25)
         act(() => result.current.play())
         expect(result.current.position).toBe(0.25)
         act(() => result.current.seek(1))
+        expect(result.current.replaying).toBe(true)
+        expect(result.current.position).toBe(1)
+    })
+
+    it('FR-RPL-002 a seek to the right end outside a replay stays in the ordinary view', async () => {
+        const {result} = hook()
+        act(() => result.current.seek(1))
+        await settle()
         expect(result.current.replaying).toBe(false)
+        expect(App.ReplayFrame).not.toHaveBeenCalled()
     })
 
     it('FR-RPL-003 a seek from the end fixes the span at that instant', async () => {
@@ -172,7 +265,7 @@ describe('useReplay, the replay on the page', () => {
         expect(App.ReplayFrame).toHaveBeenLastCalledWith('7d', [], [], NOW, 0.5)
     })
 
-    it('FR-RPL-021 another window returns to the end', async () => {
+    it('FR-RPL-021 another window returns to now', async () => {
         const {result, rerender} = hook()
         act(() => result.current.seek(0.5))
         rerender({w: '24h'})

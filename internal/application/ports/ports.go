@@ -47,6 +47,8 @@ type Settings struct {
 	TrailsShown bool
 	// BurntShown is whether the burnt-area layer is drawn (FR-BA-010).
 	BurntShown bool
+	// ReplaySpeed is the replay's speed preset (FR-RPL-025).
+	ReplaySpeed string
 }
 
 // SettingsStore keeps the settings between runs (FR-SET-004). Load starts from

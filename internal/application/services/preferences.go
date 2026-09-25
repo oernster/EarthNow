@@ -44,6 +44,18 @@ var Speeds = []dto.Speed{
 // DefaultSpeed is FR-GLB-002's idle speed.
 const DefaultSpeed = "normal"
 
+// ReplaySpeeds are FR-RPL-025's replay speeds, in the order the page cycles
+// them. Normal is FR-RPL-004's thirty-second pass; the other two halve and
+// double its speed.
+var ReplaySpeeds = []dto.ReplaySpeed{
+	{Key: "half", Label: "0.5x", PassSeconds: 60},
+	{Key: "normal", Label: "1x", PassSeconds: 30},
+	{Key: "double", Label: "2x", PassSeconds: 15},
+}
+
+// DefaultReplaySpeed is FR-RPL-004's pass.
+const DefaultReplaySpeed = "normal"
+
 // Preferences holds the reader's settings: loads them at start, answers them
 // to the page, saves every change and tells the USGS adapter its minimum.
 type Preferences struct {
@@ -63,7 +75,7 @@ func NewPreferences(store ports.SettingsStore, applyMinimum func(float64)) *Pref
 // Defaults are the settings of a first run: rotating at the normal speed,
 // minimum 2.5, the 24 h window, nothing filtered out and the day and night
 // layer shown (FR-DAY-007) with storm trails (FR-TRL-005) and burnt areas
-// (FR-BA-011).
+// (FR-BA-011), replaying at normal speed (FR-RPL-025).
 func Defaults() ports.Settings {
 	return ports.Settings{
 		AutoRotate:    true,
@@ -73,6 +85,7 @@ func Defaults() ports.Settings {
 		DayNightShown: true,
 		TrailsShown:   true,
 		BurntShown:    true,
+		ReplaySpeed:   DefaultReplaySpeed,
 	}
 }
 
@@ -113,7 +126,7 @@ func (p *Preferences) Current() dto.Settings {
 
 // Choices answers what the settings dialog offers.
 func (p *Preferences) Choices() dto.SettingChoices {
-	out := dto.SettingChoices{Speeds: slices.Clone(Speeds)}
+	out := dto.SettingChoices{Speeds: slices.Clone(Speeds), ReplaySpeeds: slices.Clone(ReplaySpeeds)}
 	for _, m := range Magnitudes {
 		out.Magnitudes = append(out.Magnitudes, dto.Choice{Key: m.Key, Label: m.Label})
 	}
@@ -135,6 +148,7 @@ func (p *Preferences) Update(chosen dto.Settings) (dto.Settings, []event.Provide
 		DayNightShown:    chosen.DayNightShown,
 		TrailsShown:      chosen.TrailsShown,
 		BurntShown:       chosen.BurntShown,
+		ReplaySpeed:      chosen.ReplaySpeed,
 	})
 	err := p.store.Save(next)
 	p.mu.Lock()
@@ -162,6 +176,9 @@ func normalised(s ports.Settings) ports.Settings {
 	}
 	if !slices.ContainsFunc(Speeds, func(v dto.Speed) bool { return v.Key == s.Speed }) {
 		s.Speed = defaults.Speed
+	}
+	if !slices.ContainsFunc(ReplaySpeeds, func(v dto.ReplaySpeed) bool { return v.Key == s.ReplaySpeed }) {
+		s.ReplaySpeed = defaults.ReplaySpeed
 	}
 	if _, ok := window.ByKey(s.Window); !ok {
 		s.Window = defaults.Window
@@ -210,5 +227,6 @@ func toSettingsDTO(s ports.Settings) dto.Settings {
 		DayNightShown:    s.DayNightShown,
 		TrailsShown:      s.TrailsShown,
 		BurntShown:       s.BurntShown,
+		ReplaySpeed:      s.ReplaySpeed,
 	}
 }

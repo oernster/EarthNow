@@ -15,7 +15,7 @@ import (
 	"github.com/oernster/EarthNow/internal/application/ports"
 )
 
-var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h", DayNightShown: true, TrailsShown: true, BurntShown: true}
+var defaults = ports.Settings{AutoRotate: true, Magnitude: "2.5", Speed: "normal", Window: "24h", DayNightShown: true, TrailsShown: true, BurntShown: true, ReplaySpeed: "normal"}
 
 func storeIn(t *testing.T) *File {
 	t.Helper()
@@ -43,7 +43,7 @@ func TestFRSET004_NoFileIsAbsenceNotAFault(t *testing.T) {
 func TestChoicesSurviveASave(t *testing.T) {
 	t.Parallel()
 	store := storeIn(t)
-	want := ports.Settings{AutoRotate: false, Magnitude: "4.5", Speed: "fast", Window: "7d", HiddenCategories: []string{"ICE"}, HiddenProviders: []string{"EONET"}, CloudsShown: true}
+	want := ports.Settings{AutoRotate: false, Magnitude: "4.5", Speed: "fast", Window: "7d", HiddenCategories: []string{"ICE"}, HiddenProviders: []string{"EONET"}, CloudsShown: true, ReplaySpeed: "double"}
 	if err := store.Save(want); err != nil {
 		t.Fatal(err)
 	}
@@ -85,6 +85,10 @@ func TestFRDAY007_AFileFromBeforeTheLayerStartsItShown(t *testing.T) {
 	// FR-BA-011: nor a burnt-area field, so the layer starts shown.
 	if !got.BurntShown {
 		t.Errorf("Load = %+v; want burnt areas shown", got)
+	}
+	// FR-RPL-025: nor a replay speed, so replay starts at normal speed.
+	if got.ReplaySpeed != "normal" {
+		t.Errorf("Load = %+v; want the normal replay speed", got)
 	}
 }
 

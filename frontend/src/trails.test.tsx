@@ -55,8 +55,8 @@ describe('FR-TRL-004 the Settings box', () => {
     it('offers "Show storm tracks" and applies a change at once', () => {
         const onChange = vi.fn()
         const settings = {autoRotate: true, magnitude: '2.5', speed: 'normal', windowKey: '24h', hiddenCategories: [],
-            hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true, burntShown: false} satisfies SettingsDTO
-        render(<SettingsDialog settings={settings} choices={{magnitudes: [], speeds: []}} onChange={onChange} onClose={() => undefined}/>)
+            hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true, burntShown: false, replaySpeed: 'normal'} satisfies SettingsDTO
+        render(<SettingsDialog settings={settings} choices={{magnitudes: [], speeds: [], replaySpeeds: []}} onChange={onChange} onClose={() => undefined}/>)
         const box = screen.getByLabelText('Show storm tracks') as HTMLInputElement
         expect(box.checked).toBe(true)
         fireEvent.click(box)

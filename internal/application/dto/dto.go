@@ -69,6 +69,14 @@ type Speed struct {
 	SecondsPerRevolution int    `json:"secondsPerRevolution"`
 }
 
+// ReplaySpeed is one replay speed (FR-RPL-025) with how long one pass of the
+// span takes, so the page holds no replay figure of its own.
+type ReplaySpeed struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	PassSeconds int    `json:"passSeconds"`
+}
+
 // Settings is what the reader has chosen that outlives a run (FR-SET-001 to
 // 003, FR-FLT-005). Every list is empty rather than absent.
 type Settings struct {
@@ -85,6 +93,8 @@ type Settings struct {
 	TrailsShown bool `json:"trailsShown"`
 	// BurntShown is whether the burnt-area layer is drawn (FR-BA-010).
 	BurntShown bool `json:"burntShown"`
+	// ReplaySpeed is the replay's speed preset (FR-RPL-025).
+	ReplaySpeed string `json:"replaySpeed"`
 }
 
 // BurntAreas is the burnt-area layer's state (FR-BA-008, FR-BA-009,
@@ -174,6 +184,7 @@ type About struct {
 
 // SettingChoices is what the settings dialog offers.
 type SettingChoices struct {
-	Magnitudes []Choice `json:"magnitudes"`
-	Speeds     []Speed  `json:"speeds"`
+	Magnitudes   []Choice      `json:"magnitudes"`
+	Speeds       []Speed       `json:"speeds"`
+	ReplaySpeeds []ReplaySpeed `json:"replaySpeeds"`
 }

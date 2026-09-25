@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/oernster/EarthNow/internal/application/dto"
@@ -147,6 +148,35 @@ func TestChoicesOfferEveryMagnitudeAndSpeed(t *testing.T) {
 	}
 	if c.Speeds[1].SecondsPerRevolution != 240 {
 		t.Errorf("normal speed = %+v, FR-GLB-002 says 240 s", c.Speeds[1])
+	}
+}
+
+func TestFRRPL025_ReplaySpeedsHalveAndDoubleTheThirtySecondPass(t *testing.T) {
+	t.Parallel()
+	got := NewPreferences(&fakeSettings{}, func(float64) {}).Choices().ReplaySpeeds
+	want := []dto.ReplaySpeed{
+		{Key: "half", Label: "0.5x", PassSeconds: 60},
+		{Key: "normal", Label: "1x", PassSeconds: 30},
+		{Key: "double", Label: "2x", PassSeconds: 15},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("replay speeds = %+v; want %+v", got, want)
+	}
+}
+
+func TestFRRPL025_TheReplaySpeedIsKeptAndAnUnknownOneDefaulted(t *testing.T) {
+	t.Parallel()
+	store := &fakeSettings{}
+	p := NewPreferences(store, func(float64) {})
+	p.Load()
+	if p.Current().ReplaySpeed != DefaultReplaySpeed {
+		t.Errorf("first run = %q; want %q", p.Current().ReplaySpeed, DefaultReplaySpeed)
+	}
+	if got, _ := p.Update(dto.Settings{ReplaySpeed: "double"}); got.ReplaySpeed != "double" || store.saved[0].ReplaySpeed != "double" {
+		t.Errorf("update = %+v, saved %+v", got, store.saved)
+	}
+	if got, _ := p.Update(dto.Settings{ReplaySpeed: "warp"}); got.ReplaySpeed != DefaultReplaySpeed {
+		t.Errorf("unknown speed kept as %q", got.ReplaySpeed)
 	}
 }
 

@@ -23,12 +23,12 @@ function burnt(patch: Partial<BurntAreasDTO> = {}): BurntAreasDTO {
 }
 
 const SETTINGS: SettingsDTO = {autoRotate: true, magnitude: '2.5', speed: 'normal', windowKey: '7d', hiddenCategories: [],
-    hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true, burntShown: false}
+    hiddenProviders: [], cloudsShown: false, dayNightShown: true, trailsShown: true, burntShown: false, replaySpeed: 'normal'}
 
 describe('FR-BA-010 the Settings box', () => {
     it('offers "Show burnt areas" and applies it at once', () => {
         const onChange = vi.fn()
-        render(<SettingsDialog settings={SETTINGS} choices={{magnitudes: [], speeds: []}} onChange={onChange} onClose={noop}/>)
+        render(<SettingsDialog settings={SETTINGS} choices={{magnitudes: [], speeds: [], replaySpeeds: []}} onChange={onChange} onClose={noop}/>)
         const box = screen.getByLabelText('Show burnt areas') as HTMLInputElement
         expect(box.checked).toBe(false)
         fireEvent.click(box)
