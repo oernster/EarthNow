@@ -11,7 +11,7 @@
 //
 // Overlap is followed through: where A overlaps B and B overlaps C, all three
 // are one cluster, since drawing A and C apart would still leave B under both.
-import {MIN_ALTITUDE, zoomed} from './cursor'
+import {MIN_ALTITUDE, ZOOM_FACTOR, zoomed} from './cursor'
 import {DRAWN_SHARE, markerSize} from './markers'
 import type {EventDTO} from './types'
 
@@ -132,6 +132,15 @@ export function spreadAltitude(members: readonly EventDTO[], halfAngle: number):
     const widest = Math.max(...points.map(p =>
         Math.acos(Math.min(1, p[0] * centre[0] + p[1] * centre[1] + p[2] * centre[2]))))
     return Math.cos(widest) + Math.sin(widest) / Math.tan(halfAngle * SPREAD_FILL) - 1
+}
+
+/**
+ * atClosest reports whether the camera is at its closest zoom, where activating a
+ * cluster can separate nothing more (FR-MRK-011). Within half a zoom step of the
+ * minimum counts, since the camera reads its own altitude back with float error.
+ */
+export function atClosest(altitude: number): boolean {
+    return altitude <= MIN_ALTITUDE * Math.sqrt(ZOOM_FACTOR)
 }
 
 /**

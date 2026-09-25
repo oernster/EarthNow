@@ -3,6 +3,7 @@
 // the status line beneath it and the detail panel over its right edge.
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {api, on} from './api'
+import {ClusterList} from './components/ClusterList'
 import {DetailPanel} from './components/DetailPanel'
 import {HelpDialog, type HelpKind} from './components/HelpDialogs'
 import {GlobeView, type GlobeHandle} from './components/GlobeView'
@@ -50,6 +51,7 @@ export default function App() {
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [statusOpen, setStatusOpen] = useState(false)
     const [help, setHelp] = useState<HelpKind | null>(null)
+    const [cluster, setCluster] = useState<EventDTO[] | null>(null)
     const [view, setView] = useState<ViewDTO>(EMPTY_VIEW)
     const [selected, setSelected] = useState<EventDTO | null>(null)
     const [problem, setProblem] = useState('')
@@ -59,7 +61,7 @@ export default function App() {
     const globe = useRef<GlobeHandle>(null)
     // NFR-KBD-001: one ring over the window, inert while a modal owns the keys.
     const shell = useRef<HTMLDivElement>(null)
-    const modalOpen = settingsOpen || statusOpen || help !== null
+    const modalOpen = settingsOpen || statusOpen || help !== null || cluster !== null
     useRing(shell, !modalOpen)
     const onProblem = useCallback((reason: string) => setProblem(reason), [])
 
@@ -162,7 +164,7 @@ export default function App() {
                 cloudImage={settings.cloudsShown ? (frame ? replay.cloudImage : cloudImage) : ''}
                 burntImage={settings.burntShown ? (frame ? replay.burntImage : burntImage) : ''}
                 dayNightShown={dayNightShown} sun={sun} trailsShown={settings.trailsShown}
-                onSelect={setSelected} onProblem={onProblem}/>}
+                onSelect={setSelected} onCluster={setCluster} onProblem={onProblem}/>}
             <StatusLine countLine={shown.countLine} providers={view.providers} problem={problem}
                 note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds} burnt={burnt}
                 replayLines={frame ? [frame.line, clouds?.shown ? frame.cloudsLine : ''] : []}/>
@@ -181,6 +183,8 @@ export default function App() {
         {settingsOpen && settings && choices && <SettingsDialog settings={settings} choices={choices}
             onChange={change} onClose={() => setSettingsOpen(false)}/>}
         {statusOpen && <StatusPanel providers={statusProviders} notice={view.notice} onClose={() => setStatusOpen(false)}/>}
+        {cluster && <ClusterList members={cluster} onClose={() => setCluster(null)}
+            onChoose={e => { setCluster(null); setSelected(e) }}/>}
         {help && <HelpDialog kind={help} onClose={() => setHelp(null)} onProblem={onProblem}/>}
     </div></ProductName.Provider>
 }

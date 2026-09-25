@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import earthTexture from '../assets/earth.jpg'
 import {api} from '../api'
 import {clusterTitle, eventTitle} from '../categories'
-import {clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
+import {atClosest, clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {clusterSprite, fitAltitude, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
@@ -58,6 +58,8 @@ interface Props {
     // trailsShown switches the storm trails (FR-TRL-002, FR-TRL-003).
     trailsShown: boolean
     onSelect: (e: EventDTO) => void
+    // onCluster lists a cluster the closest zoom cannot separate (FR-MRK-011).
+    onCluster: (members: EventDTO[]) => void
     onProblem: (reason: string) => void
 }
 
@@ -81,14 +83,14 @@ function markerRadius(g: GlobeInstance): number {
 }
 
 export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
-    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, burntImage, dayNightShown, sun, start, trailsShown, onSelect, onProblem}, ref) {
+    {events, selectedId, autoRotate, secondsPerRevolution, cloudImage, burntImage, dayNightShown, sun, start, trailsShown, onSelect, onCluster, onProblem}, ref) {
     const host = useRef<HTMLDivElement>(null)
     const [webgl2] = useState(hasWebGL2)
     const globe = useRef<GlobeInstance | null>(null)
     const hovered = useRef<MarkerItem | null>(null)
     const pointer = useRef({x: 0, y: 0})
-    const handlers = useRef({onSelect, onProblem})
-    handlers.current = {onSelect, onProblem}
+    const handlers = useRef({onSelect, onCluster, onProblem})
+    handlers.current = {onSelect, onCluster, onProblem}
     const [tip, setTip] = useState<Tip | null>(null)
     // keyboard is true while the globe holds focus, so the tooltip names the keys.
     const [keyboard, setKeyboard] = useState(false)
@@ -237,6 +239,11 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
                 const item = d as MarkerItem
                 if (item.kind === 'event') {
                     handlers.current.onSelect(item.event)
+                    return
+                }
+                // FR-MRK-011: at the closest zoom nothing more can part, so list them.
+                if (atClosest(g.pointOfView().altitude)) {
+                    handlers.current.onCluster(item.members)
                     return
                 }
                 // FR-MRK-008: towards the cluster until its members separate.

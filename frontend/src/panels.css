@@ -70,3 +70,8 @@
     text-align: center;
     color: var(--warn);
 }
+
+/* The members of a cluster the closest zoom cannot separate (FR-MRK-011). */
+.cluster-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cluster-member { width: 100%; text-align: left; }
+.cluster-member .muted { color: var(--muted); }

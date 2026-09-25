@@ -12,13 +12,15 @@ vi.mock('./api', () => ({api: {place: vi.fn(() => Promise.resolve(PLACE))}}))
 interface Fake {
     controls: {autoRotate: boolean; autoRotateSpeed: number; minDistance: number; maxDistance: number}
     calls: Array<[string, unknown[]]>
+    // altitude is what pointOfView() reports, as the camera would.
+    altitude: number
 }
 const made: Fake[] = []
 
 // makeGlobe answers a chainable recorder: every setter records its arguments and
 // answers the recorder, as globe.gl's builder does.
 function makeGlobe(): unknown {
-    const fake: Fake = {controls: {autoRotate: false, autoRotateSpeed: 0, minDistance: 0, maxDistance: 0}, calls: []}
+    const fake: Fake = {controls: {autoRotate: false, autoRotateSpeed: 0, minDistance: 0, maxDistance: 0}, calls: [], altitude: 1.6}
     made.push(fake)
     const camera = new THREE.PerspectiveCamera(50, 1.5)
     const known: Record<string, (...a: unknown[]) => unknown> = {
@@ -30,7 +32,7 @@ function makeGlobe(): unknown {
     const proxy: unknown = new Proxy({}, {
         get: (_, name: string) => known[name] ?? ((...args: unknown[]) => {
             fake.calls.push([name, args])
-            return name === 'pointOfView' && args.length === 0 ? {lat: 0, lng: 0, altitude: 1.6} : proxy
+            return name === 'pointOfView' && args.length === 0 ? {lat: 0, lng: 0, altitude: fake.altitude} : proxy
         }),
     })
     return proxy
@@ -49,16 +51,20 @@ const IDLE_MS = 10_000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+        secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
+}
+
+// webgl2Only reports WebGL2 present and the 2D context the sprites draw with absent.
+function webgl2Only() {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        ((kind: string) => (kind === 'webgl2' ? {} : null)) as never)
 }
 
 describe('the globe', () => {
     beforeEach(() => {
         made.length = 0
-        // WebGL2 is present; the 2D context the sprites draw with is not.
-        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-            ((kind: string) => (kind === 'webgl2' ? {} : null)) as never)
+        webgl2Only()
         vi.useFakeTimers()
     })
     afterEach(() => {
@@ -102,7 +108,7 @@ describe('the globe', () => {
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
         view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 
@@ -116,7 +122,7 @@ describe('the globe', () => {
 
     it('FR-GLB-015 opens facing the start view, with rotation to follow from there', () => {
         render(<GlobeView events={[]} selectedId={null} autoRotate secondsPerRevolution={60} cloudImage="" burntImage=""
-            dayNightShown={false} sun={null} trailsShown={false} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onProblem={noop}/>)
+            dayNightShown={false} sun={null} trailsShown={false} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
         const globe = made[made.length - 1]
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: 54.4027, lng: -2.1163}]])
         expect(globe.controls.autoRotate).toBe(true)
@@ -140,10 +146,38 @@ describe('the globe', () => {
         const {view} = draw(false)
         expect(load).not.toHaveBeenCalled()
         const shown = (dayNightShown: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={dayNightShown} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onProblem={noop}/>)
+            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={dayNightShown} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
         shown(true)
         shown(false)
         shown(true)
         expect(load).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('FR-MRK-011 activating a cluster', () => {
+    beforeEach(() => {
+        made.length = 0
+        webgl2Only()
+    })
+    afterEach(() => vi.restoreAllMocks())
+
+    it('zooms towards it from afar and lists it at the closest zoom', async () => {
+        const {MIN_ALTITUDE} = await import('./cursor')
+        const onCluster = vi.fn()
+        const onSelect = vi.fn()
+        render(<GlobeView events={[quake]} selectedId={null} autoRotate={false} secondsPerRevolution={60} cloudImage="" burntImage=""
+            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}}
+            onSelect={onSelect} onCluster={onCluster} onProblem={noop}/>)
+        const globe = made[made.length - 1]
+        const click = globe.calls.find(([name]) => name === 'onObjectClick')![1][0] as (d: object) => void
+        const cluster = {kind: 'cluster', lat: quake.lat, lng: quake.lng, key: 'k', members: [quake, {...quake, id: 'USGS/ak2'}], size: 1}
+        click(cluster)
+        expect(onCluster).not.toHaveBeenCalled()
+        expect(globe.calls.some(([name, args]) => name === 'pointOfView' && args.length === 2)).toBe(true)
+        globe.altitude = MIN_ALTITUDE
+        click(cluster)
+        expect(onCluster).toHaveBeenCalledWith(cluster.members)
+        click({kind: 'event', lat: quake.lat, lng: quake.lng, event: quake})
+        expect(onSelect).toHaveBeenCalledWith(quake)
     })
 })
