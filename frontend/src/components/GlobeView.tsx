@@ -8,24 +8,16 @@ import earthTexture from '../assets/earth.jpg'
 import {api} from '../api'
 import {clusterTitle, eventTitle} from '../categories'
 import {atClosest, clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
-import {MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
-import {clusterSprite, fitAltitude, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
+import {FOCUS_MS, MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
+import {clusterSprite, fitAltitude, fitOf, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
 import {trailed} from '../trails'
 import {useGlobeLayers} from '../useGlobeLayers'
+import {useIdleRotation} from '../useIdleRotation'
 import type {EventDTO, StartViewDTO, SunDTO} from '../types'
 
-// NFR-UX-003: the camera focus animation, used by Reset view as well.
-const FOCUS_MS = 1000
 // One plus or minus press animates over this long.
 const ZOOM_MS = 250
-// OrbitControls documents speed 2.0 as one orbit in 30 s, so an orbit takes
-// ORBIT_SECONDS_AT_UNIT_SPEED / speed; the period comes from the settings.
-const ORBIT_SECONDS_AT_UNIT_SPEED = 60
-// FR-GLB-002: rotation resumes after this long without input on the globe.
-const IDLE_DELAY_MS = 10_000
-// FR-GLB-003: the input that stops idle rotation.
-const STOPPING_INPUT = ['pointerdown', 'wheel', 'keydown'] as const
 const TIP_OFFSET_PX = 14
 // GLOBE_KEYS names the globe's keys (NFR-KBD-004), for its accessible name and
 // for the tooltip while it holds focus.
@@ -94,24 +86,10 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const [tip, setTip] = useState<Tip | null>(null)
     // keyboard is true while the globe holds focus, so the tooltip names the keys.
     const [keyboard, setKeyboard] = useState(false)
-    // The setting as last rendered, read when the idle delay runs out.
-    const rotationWanted = useRef(autoRotate)
-    const idleTimer = useRef<number | null>(null)
     const trails = useMemo(() => trailed(events, trailsShown), [events, trailsShown])
     const layers = useGlobeLayers(cloudImage, burntImage, dayNightShown, sun, trails)
     const opening = useRef(start)
-
-    // pause stops rotation for input and restarts it after the idle delay.
-    const pause = useRef(() => {
-        const g = globe.current
-        if (!g) return
-        g.controls().autoRotate = false
-        if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
-        idleTimer.current = window.setTimeout(() => {
-            idleTimer.current = null
-            if (globe.current) globe.current.controls().autoRotate = rotationWanted.current
-        }, IDLE_DELAY_MS)
-    })
+    const idle = useIdleRotation(globe, autoRotate, secondsPerRevolution)
 
     // showTip words a marker's tooltip at a point and adds its place line once the
     // lookup answers, unless the tooltip has moved on to another marker by then.
@@ -160,7 +138,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const walk = (delta: 1 | -1) => {
         const g = globe.current
         if (!g) return
-        pause.current()
+        idle.pause()
         const id = stepCursor(shown.current.map(e => e.id), cursor.current, delta)
         const e = shown.current.find(x => x.id === id)
         cursor.current = id
@@ -212,7 +190,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     useImperativeHandle(ref, () => ({
         resetView: () => {
             const g = globe.current
-            if (g) g.pointOfView({altitude: fitAltitude(g.camera() as THREE.PerspectiveCamera)}, FOCUS_MS)
+            if (g) g.pointOfView({altitude: fitOf(g)}, FOCUS_MS)
         },
         zoom: (zoomIn: boolean) => {
             const g = globe.current
@@ -247,7 +225,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
                     return
                 }
                 // FR-MRK-008: towards the cluster until its members separate.
-                pause.current()
+                idle.pause()
                 const altitude = separatingAltitude(item.members, g.pointOfView().altitude,
                     fitted.current, markerRadius(g), viewHalfAngle(g.camera() as THREE.PerspectiveCamera))
                 g.pointOfView({lat: item.lat, lng: item.lng, altitude}, FOCUS_MS)
@@ -271,7 +249,6 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         globe.current = g
         layers.attach(g)
         const controls = g.controls()
-        controls.autoRotate = rotationWanted.current
         // FR-GLB-006: the wheel zooms between the altitude limits. OrbitControls
         // measures distance from the centre, so a limit is the radius plus it.
         const radius = g.getGlobeRadius()
@@ -303,30 +280,16 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
             if (hovered.current) setTip(t => t && {...t, ...pointer.current})
         }
         el.addEventListener('mousemove', onMove)
-        const onInput = () => pause.current()
-        STOPPING_INPUT.forEach(name => el.addEventListener(name, onInput))
+        const detachIdle = idle.attach(g, el)
         return () => {
             observer.disconnect()
             el.removeEventListener('mousemove', onMove)
-            STOPPING_INPUT.forEach(name => el.removeEventListener(name, onInput))
-            if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
+            detachIdle()
             g._destructor()
             globe.current = null
             layers.detach()
         }
-    }, [webgl2, layers])
-
-    // The setting is the only switch (FR-GLB-004, FR-GLB-012). Switching it on
-    // starts rotation at once unless input is still inside its idle delay.
-    useEffect(() => {
-        rotationWanted.current = autoRotate
-        const g = globe.current
-        if (!g) return
-        const controls = g.controls()
-        controls.autoRotateSpeed = ORBIT_SECONDS_AT_UNIT_SPEED / secondsPerRevolution
-        if (!autoRotate) controls.autoRotate = false
-        else if (idleTimer.current === null) controls.autoRotate = true
-    }, [autoRotate, secondsPerRevolution])
+    }, [webgl2, layers, idle])
 
     // New events or a new selection draw afresh; the sprites carry both.
     useEffect(() => relayout.current(true), [events, selectedId])
@@ -335,7 +298,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         const g = globe.current
         const chosen = events.find(e => e.id === selectedId)
         if (!g || !chosen) return
-        pause.current()
+        idle.pause()
         g.pointOfView({lat: chosen.lat, lng: chosen.lng}, FOCUS_MS)
     // Focus once per selection, not on every refresh of the same event.
     // eslint-disable-next-line react-hooks/exhaustive-deps

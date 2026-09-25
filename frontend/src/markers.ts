@@ -1,5 +1,6 @@
 // Marker sprites: each category's emoji drawn once to a texture and shared
 // (measured in the Phase 0 spike: 2,501 sprites held a 10 ms median frame).
+import type {GlobeInstance} from 'globe.gl'
 import * as THREE from 'three'
 import {categoryCounts, categoryOf} from './categories'
 import type {EventDTO} from './types'
@@ -157,4 +158,9 @@ export function viewHalfAngle(camera: THREE.PerspectiveCamera): number {
 
 export function fitAltitude(camera: THREE.PerspectiveCamera): number {
     return 1 / (FIT_FILL * Math.sin(viewHalfAngle(camera))) - 1
+}
+
+/** fitOf answers the fit altitude for a globe's camera as it stands (FR-GLB-013). */
+export function fitOf(g: GlobeInstance): number {
+    return fitAltitude(g.camera() as THREE.PerspectiveCamera)
 }

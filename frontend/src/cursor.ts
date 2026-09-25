@@ -22,6 +22,19 @@ export const MAX_ALTITUDE = 4.0
 // ZOOM_FACTOR is one plus or minus press: the altitude divides or multiplies by it.
 export const ZOOM_FACTOR = 1.25
 
+// NFR-UX-003: the camera focus animation, used by Reset view and by the return
+// to the fit altitude before idle rotation (FR-GLB-018) as well.
+export const FOCUS_MS = 1000
+
+// HALF_STEP is half a zoom press as a ratio. Altitudes within it of each other
+// are the same zoom, since the camera reads its own altitude back with float error.
+export const HALF_STEP = Math.sqrt(ZOOM_FACTOR)
+
+/** nearAltitude answers whether altitude is within half a zoom press of target. */
+export function nearAltitude(altitude: number, target: number): boolean {
+    return altitude <= target * HALF_STEP && altitude >= target / HALF_STEP
+}
+
 /** zoomed answers the altitude after one zoom press, held inside the limits. */
 export function zoomed(altitude: number, zoomIn: boolean): number {
     const next = zoomIn ? altitude / ZOOM_FACTOR : altitude * ZOOM_FACTOR

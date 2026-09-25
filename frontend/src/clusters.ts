@@ -11,7 +11,7 @@
 //
 // Overlap is followed through: where A overlaps B and B overlaps C, all three
 // are one cluster, since drawing A and C apart would still leave B under both.
-import {MIN_ALTITUDE, ZOOM_FACTOR, zoomed} from './cursor'
+import {HALF_STEP, MIN_ALTITUDE, zoomed} from './cursor'
 import {DRAWN_SHARE, markerSize} from './markers'
 import type {EventDTO} from './types'
 
@@ -140,7 +140,7 @@ export function spreadAltitude(members: readonly EventDTO[], halfAngle: number):
  * minimum counts, since the camera reads its own altitude back with float error.
  */
 export function atClosest(altitude: number): boolean {
-    return altitude <= MIN_ALTITUDE * Math.sqrt(ZOOM_FACTOR)
+    return altitude <= MIN_ALTITUDE * HALF_STEP
 }
 
 /**

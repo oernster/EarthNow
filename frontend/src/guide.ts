@@ -50,7 +50,7 @@ export function guideSections(product: string): readonly GuideSection[] {
             heading: 'The buttons down the left',
             intro: 'Hover any of them or reach it with Tab to see its name.',
             entries: [
-                {icon: icons.rotate, name: RAIL_LABELS.startRotating, text: 'turns the globe slowly while you are not using it. While it turns, the button shows a cross and stops it.'},
+                {icon: icons.rotate, name: RAIL_LABELS.startRotating, text: 'turns the globe slowly while you are not using it, first bringing the whole globe back into view. While it turns, the button shows a cross and stops it.'},
                 {icon: icons.cloudCover, name: RAIL_LABELS.showClouds, text: 'lays the clouds over the globe as weather satellites last saw them. While they show, the button shows a cross and hides them.'},
                 {icon: icons.dayNight, name: RAIL_LABELS.showDayNight, text: 'shades the side of the Earth where it is night and lights its cities. It shows from the first run; while it shows, the button shows a cross and hides it.'},
                 {icon: icons.resetView, name: RAIL_LABELS.resetView, text: 'brings the whole globe back into view.'},

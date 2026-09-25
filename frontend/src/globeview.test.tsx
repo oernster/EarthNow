@@ -40,6 +40,7 @@ function makeGlobe(): unknown {
 vi.mock('globe.gl', () => ({default: function Globe() { return makeGlobe() }}))
 
 const {GlobeView} = await import('./components/GlobeView')
+const {fitAltitude} = await import('./markers')
 
 const quake: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
@@ -48,6 +49,8 @@ const quake: EventDTO = {
 }
 const noop = () => undefined
 const IDLE_MS = 10_000
+// NFR-UX-003's focus duration, over which the return to the fit altitude runs.
+const FOCUS = 1000
 
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
     const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
@@ -87,9 +90,58 @@ describe('the globe', () => {
         expect(globe.controls.autoRotate).toBe(false)
     })
 
+    it.each([['in', 0.5], ['out', 2]])('FR-GLB-018 zoomed %s, returns to the fit altitude before rotating', (_, times) => {
+        const {globe, host} = draw(true)
+        const fit = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
+        globe.altitude = fit * times
+        fireEvent.wheel(host)
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        expect(globe.calls).toContainEqual(['pointOfView', [{altitude: fit}, FOCUS]])
+        expect(globe.controls.autoRotate).toBe(false)
+        act(() => { vi.advanceTimersByTime(FOCUS) })
+        expect(globe.controls.autoRotate).toBe(true)
+    })
+
+    it('FR-GLB-018 rotates at once when already at the fit altitude', () => {
+        const {globe, host} = draw(true)
+        globe.altitude = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
+        fireEvent.pointerDown(host)
+        const before = globe.calls.length
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        expect(globe.controls.autoRotate).toBe(true)
+        expect(globe.calls.slice(before).some(([name, args]) => name === 'pointOfView' && args.length === 2)).toBe(false)
+    })
+
+    it('FR-GLB-018 input during the return stops it where it is and waits again', () => {
+        const {globe, host} = draw(true)
+        globe.altitude = 0.3
+        fireEvent.pointerDown(host)
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        fireEvent.pointerDown(host)
+        expect(globe.calls.at(-1)).toEqual(['pointOfView', [{lat: 0, lng: 0, altitude: 0.3}]])
+        act(() => { vi.advanceTimersByTime(FOCUS) })
+        expect(globe.controls.autoRotate).toBe(false)
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        expect(globe.calls.filter(([name, args]) => name === 'pointOfView' && args.length === 2)).toHaveLength(2)
+    })
+
+    it('FR-GLB-004 and FR-GLB-011 apply the setting and its speed at launch and at once on a change', () => {
+        const {view, globe} = draw(true)
+        expect(globe.controls.autoRotateSpeed).toBe(1)
+        const set = (autoRotate: boolean, secondsPerRevolution: number) => view.rerender(<GlobeView events={[]}
+            selectedId={null} autoRotate={autoRotate} secondsPerRevolution={secondsPerRevolution} cloudImage="" burntImage=""
+            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        set(false, 60)
+        expect(globe.controls.autoRotate).toBe(false)
+        set(true, 120)
+        expect(globe.controls.autoRotate).toBe(true)
+        expect(globe.controls.autoRotateSpeed).toBe(0.5)
+    })
+
     it('FR-GLB-012 rotates on idle whatever the reduced-motion setting says', () => {
         vi.stubGlobal('matchMedia', (query: string) => ({matches: query.includes('reduce'), media: query}))
         const {globe, host} = draw(true)
+        globe.altitude = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
         expect(globe.controls.autoRotate).toBe(true)
         fireEvent.pointerDown(host)
         act(() => { vi.advanceTimersByTime(IDLE_MS) })
