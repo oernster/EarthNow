@@ -56,9 +56,9 @@ func Attributions() []string {
 		"Place names and borders: Natural Earth.",
 		// NFR-LEG-002: the wording the owner confirmed (ASM-007).
 		"Cloud images: EUMETSAT, world cloud map (EUMETView).",
-		// NFR-LEG-002: CC BY 4.0 asks for the source, the licence and a note of
-		// changes (R13); the wording awaits the owner (ASM-011).
-		"Burnt areas: Global Wildfire Information System (GWIS), Copernicus Emergency Management Service, CC BY 4.0; redrawn over the globe.",
+		// NFR-LEG-002: CC BY 4.0 asks for the source, the copyright notice, the
+		// licence and a note of changes (R13); confirmed by the owner (ASM-011).
+		"Burnt areas: © European Union, Global Wildfire Information System (GWIS), Copernicus Emergency Management Service, CC BY 4.0; redrawn over the globe.",
 		"None of NASA, the USGS, the Smithsonian, EUMETSAT or GWIS endorses " + Name + ".",
 	}
 }
