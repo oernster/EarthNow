@@ -66,8 +66,8 @@ describe('NFR-KBD-009 the replay on the ring and the keys', () => {
             <ReplayControls position={0.5} playing replaying speed={NORMAL} next={DOUBLE} onPlay={noop} onPause={onPause}
                 onSeek={onSeek} onNow={noop} onSpeed={noop}/></div>)
         const stops = Array.from(document.querySelectorAll('[data-stop]')).map(e => e.getAttribute('aria-label') ?? e.textContent)
-        expect(stops).toEqual(['24 h', REPLAY_LABELS.pause, REPLAY_LABELS.position, REPLAY_LABELS.nowName,
-            REPLAY_LABELS.speed('1x', '2x')])
+        expect(stops).toEqual(['24 h', REPLAY_LABELS.pause, REPLAY_LABELS.position, REPLAY_LABELS.speed('1x', '2x'),
+            REPLAY_LABELS.nowName])
         const scrubber = screen.getByLabelText(REPLAY_LABELS.position) as HTMLInputElement
         expect(scrubber.step).toBe('10')
         fireEvent.keyDown(scrubber, {key: ' '})
@@ -79,15 +79,15 @@ describe('NFR-KBD-009 the replay on the ring and the keys', () => {
 })
 
 describe('FR-RPL-024 the Now button', () => {
-    it('reads Now, is disabled outside a replay and returns to the present while replaying', () => {
+    it('is hidden outside a replay; while replaying it reads Now and returns to the present', () => {
         const onNow = vi.fn()
         const {unmount} = controls(false, {onNow}, false)
-        const idle = screen.getByLabelText(REPLAY_LABELS.nowName) as HTMLButtonElement
-        expect(idle.textContent).toBe(REPLAY_LABELS.now)
-        expect(idle.disabled).toBe(true)
+        expect(screen.queryByLabelText(REPLAY_LABELS.nowName)).toBeNull()
         unmount()
         controls(true, {onNow})
-        fireEvent.click(screen.getByLabelText(REPLAY_LABELS.nowName))
+        const now = screen.getByLabelText(REPLAY_LABELS.nowName)
+        expect(now.textContent).toBe(REPLAY_LABELS.now)
+        fireEvent.click(now)
         expect(onNow).toHaveBeenCalledTimes(1)
     })
 })

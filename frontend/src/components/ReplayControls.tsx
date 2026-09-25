@@ -1,9 +1,9 @@
 // The replay control (FR-RPL-008, FR-RPL-020, FR-RPL-024, FR-RPL-025,
-// NFR-KBD-009): Play/Pause, the scrubber, Now and the speed, after the time
-// window in the top bar. The scrubber's right end is the span's end; only Now
-// returns to the present. Each is one ring stop; the scrubber's arrows step a
-// hundredth of the span and Home and End reach the ends, as a range input does,
-// while Space plays or pauses.
+// NFR-KBD-009): Play/Pause, the scrubber, the speed and Now (while replaying),
+// after the time window in the top bar. The scrubber's right end is the span's
+// end; only Now returns to the present. Each is one ring stop; the scrubber's
+// arrows step a hundredth of the span and Home and End reach the ends, as a
+// range input does, while Space plays or pauses.
 import {icons} from '../icons'
 import type {ReplaySpeedDTO} from '../types'
 
@@ -51,9 +51,10 @@ export function ReplayControls({position, playing, replaying, speed, next, onPla
                 e.preventDefault()
                 toggle()
             }}/>
-        <button data-stop className="replay-text" aria-label={REPLAY_LABELS.nowName} title={REPLAY_LABELS.nowName}
-            disabled={!replaying} onClick={onNow}>{REPLAY_LABELS.now}</button>
         {speed && <button data-stop className="replay-text" aria-label={speedName} title={speedName}
             onClick={onSpeed}>{speed.label}</button>}
+        {/* Last in the row, so its coming and going moves nothing else. */}
+        {replaying && <button data-stop className="replay-text" aria-label={REPLAY_LABELS.nowName}
+            title={REPLAY_LABELS.nowName} onClick={onNow}>{REPLAY_LABELS.now}</button>}
     </div>
 }

@@ -104,7 +104,7 @@ which wire the parts together and are checked by eye:
 | Page measure | Floor |
 |---|---|
 | Statements | 87.13 |
-| Branches | 81 |
+| Branches | 81.07 |
 | Functions | 85.1 |
 | Lines | 88.94 |
 
@@ -266,7 +266,7 @@ when its key changes (FR-BA-006 to FR-BA-010, FR-BA-016).
 Replay too: the Play/Pause button's name and artwork, its four ring stops after
 the time window with Space and the scrubber's step, a pass played on stubbed
 animation frames to its end and held there, the right end staying in the
-replay, Now returning to the present and disabled outside a replay, the speed
+replay, Now returning to the present and hidden outside a replay, the speed
 button naming the next speed, a pass at half and at double speed, play waiting
 until the speeds are known, pause and seek, another window returning to now,
 each image asked for once its key names one, the lines and the guide
