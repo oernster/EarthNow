@@ -242,7 +242,7 @@ Every assumption has an owner and a confirm-by point.
 | ASM-008 | The `mumi:worldcloudmap_ir108` layer keeps its name, extent and 3-hourly time dimension at `https://view.eumetsat.int/geoserver/wms`. | Implementer | Cloud spike exit (FR-CLD-015) |
 | ASM-009 | NASA's Black Marble 2016 may ship inside the application with a credit line under the NASA media terms (R5), as the Blue Marble does (ASM-004). | Oliver | Confirmed by the owner on 2026-09-25 (amendment 37) |
 | ASM-010 | macOS keeps its Region setting as the region part of the `AppleLocale` preference; a Linux desktop's region is the territory of `LC_ALL`, else of `LANG` (FR-GLB-014). Measured on all three platforms: each reads GB on the owner's machines. | Oliver | Confirmed by the owner on 2026-09-25 (amendment 38) |
-| ASM-011 | GWIS's CC BY 4.0 licence (R13) is met by the credit in NFR-LEG-002, naming the source, the licence and that the images are redrawn. The licence is read in the snapshot of 2026-09-24; the attribution wording GWIS asks for, if any, is not. | Oliver | Confirmed by the owner on 2026-09-25 (amendment 37) |
+| ASM-011 | GWIS's CC BY 4.0 licence (R13) is met by the credit in NFR-LEG-002, naming the source, the licence and that the images are redrawn. The licence page, read on 2026-09-25, asks for no wording of its own (amendment 37). | Oliver | Confirmed by the owner on 2026-09-25 (amendment 37) |
 | ASM-012 | The `nrt.ba` layer keeps its name, its EPSG:4326 extent and its one-day `time` parameter at `https://maps.effis.emergency.copernicus.eu/gwis`. | Implementer | Burnt-area spike exit (FR-BA-015) |
 
 ---
