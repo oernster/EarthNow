@@ -176,18 +176,34 @@ func (g *Globe) Windows() []dto.Choice {
 	return out
 }
 
-// View answers what to show for a window key and filter. An unknown key falls
-// back to the default window rather than showing nothing.
-func (g *Globe) View(windowKey string, f Filter) dto.View {
-	w, ok := window.ByKey(windowKey)
-	if !ok {
-		w = window.Default
+// windowOf answers the window a key names; an unknown key falls back to the
+// default window rather than showing nothing.
+func windowOf(key string) window.Window {
+	if w, ok := window.ByKey(key); ok {
+		return w
 	}
-	now := g.clock.Now()
+	return window.Default
+}
+
+// View answers what to show for a window key and filter.
+func (g *Globe) View(windowKey string, f Filter) dto.View {
+	w := windowOf(windowKey)
 	shown := g.store.Visible(w, f)
+	return g.view(w, shown, freshness.CountLine(len(shown), w.Label))
+}
+
+// ReplayView answers what a replay shows over its range (FR-RPL-009), counted
+// up to its instant (FR-RPL-011).
+func (g *Globe) ReplayView(w window.Window, r window.Range, f Filter) dto.View {
+	shown := g.store.Within(r, f)
+	return g.view(w, shown, freshness.ReplayCountLine(len(shown), r.To, w.Label))
+}
+
+func (g *Globe) view(w window.Window, shown []Shown, countLine string) dto.View {
+	now := g.clock.Now()
 	view := dto.View{
 		WindowKey: w.Key,
-		CountLine: freshness.CountLine(len(shown), w.Label),
+		CountLine: countLine,
 		Events:    make([]dto.Event, 0, len(shown)),
 		Counts:    map[string]int{},
 	}

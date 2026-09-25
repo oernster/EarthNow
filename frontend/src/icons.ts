@@ -10,6 +10,8 @@ import dayNight from './assets/icons/day-night.png'
 import dayNightHide from './assets/icons/day-night-hide.png'
 import donate from './assets/donate.png'
 import help from './assets/icons/help-info.png'
+import pause from './assets/icons/pause.png'
+import play from './assets/icons/play.png'
 import refresh from './assets/icons/refresh.png'
 import resetView from './assets/icons/reset-view.png'
 import rotate from './assets/icons/rotate.png'
@@ -19,4 +21,4 @@ import status from './assets/icons/status.png'
 import zoomIn from './assets/icons/zoom-in.png'
 import zoomOut from './assets/icons/zoom-out.png'
 
-export const icons = {appMark, cloudCover, cloudCoverHide, dayNight, dayNightHide, donate, help, refresh, resetView, rotate, rotateStop, settings, status, zoomIn, zoomOut}
+export const icons = {appMark, cloudCover, cloudCoverHide, dayNight, dayNightHide, donate, help, pause, play, refresh, resetView, rotate, rotateStop, settings, status, zoomIn, zoomOut}

@@ -102,9 +102,28 @@ func TestFRCLD016_TheImageIsAskedForAtTheListedTime(t *testing.T) {
 	}
 }
 
+func TestFRRPL015_AReplayImageIsAskedForAtHalfTheSize(t *testing.T) {
+	t.Parallel()
+	s, g := sourceAnswering(sourceImage(t, ReplayWidth, ReplayHeight))
+	if _, err := s.ReplayImage(context.Background(), time.Date(2026, 9, 24, 15, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+	u, _ := url.Parse(g.Asked[0])
+	if q := u.Query(); q.Get("width") != "1024" || q.Get("height") != "512" {
+		t.Errorf("asked %s", g.Asked[0])
+	}
+	if _, err := s.ReplayImage(context.Background(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	s, _ = sourceAnswering(sourceImage(t, Width, Height))
+	if _, err := s.ReplayImage(context.Background(), time.Now()); !errors.Is(err, pngcheck.ErrWrongSize) {
+		t.Errorf("a full-size answer to a replay request: %v", err)
+	}
+}
+
 func TestFRCLD006_TheDrawnImageFollowsTheRamp(t *testing.T) {
 	t.Parallel()
-	out, err := Draw(sourceImage(t, Width, Height))
+	out, err := Draw(sourceImage(t, Width, Height), Width, Height)
 	if err != nil {
 		t.Fatal(err)
 	}

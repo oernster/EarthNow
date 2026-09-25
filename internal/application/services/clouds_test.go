@@ -19,10 +19,17 @@ type fakeCloudSource struct {
 	imageErr   error
 	checks     int
 	fetchedFor []time.Time
+	replayFor  []time.Time
+	replayFail map[int64]error
+	// onLatest and onReplay run once, inside the next call, as a change
+	// arriving mid-round.
+	onLatest func()
+	onReplay func()
 }
 
 func (f *fakeCloudSource) Latest(context.Context) (time.Time, error) {
 	f.checks++
+	once(&f.onLatest)
 	return f.listed, f.latestErr
 }
 
@@ -32,6 +39,16 @@ func (f *fakeCloudSource) Image(_ context.Context, validTime time.Time) ([]byte,
 		return nil, f.imageErr
 	}
 	return []byte("png of " + validTime.Format(time.RFC3339)), nil
+}
+
+// ReplayImage answers the replay's image, failing for the times in replayFail.
+func (f *fakeCloudSource) ReplayImage(_ context.Context, validTime time.Time) ([]byte, error) {
+	f.replayFor = append(f.replayFor, validTime)
+	once(&f.onReplay)
+	if err := f.replayFail[validTime.Unix()]; err != nil {
+		return nil, err
+	}
+	return []byte("small png of " + validTime.Format(time.RFC3339)), nil
 }
 
 type fakeCloudCache struct {
@@ -268,5 +285,13 @@ func TestClouds_CacheProblemsAreNotices(t *testing.T) {
 	runDue(t, c)
 	if got := c.Status().Notice; got != "" {
 		t.Errorf("a good save left the notice %q", got)
+	}
+}
+
+// once runs a hook and clears it, so it fires on the next call alone.
+func once(hook *func()) {
+	if h := *hook; h != nil {
+		*hook = nil
+		h()
 	}
 }

@@ -85,6 +85,55 @@ func Status(validTime, now time.Time) string {
 	return line
 }
 
+// ValidTimes answers the valid times from from to to, both included, oldest
+// first: the service's grid of one every ImageInterval from midnight UTC
+// (measured 2026-09-25: listed from 2021-06-06T15:00Z every PT3H). A replay
+// fetches these (FR-RPL-015).
+func ValidTimes(from, to time.Time) []time.Time {
+	var out []time.Time
+	t := from.UTC().Truncate(ImageInterval)
+	if t.Before(from) {
+		t = t.Add(ImageInterval)
+	}
+	for ; !t.After(to); t = t.Add(ImageInterval) {
+		out = append(out, t)
+	}
+	return out
+}
+
+// AtOrBefore is FR-RPL-014: of times, oldest first, the latest at or before
+// at; false when none is.
+func AtOrBefore(times []time.Time, at time.Time) (time.Time, bool) {
+	for i := len(times) - 1; i >= 0; i-- {
+		if !times[i].After(at) {
+			return times[i], true
+		}
+	}
+	return time.Time{}, false
+}
+
+// ReplayListing is the replay's cloud line before its images are known.
+const ReplayListing = "Clouds: finding the replay's images"
+
+// ReplayProgress is FR-RPL-016: "Clouds 12 of 56", the images a replay holds
+// of those its span holds.
+func ReplayProgress(held, total int) string {
+	return fmt.Sprintf("Clouds %d of %d", held, total)
+}
+
+// ReplayMissing is FR-RPL-017's popover problem: "Missing images: 23 Sep 15:00,
+// 23 Sep 18:00 UTC".
+func ReplayMissing(times []time.Time) string {
+	line := "Missing images:"
+	for i, t := range times {
+		if i > 0 {
+			line += ","
+		}
+		line += " " + freshness.Instant(t)
+	}
+	return line + " UTC"
+}
+
 // Unavailable is FR-CLD-013's status line when no image is held and the first
 // fetch failed; the reason itself goes to the provider status popover.
 const Unavailable = "Clouds: the cloud image could not be retrieved"

@@ -85,20 +85,25 @@ func (s *Store) Snapshot(provider event.Provider) (Snapshot, bool) {
 	return snap, ok
 }
 
-// Visible answers the events inside the window and not filtered out, newest
-// first, which is the order the keyboard cursor walks (NFR-KBD-004).
+// Visible answers the events inside the window ending now and not filtered
+// out, newest first, which is the order the keyboard cursor walks (NFR-KBD-004).
 func (s *Store) Visible(w window.Window, f Filter) []Shown {
+	return s.Within(w.Now(s.clock.Now()), f)
+}
+
+// Within answers the events inside a range and not filtered out, newest first:
+// the live window's range or a replay's (FR-RPL-009).
+func (s *Store) Within(r window.Range, f Filter) []Shown {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	now := s.clock.Now()
 	var out []Shown
 	for _, snap := range s.sets {
 		for _, e := range snap.Events {
 			if f.hides(e) {
 				continue
 			}
-			if o, ok := w.Latest(e, now); ok {
-				out = append(out, Shown{Event: e, Observation: o, RetrievedAt: snap.RetrievedAt, Trail: w.Trail(e, now)})
+			if o, ok := r.Latest(e); ok {
+				out = append(out, Shown{Event: e, Observation: o, RetrievedAt: snap.RetrievedAt, Trail: r.Trail(e)})
 			}
 		}
 	}

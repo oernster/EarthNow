@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"slices"
 	"strings"
@@ -46,14 +45,14 @@ type BurntAreas struct {
 	nextDue     time.Time
 	problem     string
 	notice      string
-	composedKey string
-	composed    string
+	// composed keeps each image composed, by its key, until the held days change.
+	composed map[string]string
 }
 
 // NewBurntAreas builds the use case over the default window, hidden until the
 // saved or default setting shows it (FR-BA-011); SetWindow follows the reader's.
 func NewBurntAreas(clock ports.Clock, source ports.BurntSource, cache ports.BurntCache) *BurntAreas {
-	return &BurntAreas{clock: clock, source: source, cache: cache, win: window.Default, held: map[int64]ports.BurntDay{}}
+	return &BurntAreas{clock: clock, source: source, cache: cache, win: window.Default, held: map[int64]ports.BurntDay{}, composed: map[string]string{}}
 }
 
 // Restore reads the held days from the cache, so the layer draws offline at
@@ -148,6 +147,9 @@ func (b *BurntAreas) Refresh(ctx context.Context) (int, error) {
 	for _, g := range got {
 		b.held[g.Day.Unix()] = g
 	}
+	if len(got) > 0 {
+		b.composed = map[string]string{}
+	}
 	b.prune(now)
 	if len(got) > 0 {
 		b.save()
@@ -213,12 +215,23 @@ func (b *BurntAreas) save() {
 	}
 }
 
-// inWindow answers the held days of the window, oldest first, with whether
-// every day of it is held. The caller holds the lock.
+// inWindow answers the held days of the window ending now, oldest first,
+// with whether every day of it is held. The caller holds the lock.
 func (b *BurntAreas) inWindow(now time.Time) ([]ports.BurntDay, bool) {
+	return b.heldFor(b.win, now, now)
+}
+
+// heldFor answers the held days of w's span ending at end, from its first up
+// to until's day, oldest first, with whether every such day is held: the
+// window ending now, else a replay's days so far (FR-RPL-013). The caller holds
+// the lock.
+func (b *BurntAreas) heldFor(w window.Window, end, until time.Time) ([]ports.BurntDay, bool) {
 	var out []ports.BurntDay
 	all := true
-	for _, d := range b.win.Days(now) {
+	for _, d := range w.Days(end) {
+		if d.After(until) {
+			break
+		}
 		if h, ok := b.held[d.Unix()]; ok {
 			out = append(out, h)
 		} else {
@@ -226,27 +239,6 @@ func (b *BurntAreas) inWindow(now time.Time) ([]ports.BurntDay, bool) {
 		}
 	}
 	return out, all
-}
-
-// drawn answers the days that drew anything.
-func drawn(days []ports.BurntDay) []ports.BurntDay {
-	var out []ports.BurntDay
-	for _, d := range days {
-		if d.Drawn {
-			out = append(out, d)
-		}
-	}
-	return out
-}
-
-// imageKey names the days drawn and when each arrived, so a new key means a
-// new image.
-func imageKey(days []ports.BurntDay) string {
-	parts := make([]string, len(days))
-	for i, d := range days {
-		parts[i] = d.Day.UTC().Format(dayKeyLayout) + "@" + d.RetrievedAt.UTC().Format(time.RFC3339Nano)
-	}
-	return strings.Join(parts, ",")
 }
 
 // Status answers the layer's state for the page; the line is empty while the
@@ -315,38 +307,4 @@ func latest(x, y time.Time) time.Time {
 		return y
 	}
 	return x
-}
-
-// Image answers the window's drawn days as one image, a data URL the page can
-// draw; empty when none draws. The last one composed is kept until its key
-// changes, since composing decodes every day.
-func (b *BurntAreas) Image() string {
-	b.mu.Lock()
-	held, _ := b.inWindow(b.clock.Now())
-	shown := drawn(held)
-	key := imageKey(shown)
-	if key == b.composedKey {
-		defer b.mu.Unlock()
-		return b.composed
-	}
-	b.mu.Unlock()
-	images := make([][]byte, len(shown))
-	for i, d := range shown {
-		images[i] = d.PNG
-	}
-	url := ""
-	if len(images) > 0 {
-		img, err := b.source.Compose(images)
-		if err != nil {
-			b.mu.Lock()
-			defer b.mu.Unlock()
-			b.notice = "The burnt-area maps could not be drawn: " + err.Error()
-			return ""
-		}
-		url = pngDataURL + base64.StdEncoding.EncodeToString(img)
-	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.composedKey, b.composed = key, url
-	return url
 }

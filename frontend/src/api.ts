@@ -1,7 +1,7 @@
 // The one door to the Go side. Every call takes a refusal handler as its last
 // argument and answers null rather than rejecting, so a call without one does
 // not compile and nothing is left for a console nobody opens (NFR-REL-004).
-import type {AboutDTO, BurntAreasDTO, ChoiceDTO, CloudsDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, SunDTO, ViewDTO} from './types'
+import type {AboutDTO, BurntAreasDTO, ChoiceDTO, CloudsDTO, ReplayFrameDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, SunDTO, ViewDTO} from './types'
 
 type Refused = (reason: string) => void
 
@@ -18,6 +18,10 @@ interface Bound {
     CloudImage(): Promise<string>
     BurntAreas(): Promise<BurntAreasDTO>
     BurntImage(): Promise<string>
+    ReplayFrame(windowKey: string, hiddenCategories: string[], hiddenProviders: string[], endMs: number, position: number): Promise<ReplayFrameDTO>
+    ReplayCloudImage(validTime: string): Promise<string>
+    ReplayBurntImage(windowKey: string, endMs: number, position: number): Promise<string>
+    EndReplay(): Promise<void>
     Sun(): Promise<SunDTO>
     StartView(): Promise<StartViewDTO>
     About(): Promise<AboutDTO>
@@ -69,6 +73,14 @@ export const api = {
     // window's burnt areas drawn as one data URL, empty when none draws.
     burntAreas: (onRefused: Refused) => call(b => b.BurntAreas(), onRefused),
     burntImage: (onRefused: Refused) => call(b => b.BurntImage(), onRefused),
+    // The replay (3.2.14): a frame at a position along the span ending at endMs;
+    // its images by key; the release on returning to the end.
+    replayFrame: (windowKey: string, hiddenCategories: string[], hiddenProviders: string[], endMs: number, position: number, onRefused: Refused) =>
+        call(b => b.ReplayFrame(windowKey, hiddenCategories, hiddenProviders, endMs, position), onRefused),
+    replayCloudImage: (validTime: string, onRefused: Refused) => call(b => b.ReplayCloudImage(validTime), onRefused),
+    replayBurntImage: (windowKey: string, endMs: number, position: number, onRefused: Refused) =>
+        call(b => b.ReplayBurntImage(windowKey, endMs, position), onRefused),
+    endReplay: (onRefused: Refused) => call(b => b.EndReplay(), onRefused),
     // sun answers where the sun stands overhead now (FR-DAY-001).
     sun: (onRefused: Refused) => call(b => b.Sun(), onRefused),
     // startView answers where the globe opens (FR-GLB-015).

@@ -90,7 +90,7 @@ try {
 # on Windows only; the macOS and Linux readers are vetted, not run, here).
 $measured = [ordered]@{
     './internal/infrastructure/cache'             = 92.6
-    './internal/infrastructure/clouds'            = 97.7
+    './internal/infrastructure/clouds'            = 97.8
     './internal/infrastructure/geo'               = 100
     './internal/infrastructure/gwis'              = 96.9
     './internal/infrastructure/httpfetch'         = 97.7

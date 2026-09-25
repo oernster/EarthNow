@@ -1,6 +1,8 @@
 package services
 
 import (
+	"time"
+
 	"github.com/oernster/EarthNow/internal/application/dto"
 	"github.com/oernster/EarthNow/internal/application/ports"
 	"github.com/oernster/EarthNow/internal/domain/sun"
@@ -19,9 +21,12 @@ func NewSun(clock ports.Clock) *Sun {
 	return &Sun{clock: clock}
 }
 
-// Position answers the sun as the page draws it.
-func (s *Sun) Position() dto.Sun {
-	at := sun.Subsolar(s.clock.Now())
+// Position answers the sun now as the page draws it.
+func (s *Sun) Position() dto.Sun { return s.PositionAt(s.clock.Now()) }
+
+// PositionAt answers the sun at an instant: now, else a replay's (FR-RPL-012).
+func (s *Sun) PositionAt(instant time.Time) dto.Sun {
+	at := sun.Subsolar(instant)
 	return dto.Sun{
 		Lat:             at.Lat,
 		Lng:             at.Lng,

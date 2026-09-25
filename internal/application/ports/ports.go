@@ -100,10 +100,12 @@ type CloudImage struct {
 // CloudSource is the cloud service behind its adapter (FR-CLD-004,
 // FR-CLD-016). Image answers the image already drawn, so the page is handed
 // pixels and fetches nothing (NFR-SEC-002); an answer that is not the image
-// asked for is an error (FR-CLD-012).
+// asked for is an error (FR-CLD-012). ReplayImage is the same at the smaller
+// size a replay fetches (FR-RPL-015).
 type CloudSource interface {
 	Latest(ctx context.Context) (time.Time, error)
 	Image(ctx context.Context, validTime time.Time) ([]byte, error)
+	ReplayImage(ctx context.Context, validTime time.Time) ([]byte, error)
 }
 
 // CloudCache keeps the last good cloud image across runs (FR-CLD-014). Load

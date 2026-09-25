@@ -131,6 +131,30 @@ type Sun struct {
 	CloudNightFloor float64 `json:"cloudNightFloor"`
 }
 
+// ReplayFrame is everything a replay shows at one instant (FR-RPL-009 to
+// 019). The images are asked for apart, by CloudTime and BurntKey, only when
+// those change.
+type ReplayFrame struct {
+	// View is the replay's events, counts and count line (FR-RPL-009, 011).
+	View View `json:"view"`
+	// At is the replay instant, RFC 3339.
+	At string `json:"at"`
+	// Line is the status line naming the instant (FR-RPL-019).
+	Line string `json:"line"`
+	// Sun is where the sun stood at the instant (FR-RPL-012).
+	Sun Sun `json:"sun"`
+	// CloudTime is the valid time of the replay cloud image to draw, RFC 3339;
+	// empty when none (FR-RPL-014).
+	CloudTime string `json:"cloudTime"`
+	// CloudsLine counts the replay cloud images arriving (FR-RPL-016); empty
+	// once all are in.
+	CloudsLine string `json:"cloudsLine"`
+	// CloudsProvider is the replay clouds' popover entry (FR-RPL-017).
+	CloudsProvider Provider `json:"cloudsProvider"`
+	// BurntKey names the burnt-area image of the days so far (FR-RPL-013).
+	BurntKey string `json:"burntKey"`
+}
+
 // StartView is where the globe opens (FR-GLB-015): facing Lat, Lng when Found;
 // otherwise as it always has (FR-GLB-016).
 type StartView struct {

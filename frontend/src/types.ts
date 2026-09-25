@@ -102,6 +102,19 @@ export interface SunDTO {
     cloudNightFloor: number
 }
 
+// Everything a replay shows at one instant (FR-RPL-009 to 019). The images
+// are asked for apart, by cloudTime and burntKey, only when those change.
+export interface ReplayFrameDTO {
+    view: ViewDTO
+    at: string
+    line: string
+    sun: SunDTO
+    cloudTime: string
+    cloudsLine: string
+    cloudsProvider: ProviderDTO
+    burntKey: string
+}
+
 // Where the globe opens (FR-GLB-015): facing lat, lng when found; otherwise
 // as it always has (FR-GLB-016).
 export interface StartViewDTO {

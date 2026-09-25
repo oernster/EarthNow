@@ -53,18 +53,10 @@ const ClockSkew = 15 * time.Minute
 
 // Contains reports whether an instant falls in the window ending at now, now
 // stretched by ClockSkew (FR-TW-002).
-func (w Window) Contains(at, now time.Time) bool {
-	return at.After(now.Add(-w.Length)) && !at.After(now.Add(ClockSkew))
-}
+func (w Window) Contains(at, now time.Time) bool { return w.Now(now).Contains(at) }
 
-// Latest answers the event's newest observation inside the window; false when
-// none falls inside it, which means the event is not shown (FR-TW-002). That
-// observation's time is the event time and its position the marker position.
+// Latest answers the event's newest observation inside the window ending at
+// now (FR-TW-002, DATA-003).
 func (w Window) Latest(e event.Event, now time.Time) (event.Observation, bool) {
-	for i := len(e.Observations) - 1; i >= 0; i-- {
-		if o := e.Observations[i]; w.Contains(o.At, now) {
-			return o, true
-		}
-	}
-	return event.Observation{}, false
+	return w.Now(now).Latest(e)
 }

@@ -30,7 +30,9 @@ const Host = "view.eumetsat.int"
 const BaseURL = "https://" + Host + "/geoserver"
 
 // The layer and the image FR-CLD-016 asks for: the whole world in CRS:84, at
-// 2048 x 1024, as measured by the cloud spike (ASM-008).
+// 2048 x 1024, as measured by the cloud spike (ASM-008). A replay asks for its
+// images at half that (FR-RPL-015): measured 0.45 MB in 0.6 s each against
+// 1.6 MB in 1.1 to 1.5 s.
 const (
 	layerWorkspace = "mumi"
 	layerName      = "worldcloudmap_ir108"
@@ -38,6 +40,8 @@ const (
 	bbox           = "-180,-90,180,90"
 	Width          = 2048
 	Height         = 1024
+	ReplayWidth    = Width / 2
+	ReplayHeight   = Height / 2
 	wmsVersion     = "1.3.0"
 	pngType        = "image/png"
 )
@@ -74,11 +78,21 @@ func (s *Source) Latest(ctx context.Context) (time.Time, error) {
 
 // Image implements ports.CloudSource: validTime's image, drawn.
 func (s *Source) Image(ctx context.Context, validTime time.Time) ([]byte, error) {
+	return s.image(ctx, validTime, Width, Height)
+}
+
+// ReplayImage implements ports.CloudSource: validTime's image at the replay's
+// size, drawn (FR-RPL-015).
+func (s *Source) ReplayImage(ctx context.Context, validTime time.Time) ([]byte, error) {
+	return s.image(ctx, validTime, ReplayWidth, ReplayHeight)
+}
+
+func (s *Source) image(ctx context.Context, validTime time.Time, width, height int) ([]byte, error) {
 	q := url.Values{
 		"service": {"WMS"}, "version": {wmsVersion}, "request": {"GetMap"},
 		"layers": {layerWorkspace + ":" + layerName}, "styles": {""},
 		"crs": {crs}, "bbox": {bbox},
-		"width": {fmt.Sprint(Width)}, "height": {fmt.Sprint(Height)},
+		"width": {fmt.Sprint(width)}, "height": {fmt.Sprint(height)},
 		"format": {pngType}, "transparent": {"true"},
 		"time": {validTime.UTC().Format(time.RFC3339)},
 	}
@@ -86,7 +100,7 @@ func (s *Source) Image(ctx context.Context, validTime time.Time) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	return Draw(body)
+	return Draw(body, width, height)
 }
 
 // newestTime reads the default of the layer's time dimension.
@@ -127,8 +141,8 @@ func attr(el xml.StartElement, name string) string {
 // every pixel grey, alpha only 0 or 255). An answer that is not a PNG of the
 // requested size is refused (FR-CLD-012); the service's errors arrive as XML
 // with status 200, which fails here.
-func Draw(src []byte) ([]byte, error) {
-	img, err := pngcheck.Decode(src, Width, Height)
+func Draw(src []byte, width, height int) ([]byte, error) {
+	img, err := pngcheck.Decode(src, width, height)
 	if err != nil {
 		return nil, err
 	}

@@ -37,6 +37,7 @@ var wireShapes = map[string]string{
 	"Clouds":         "CloudsDTO",
 	"Event":          "EventDTO",
 	"Provider":       "ProviderDTO",
+	"ReplayFrame":    "ReplayFrameDTO",
 	"SettingChoices": "SettingChoicesDTO",
 	"Settings":       "SettingsDTO",
 	"Speed":          "SpeedDTO",

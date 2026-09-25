@@ -74,7 +74,7 @@ below are the ones written beside each floor in `test.ps1` and
 | `infrastructure/pngcheck` | 100 | |
 | `infrastructure/httpfetch` | 97.7 | A request-building failure that no valid method and context can produce. |
 | `infrastructure/oslocale` | 85.7 | The region call failing: absent before Windows 10 1709, else answering nothing. Neither happens on a current Windows. |
-| `infrastructure/clouds` | 97.7 | Encoding the drawn image into memory, which cannot fail. |
+| `infrastructure/clouds` | 97.8 | Encoding the drawn image into memory, which cannot fail. |
 | `infrastructure/gwis` | 96.9 | Encoding the composed image into memory, which cannot fail. |
 | `infrastructure/cache` | 92.6 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
 | `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
@@ -103,10 +103,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 83.71 |
-| Branches | 76.24 |
-| Functions | 81.75 |
-| Lines | 85.67 |
+| Statements | 85.75 |
+| Branches | 78.8 |
+| Functions | 84.32 |
+| Lines | 87.46 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -236,6 +236,12 @@ The burnt-area layer as well: the Settings box, the line shown, marked or
 absent, the guide's four limits, the sphere lying beneath the clouds and
 following its image; also the shared reader that asks for a layer's image only
 when its key changes (FR-BA-006 to FR-BA-010, FR-BA-016).
+Replay too: the Play/Pause button's name and artwork, its two ring stops after
+the time window with Space and the scrubber's step, a pass played on stubbed
+animation frames to its end and back to now, pause and seek, another window
+returning to now, each image asked for once its key names one, the lines and
+the guide (FR-RPL-002 to FR-RPL-008, FR-RPL-013, FR-RPL-014, FR-RPL-019,
+FR-RPL-021, FR-RPL-023, NFR-KBD-009).
 The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
@@ -329,6 +335,7 @@ recorded there, in section 3.1.
 | The cloud layer draws over the texture, turns with it and stays beneath every marker; the veil reads as unseen rather than as cloud; frame time holds with the layer shown (FR-CLD-008, FR-CLD-015, NFR-PERF-005) | Show the clouds, leave the globe turning, look at the poles. With no frame-time log in the application, smoothness is judged by eye; the result and the spike's measured thresholds are in section 3.2.10 of REQUIREMENTS.md. |
 | The lit side faces the sun and the terminator runs through dawn and dusk; the city lights show on the night side only; clouds over the night side dim and never glow white; frame time holds with both layers shown and 2,500 markers (FR-DAY-003, FR-DAY-009, NFR-PERF-006) | Show both layers and compare the terminator with NOAA's or any day and night map for the same minute; leave the globe turning. With no frame-time log in the application, smoothness is judged by eye, as for NFR-PERF-005. |
 | The burnt areas draw in red over the texture, turn with it and lie beneath the clouds and every marker; the spike's measurements are taken; frame time holds with every layer shown (FR-BA-006, FR-BA-007, FR-BA-015, NFR-PERF-007) | Tick Settings' box with 7 days chosen, show the clouds too, leave the globe turning. The spike's results go in section 3.2.13 of REQUIREMENTS.md; smoothness is judged by eye, as for NFR-PERF-005. |
+| Replay plays the chosen window in 30 s with events appearing, tracks growing, the sun sweeping and the burnt days building; the replay clouds arrive while it plays; the controls sit on the top bar's one row at the minimum window; frame time holds through a 7 day pass with every layer shown (FR-RPL-020, NFR-PERF-008) | Choose 7 days with every layer shown and press Play; drag the slider; press Play at the end; resize to 960 by 700. Smoothness is judged by eye, as for NFR-PERF-005. |
 | A storm's track fades from faint to strong and ends in its marker without crowding the globe (FR-TRL-002) | Show the 7 day window with a storm in it; look, then clear Settings' box. |
 | The globe opens facing your country, then turns from there; on a Mac and on Linux the region is read as ASM-010 states (FR-GLB-014, FR-GLB-015) | Launch; the log's "Start view:" line names the region and the point. On a Mac and on Linux, the same line after launch. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |

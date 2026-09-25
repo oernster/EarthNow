@@ -67,11 +67,31 @@ func Reported(o event.Observation, now time.Time) string {
 
 // CountLine is FR-CNT-001: "3 events in the last 24 h".
 func CountLine(n int, windowLabel string) string {
-	noun := "events"
+	return fmt.Sprintf("%s in the last %s", events(n), windowLabel)
+}
+
+// instantLayout words a replay instant: "20 Sep 14:00".
+const instantLayout = "2 Jan 15:04"
+
+// Instant words a replay instant in UTC: "20 Sep 14:00".
+func Instant(at time.Time) string { return at.UTC().Format(instantLayout) }
+
+// ReplayCountLine is FR-RPL-011: "3 events up to 20 Sep 14:00 UTC in the last 7 days".
+func ReplayCountLine(n int, at time.Time, windowLabel string) string {
+	return fmt.Sprintf("%s up to %s UTC in the last %s", events(n), Instant(at), windowLabel)
+}
+
+// ReplayLine is FR-RPL-019: "Replay: 20 Sep 14:00 UTC".
+func ReplayLine(at time.Time) string {
+	return "Replay: " + Instant(at) + " UTC"
+}
+
+// events words a count of events: "1 event", "3 events".
+func events(n int) string {
 	if n == 1 {
-		noun = "event"
+		return "1 event"
 	}
-	return fmt.Sprintf("%d %s in the last %s", n, noun, windowLabel)
+	return fmt.Sprintf("%d events", n)
 }
 
 // Until words a coming time as "in 4 min"; a time already arrived reads "now".

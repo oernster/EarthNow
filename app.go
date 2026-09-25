@@ -35,11 +35,14 @@ type App struct {
 	prefs  *services.Preferences
 	clouds *services.Clouds
 	burnt  *services.BurntAreas
-	sun    *services.Sun
-	start  *services.StartView
-	help   Help
-	byName map[event.Provider]ports.Provider
-	wake   chan struct{}
+	// replay answers a replay's frames; replayClouds fetches its cloud images.
+	replay       *services.Replay
+	replayClouds *services.ReplayClouds
+	sun          *services.Sun
+	start        *services.StartView
+	help         Help
+	byName       map[event.Provider]ports.Provider
+	wake         chan struct{}
 }
 
 // Help is what the help dialogs read (FR-HLP-001 to 003), gathered at the
@@ -51,12 +54,12 @@ type Help struct {
 }
 
 // NewApp builds the facade.
-func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, burnt *services.BurntAreas, sun *services.Sun, start *services.StartView, help Help, providers []ports.Provider) *App {
+func NewApp(globe *services.Globe, sched *services.Scheduler, prefs *services.Preferences, clouds *services.Clouds, burnt *services.BurntAreas, replay *services.Replay, replayClouds *services.ReplayClouds, sun *services.Sun, start *services.StartView, help Help, providers []ports.Provider) *App {
 	byName := map[event.Provider]ports.Provider{}
 	for _, p := range providers {
 		byName[p.Name()] = p
 	}
-	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, burnt: burnt, sun: sun, start: start, help: help, byName: byName, wake: make(chan struct{}, 1)}
+	return &App{globe: globe, sched: sched, prefs: prefs, clouds: clouds, burnt: burnt, replay: replay, replayClouds: replayClouds, sun: sun, start: start, help: help, byName: byName, wake: make(chan struct{}, 1)}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -137,9 +140,12 @@ func (a *App) drive() {
 		if a.burnt.Due() {
 			go a.guard("burnt areas", a.fetchBurnt)
 		}
+		if a.replayClouds.Due() {
+			go a.guard("replay clouds", a.fetchReplayClouds)
+		}
 		var timer *time.Timer
 		var fire <-chan time.Time
-		if next := earliest(a.sched.NextWake(), a.clouds.NextWake(), a.burnt.NextWake()); !next.IsZero() {
+		if next := earliest(a.sched.NextWake(), a.clouds.NextWake(), a.burnt.NextWake(), a.replayClouds.NextWake()); !next.IsZero() {
 			timer = time.NewTimer(max(time.Until(next), 0))
 			fire = timer.C
 		}
@@ -227,14 +233,7 @@ func (a *App) RefreshNow() int64 {
 // View answers what to show for a window and the categories and providers
 // switched off.
 func (a *App) View(windowKey string, hiddenCategories, hiddenProviders []string) dto.View {
-	f := services.Filter{HiddenCategories: map[event.Category]bool{}, HiddenProviders: map[event.Provider]bool{}}
-	for _, c := range hiddenCategories {
-		f.HiddenCategories[event.Category(c)] = true
-	}
-	for _, p := range hiddenProviders {
-		f.HiddenProviders[event.Provider(p)] = true
-	}
-	view := a.globe.View(windowKey, f)
+	view := a.globe.View(windowKey, filterOf(hiddenCategories, hiddenProviders))
 	now := time.Now()
 	for i, p := range view.Providers {
 		if p.Problem != "" {
@@ -244,6 +243,18 @@ func (a *App) View(windowKey string, hiddenCategories, hiddenProviders []string)
 	a.sched.MarkRefreshing(view.Providers)
 	view.Notice = services.JoinNotices(view.Notice, a.prefs.Notice(), a.clouds.Status().Notice, a.burnt.Status().Notice)
 	return view
+}
+
+// filterOf builds the filter from the categories and providers switched off.
+func filterOf(hiddenCategories, hiddenProviders []string) services.Filter {
+	f := services.Filter{HiddenCategories: map[event.Category]bool{}, HiddenProviders: map[event.Provider]bool{}}
+	for _, c := range hiddenCategories {
+		f.HiddenCategories[event.Category(c)] = true
+	}
+	for _, p := range hiddenProviders {
+		f.HiddenProviders[event.Provider(p)] = true
+	}
+	return f
 }
 
 // Windows answers the time window choices.

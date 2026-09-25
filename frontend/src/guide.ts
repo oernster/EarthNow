@@ -105,6 +105,14 @@ export function guideSections(product: string): readonly GuideSection[] {
             ],
         },
         {
+            heading: 'Replay',
+            paragraphs: [
+                'Play, beside the time window, replays the chosen window from its start in 30 seconds: events appear at their own times, storm tracks grow, the sun sweeps round and the burnt days build up. The slider beside it moves through the window by hand; its right end is now.',
+                'Replay shows what the sources hold now about those days. A source may since have revised or withdrawn a report, so it is not always what was known at the time.',
+                'Its clouds are softer images than the ordinary layer, fetched for the replay and let go when it ends. They arrive while it plays; the line beneath the globe counts them in.',
+            ],
+        },
+        {
             heading: 'Burnt areas',
             paragraphs: [
                 'Settings can lay burnt ground over the globe in red, from the Global Wildfire Information System (GWIS), which maps it from satellites one UTC day at a time. Every day the chosen time window touches is drawn, so 7 days shows eight days of maps.',

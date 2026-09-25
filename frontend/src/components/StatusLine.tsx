@@ -21,6 +21,9 @@ interface Props {
     // its layer does.
     clouds?: LayerState | null
     burnt?: LayerState | null
+    // replayLines are the replay's instant and its cloud images' progress
+    // (FR-RPL-016, FR-RPL-019); empty while not replaying.
+    replayLines?: string[]
 }
 
 /** lastRefreshed words when the last manual refresh was made, in local time (FR-PRV-010). */
@@ -41,12 +44,13 @@ function layerLine(layer: LayerState | null) {
     return <span className={p.problem || p.stale ? 'provider warn' : 'provider'} title={p.problem}>{layer.line}</span>
 }
 
-export function StatusLine({countLine, providers, problem, note = '', clouds = null, burnt = null}: Props) {
+export function StatusLine({countLine, providers, problem, note = '', clouds = null, burnt = null, replayLines = []}: Props) {
     return <div className="status" role="status">
         <span className="count">{countLine}</span>
         {providers.map(p => <span key={p.name} className={p.problem || p.stale ? 'provider warn' : 'provider'} title={p.problem}>
             {providerLine(p)}
         </span>)}
+        {replayLines.filter(l => l !== '').map(l => <span key={l} className="provider">{l}</span>)}
         {layerLine(clouds)}
         {layerLine(burnt)}
         {note && <span className="provider">{note}</span>}

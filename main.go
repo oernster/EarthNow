@@ -150,6 +150,11 @@ func main() {
 	burntLayer.Restore()
 	burntLayer.SetWindow(prefs.Current().WindowKey)
 	burntLayer.SetShown(prefs.Current().BurntShown)
+	// Replay's cloud images come from the same service at a smaller size, held
+	// in memory only (FR-RPL-015).
+	sun := services.NewSun(clock)
+	replayClouds := services.NewReplayClouds(clock, clouds.New(client, clouds.BaseURL))
+	replay := services.NewReplay(globe, sun, cloudLayer, burntLayer, replayClouds)
 	help := Help{
 		About:   dto.About{Name: product.Name, Version: appVersion, Copyright: product.Copyright, Licence: product.Licence, Attributions: product.Attributions()},
 		Licence: licenceText,
@@ -163,7 +168,7 @@ func main() {
 		labels = &geo.Labels{}
 	}
 	start := services.NewStartView(oslocale.Setting{}, labels)
-	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, burntLayer, services.NewSun(clock), start, help, providers)
+	app := NewApp(globe, services.NewScheduler(clock, providers), prefs, cloudLayer, burntLayer, replay, replayClouds, sun, start, help, providers)
 
 	// NFR-PRIV-002: WebView2 keeps its data inside the data folder. Left unset it
 	// falls back to %APPDATA%\EarthNow.exe (measured), outside it.

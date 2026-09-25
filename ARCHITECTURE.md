@@ -62,11 +62,13 @@ These hold in the tree as it stands; no test fails if one is broken.
 
 ```
 main.go, app.go          composition root and the Wails facade the page calls
+                         (layers.go and replay.go hold the image layers' and
+                         Replay's part of the facade)
 frontend/src             the page: React, TypeScript, globe.gl
 internal/application/
     ports                what the application needs from outside
     services             the use cases: globe, store, scheduler, preferences, clouds,
-                         burnt areas, sun, start view
+                         burnt areas, replay, replay clouds, sun, start view
     dto                  the shapes that cross to the page
 internal/domain/
     burnt                the burnt-area union and wording
@@ -169,6 +171,14 @@ The use cases, behind the ports in
   004). A day that fails keeps its held image while the others draw
   (FR-BA-012). It composes the drawn days into one image only when their key
   changes, since composing decodes each day.
+- `Replay` answers one frame of a replay (3.2.14): the events over the range
+  from the span's start to the replay instant, counted up to it, the sun at
+  it, which cloud image and which burnt days to draw. The page holds the
+  position and the span's end; the domain's `window.Range` is the one rule
+  for what a live window and a replay each show (FR-RPL-009).
+- `ReplayClouds` fetches a replay's cloud images on the driver's loop, one a
+  round at 1024 by 512 after listing the span's times up to the newest image,
+  in memory only and dropped when the replay ends (FR-RPL-015 to 018).
 - `Sun` answers where the sun stands overhead by the clock, with the twilight
   limit and the night floor, so the page draws the light without holding a
   figure of its own (FR-DAY-001, FR-DAY-004).
@@ -302,7 +312,9 @@ the page answers each by asking for the view. A cloud check runs the same
 way and emits `clouds-changed`; the page then asks for the cloud state; it asks
 for the image only when the valid time has changed. A burnt-area round emits
 `burnt-changed` and the page asks for the image only when the key has
-changed; both layers share one reader on the page (`useLayer.ts`). A change of
+changed; both layers share one reader on the page (`useLayer.ts`). While a
+replay's clouds are arriving, each image fetched emits `replay-changed` and the
+page asks for its frame again (`useReplay.ts`). A change of
 window reaches the layer through the saved settings. The day and night layer
 needs no background work: while it is shown the page asks for the sun on
 showing and once a minute after (FR-DAY-004).
@@ -394,6 +406,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
 | The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`imageLayers.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
 | The burnt areas | Each UTC day fetched and held apart, composed in Go into one image for the window and laid on a sphere beneath the clouds (`imageLayers.ts`) | One image per day on the page: up to eight textures and spheres, decoded on the page. A date range in one request: GWIS answers an empty body (measured). |
+| Replay's frames | The page holds the position and plays it on animation frames; it asks Go for a frame at most every 100 ms and for an image only when the frame's key for it changes (`useReplay.ts`) | Go driving the clock and pushing frames: a timer on the Go side for what is a page's animation; a stream of events where the page can ask at its own pace. |
 | The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |
 | Drawing day and night | three-globe's own lit material kept, the night lights added as its emissive map; one light factor per point, from the world-space normal against a world-space sun, scales the day by it and the lights by what is left (`dayNight.ts`). The cloud sphere dims by the same uniforms. | The example's unlit shader in view space: three-globe's default globe is a Phong material lit by globe.gl's ambient and directional lights (read in source), so an unlit shader would change the day side and hiding the layer would not restore the globe as before (FR-DAY-008). View space also needs the camera's turn fed in every frame, where world space needs nothing while only the camera moves. |
 | The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |

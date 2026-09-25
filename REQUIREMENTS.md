@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 33.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 34.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -39,6 +39,7 @@ edits.
 | 31 | 2026-09-24 | Earthquake depth (FR-SEL-010 to 014): the detail panel gains a Depth row for an event whose source gives one, to one decimal with USGS's band word; a depth above sea level is worded as such; exactly 10 km is marked as often a fixed depth. Nothing changes on the globe or in the tooltip. R10 and R11 added. | Owner request, the detail panel only: "I'd resist turning the globe into a Christmas tree." DATA-010 already keeps USGS depth in kilometres (measured: `Extras.DepthKm`); nothing carried it past the domain. Measured over the cached week of 244 USGS quakes at 2.5 and above: 165 shallow, 62 intermediate, 17 deep, 77 at exactly 10 km. USGS states that 10 km is a fixed depth assigned when the data are too poor to compute one (R11); its summary feed does not say which ones, so the row says often rather than claiming this one is. |
 | 32 | 2026-09-24 | Storm trails (3.2.12, FR-TRL-001 to 005): a severe storm's fixes inside the time window are drawn as a line to its marker, oldest faintest, switched by a Settings box that starts on. The Won't "storm tracks drawn as lines" leaves 1.3 and 3.6; iceberg drift and earthquake swarms are recorded there instead. | Owner request: show where a storm has been. The owner chose storms only (measured on 2026-09-23: five storms with 6 to 14 fixes over one to three days; icebergs held 41 to 65 fixes back to 2021, which a window clips to a stub; swarms need a rule, measured at 8 groups of 5 or more within 50 km in 48 h and none of 10 or more within 20 km in a day) and a Settings box over a rail button, since the rail is full at the minimum height. Wildfire perimeters were researched apart: FIRMS gives points, NIFC's are the United States only (rejected by the owner as inconsistent) and GWIS's global burnt areas come as a daily image, a candidate for its own amendment. |
 | 33 | 2026-09-25 | The burnt-area layer (3.2.13, FR-BA-001 to 017): a Settings switch drawing GWIS's burnt areas over the globe for every UTC day the time window overlaps, fetched only while shown, a day at a time. NFR-PRIV-001 allows `maps.effis.emergency.copernicus.eu`; NFR-LEG-002 credits GWIS and names it in the non-endorsement line; NFR-PERF-007, ASM-011, ASM-012, R12 and R13 added. Scope admits the layer; GWIS vector perimeters and NIFC perimeters join the Won't list. | Owner request: show where wildfires have burnt, worldwide. The owner rejected NIFC's perimeters as the United States only. Measured on 2026-09-25: GWIS's WMS layer `nrt.ba` answers one day per request (a range answers an empty body), keyless; each day's image keeps only 11 to 25% of the day before's pixels, so it is that day's mapping and never a running total; a day not yet begun in UTC answers a valid empty image. The owner chose the rule: a window shows every day it overlaps ("if a user selects a window they should see that window"), so 7 days draws eight days; a window holding nothing mapped says so in words. A Settings switch, since the rail is full at the minimum height (amendment 29), on by default (owner, after seeing it in the real window). GWIS's images also carry grey-white rings, drawn red with the rest; the owner chose to keep them. |
+| 34 | 2026-09-25 | Replay (3.2.14, FR-RPL-001 to 023): a timeline in the top bar, a Play/Pause button and a scrubber whose right end is now, replaying the chosen time window in 30 s. The view builds up from the span's start to the replayed instant: events, storm tracks, the sun, the burnt-area days and 3-hourly cloud images fetched at 1024 by 512 for the replay and held in memory only. NFR-PERF-008, NFR-KBD-009, Appendix D.2's `play.png` and `pause.png` added. Timeline playback and cloud animation leave 1.3's exclusions and 3.6's Won'ts. | Owner request: replay the Earth. The owner chose the chosen window over a fixed 7 days, every layer including the clouds, play and pause with a scrubber, 30 s a pass, a view that builds up rather than slides, clouds at 1024 wide and artwork of their own. Measured on 2026-09-25: EUMETSAT lists an image every 3 h from 2021-06-06 to now; a past image was 1.62 to 1.64 MB in 1.1 to 1.5 s at 2048 and 0.44 to 0.45 MB in 0.6 to 0.7 s at 1024 (three times each), so 7 days' 56 images come to about 25 MB at 1024 against 91 MB (multiplied, not measured). The events of the window are already held (DATA-009); the sun is computed. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -70,7 +71,7 @@ The product sentence, which settles any unclear choice:
 ### 1.3 Scope
 
 **In scope for V1 (Windows, macOS and Linux):** the globe, the three providers (NASA EONET,
-USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the day and night layer (3.2.11), the burnt-area layer from GWIS (3.2.13), the provider-neutral event model, refresh with local caching,
+USGS earthquakes, the Smithsonian / USGS weekly volcano report), the cloud layer from EUMETSAT's world cloud map (3.2.10), the day and night layer (3.2.11), the burnt-area layer from GWIS (3.2.13), Replay of the time window (3.2.14), the provider-neutral event model, refresh with local caching,
 filters, the time window, event selection with a detail panel, source and
 freshness display, keyboard navigation to the house model, the self-reading
 help surfaces, the Windows build script and the bespoke setup program, the
@@ -81,9 +82,9 @@ Linux Flatpak with its cleanup script and the macOS DMG (3.5).
 - user accounts, cloud sync, social features, telemetry of any kind;
 - AI summaries, interpretation, predictions or forecasts;
 - push or desktop notifications;
-- a historical archive beyond the 7-day window, timeline playback;
+- a historical archive beyond the 7-day window, replay beyond it, saving a replay as a video;
 - NASA FIRMS hotspots, event polygons drawn as areas, wildfire perimeters as shapes (GWIS or NIFC), iceberg drift and earthquake swarms drawn as trails;
-- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud and burnt-area layers, cloud history or animation, aurora;
+- weather (precipitation, temperature, wind, forecasts), satellite imagery beyond the cloud and burnt-area layers, cloud history beyond a replay's span, aurora;
 - a server or backend controlled by EarthNow;
 - GIS tooling (measurement, projections, layer management);
 - an update check, a system tray icon, start with Windows.
@@ -112,6 +113,8 @@ One term, one meaning, throughout.
 | **GWIS** | The Global Wildfire Information System of the Copernicus Emergency Management Service (R12). |
 | **Burnt-area day** | One UTC calendar day of GWIS's burnt-area mapping: the image its WMS layer `nrt.ba` answers for `time=` that day. |
 | **Burnt-area layer** | The burnt-area days the time window overlaps (FR-BA-001), drawn together over the globe texture (FR-BA-006). |
+| **Replay instant** | The moment Replay shows: a position along the span (FR-RPL-001). |
+| **Span** | The chosen time window, ending where the scrubber left its right end (FR-RPL-003). |
 | **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
 
 ### 1.5 References
@@ -568,6 +571,43 @@ keep them. Whether a finished day's image later changes is not yet measured
 | FR-BA-015 | Must | Before the burnt-area layer is built, a burnt-area spike shall measure, on the reference machine: whether a finished day's image changes when retrieved again a day later (the answer can only loosen FR-BA-003); the size and fetch time of one day at 2048 and at 4096 pixels wide, choosing the width; the look by eye; NFR-PERF-007's frame time. | Its measured results recorded in this section, as the cloud spike's are in 3.2.10. | D |
 | FR-BA-016 | Must | The guide shall say that GWIS maps burnt ground from satellites one UTC day at a time, that a burn shows on the day it was mapped rather than the day the fire began, that a small burn may not show at the drawn resolution and that a short window may show none yet. | The guide's burnt-area entry names all four. | T |
 
+#### 3.2.14 Replay (amendment 34)
+
+Replay plays the chosen time window back from its start to its end. Nothing
+new is kept for it: the events are those the store holds for the window
+(DATA-009), the sun is computed (FR-DAY-001), the burnt-area days are the
+layer's own (3.2.13). Only the clouds need more: EUMETSAT lists an image every
+3 h back to 2021-06-06 (measured 2026-09-25), fetched for the replay at 1024 by
+512 and held in memory only. Replay shows what the sources hold now about the
+span, which is not always what they had said at each moment in it: a source may
+revise or withdraw a report afterwards. The guide says so (FR-RPL-023).
+
+| ID | Pri | Requirement | Acceptance | Verify |
+|---|---|---|---|---|
+| FR-RPL-001 | Must | The domain shall give the replay instant for a position from 0 to 1 along a span as the span's start plus that share of its length; a position outside 0 to 1 shall be held at the nearer end. | A 7 day span ending 24 Sep 12:00 UTC: 0 gives 17 Sep 12:00, 0.5 gives 21 Sep 00:00, 1 gives 24 Sep 12:00; 1.2 gives 24 Sep 12:00. | T |
+| FR-RPL-002 | Must | While the scrubber rests at its right end, the application shall show the ordinary view of the chosen window ending at the current instant, refreshing as usual. | With the scrubber at the end the view equals the view with no replay control. | T |
+| FR-RPL-003 | Must | When the scrubber leaves its right end, the replay control shall fix the span as the chosen time window ending at that instant, until the scrubber returns to the end. | Leaving the end at 12:00 and pausing: at 12:05 the span still ends at 12:00. | T |
+| FR-RPL-004 | Must | When Play is activated, the replay control shall advance the position from where it rests to the end over the rest of one 30 s pass, starting from 0 when it rests at the end. | Fake timer: from 0, the position reads 0.5 after 15 s and 1 after 30 s; from 0.5, 1 after 15 s. | T |
+| FR-RPL-005 | Must | When the position reaches the end during play, the replay control shall stop there, so the view is the ordinary one again (FR-RPL-002). | Fake timer at 30 s: playing is off and the scrubber rests at the end. | T |
+| FR-RPL-006 | Must | When Pause is activated, the replay control shall stop the position where it is. | Pausing at 10 s holds 1/3 through any later time. | T |
+| FR-RPL-007 | Must | When the scrubber is dragged or stepped, the replay control shall pause and move the position to the scrubber's. | Dragging during play stops play at the dragged position. | T |
+| FR-RPL-008 | Must | While playing, the Play/Pause button shall show the `pause` artwork with the tooltip and accessible name "Pause replay"; otherwise the `play` artwork with "Play replay" (NFR-UX-004). | The name reads "Play replay", then "Pause replay" after a press. | T |
+| FR-RPL-009 | Must | While replaying, the event query shall include an event only if one of its observations falls from the span's start up to the replay instant, at its latest such observation (DATA-003 with the replay instant as the window's end). | A quake at 20 Sep 10:00 in a 7 day span ending 24 Sep 12:00: absent at a replay instant of 20 Sep 09:59, present at 10:00. A storm fixed at 19 and 21 Sep sits at its 19 Sep fix on 20 Sep. | T |
+| FR-RPL-010 | Must | While replaying, a severe storm's trail shall join its fixes from the span's start up to the replay instant (FR-TRL-001 over that range). | The storm above has one point on 20 Sep and no trail; two on 21 Sep. | T |
+| FR-RPL-011 | Must | While replaying, the count line shall read "N events up to <replay instant> UTC in the last <window>" (FR-CNT-001). | 3 events at 20 Sep 14:00 in 7 days: "3 events up to 20 Sep 14:00 UTC in the last 7 days". | T |
+| FR-RPL-012 | Must | While replaying with the day and night layer shown, the globe view shall place the sun at the replay instant (FR-DAY-001). | The sun handed to the globe is the subsolar point of the replay instant. | T |
+| FR-RPL-013 | Must | While replaying with the burnt-area layer shown, the globe view shall draw the burnt-area days of the span from its first up to the replay instant's UTC day. | A 7 day span from 17 Sep: at 20 Sep 14:00 the image holds 17 to 20 Sep. | T |
+| FR-RPL-014 | Must | While replaying with the cloud layer shown, the globe view shall draw the replay cloud image whose valid time is the latest at or before the replay instant; before the first, none. | Images held at 12:00 and 15:00: 14:59 draws 12:00, 15:00 draws 15:00, 11:59 draws none. | T |
+| FR-RPL-015 | Must | When the scrubber leaves its end with the cloud layer shown, the cloud provider shall retrieve every valid time the span holds at 1024 by 512, oldest first, holding them in memory only and never in the cloud cache. | Fake source, 24 h span: eight GetMap requests at width 1024, each with its own time; the cache is not written. | T |
+| FR-RPL-016 | Must | While the replay cloud images are arriving, the replay control shall state how many are held of how many the span holds, worded "Clouds 12 of 56"; play shall not wait for them. | Fake source slowed: the line counts up; the position advances meanwhile. | T |
+| FR-RPL-017 | Must | If a replay cloud image cannot be retrieved, then the replay shall draw the latest image held at or before the instant and state in the provider status popover which valid times are missing. | Fake source failing for 15:00: 16:00 draws 12:00; the popover names 15:00. | T |
+| FR-RPL-018 | Must | When the scrubber returns to its end, the cloud provider shall release the replay cloud images. | After the return, none is held and the ordinary cloud image draws. | T |
+| FR-RPL-019 | Must | While replaying, the status area shall state the replay instant, worded "Replay: 20 Sep 14:00 UTC", never "live" (FR-STS-006). | Replay at 20 Sep 14:00 reads exactly that. | T |
+| FR-RPL-020 | Must | The top bar shall hold the Play/Pause button and the scrubber after the time window control, taking no height from the globe area (NFR-UX-001). | At 960 by 700 both show on the top bar's one row (D); the globe area is unchanged (T). | T + D |
+| FR-RPL-021 | Must | When the time window changes while replaying, the replay control shall return the scrubber to its end. | Choosing 24 h at 0.4 through a 7 day replay shows the ordinary 24 h view. | T |
+| FR-RPL-022 | Must | While replaying, the scheduler shall go on refreshing the providers; since the replay's range ends where the scrubber left its end (FR-RPL-003), an event a refresh brings from after that instant shall not be drawn until the scrubber returns to its end. | An event timed after the span's end is absent from every replay frame and present in the ordinary view. | T |
+| FR-RPL-023 | Must | The guide shall say that Replay shows what the sources hold now about the span, which a source may since have revised or withdrawn; also that its clouds are softer images fetched for it. | The guide's Replay entry names both. | T |
+
 ### 3.3 Non-functional requirements
 
 Every performance figure is measured on the reference machine.
@@ -580,6 +620,7 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
 | NFR-PERF-006 | Must | While idle-rotating with the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over 60 s with both layers shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005 (amendment 27). |
 | NFR-PERF-007 | Must | While idle-rotating with the burnt-area layer showing 7 days, the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the burnt-area spike, FR-BA-015, measures it). | Frame-time log over 60 s with every layer shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
+| NFR-PERF-008 | Must | While a 7 day replay plays with every layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over one 30 s pass; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
 | NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
@@ -594,6 +635,7 @@ Every performance figure is measured on the reference machine.
 | NFR-KBD-003 | Must | When the page's DOM is ready, the host shall focus the WebView2 child directly (falling back to `runtime.Show`); if the page finds it holds no keyboard after the settle time, it shall ask the host again. | Vitest over the settle step; the log records each focus attempt; first Tab steps the ring in the real window with no click (D). |
 | NFR-KBD-004 | Must | The globe shall be one canvas stop on the ring: while it holds focus, Up and Down shall walk the displayed events newest first (wrapping) and move the camera to each; Enter or Space shall open the detail panel; plus and minus shall zoom. Arriving on the globe shall move the cursor to an event at once and show its tooltip with a line naming these keys, since the globe paints no ring. | T (cursor walk) + D |
 | NFR-KBD-005 | Must | The time window control shall be one stop per option, bounded for Tab and wrapping for Up and Down. | T |
+| NFR-KBD-009 | Must | The Play/Pause button and the scrubber shall each be one ring stop after the time window; while the scrubber holds focus, Left and Right shall step it by one hundredth of the span, Home and End shall move it to the ends and Space shall play or pause. | Vitest over the ring and the keys. | T |
 | NFR-KBD-006 | Must | Every dialog and the detail panel shall open focused on its first actionable stop, close on Escape and return focus to its opener. | T per dialog. |
 | NFR-KBD-007 | Must | No container, reading body or scroll region shall take focus from a click or paint a ring; a reading body is reachable by Tab only while it overflows and never rings (noborderfocus). | Static CSS scan plus a runtime check, each proved by a planted violation. |
 | NFR-KBD-008 | Must | Rings shall follow the three-state model: none at rest, the ring green while an enabled control is hovered or focused, a permanent danger ring while disabled; the accent never rings. | Static CSS scan. |
@@ -650,7 +692,7 @@ Every performance figure is measured on the reference machine.
 
 ### 3.6 Won't this time (recorded so they are not re-proposed)
 
-Timeline playback; NASA FIRMS; polygons drawn as shapes; wildfire perimeters as shapes (amendment 33: GWIS offers no vector service, measured; NIFC's cover the United States only, rejected by the owner); iceberg drift and earthquake swarms drawn as trails (amendment 32: no agreed swarm rule yet); the
+Replay beyond the 7-day window and saving a replay as a video (amendment 34); NASA FIRMS; polygons drawn as shapes; wildfire perimeters as shapes (amendment 33: GWIS offers no vector service, measured; NIFC's cover the United States only, rejected by the owner); iceberg drift and earthquake swarms drawn as trails (amendment 32: no agreed swarm rule yet); the
 notifications; favourites and
 home location; screenshots and export; an event list or search view (Plan 16
 allows deferring it; NFR-KBD-004 makes every event reachable from the keyboard
@@ -771,6 +813,7 @@ No artwork may depict the Earth's surface in place of the NASA texture (CON-009)
 | `help-info.png` | About, guide, licences |
 | `zoom-in.png`, `zoom-out.png` | Zoom buttons (FR-RAIL-002) |
 | `day-night.png` | Day and night button (FR-DAY-005), supplied by the owner: shown alone while the layer is hidden. `tools/genicons.py` composites `negative.png` over it to make `day-night-hide.png`, shown while the layer is shown, the default. |
+| `play.png`, `pause.png` | The Play/Pause button (FR-RPL-008), supplied by the owner: `play.png` while stopped or paused, `pause.png` while playing. |
 | `cloud-cover.png` | Cloud button (FR-CLD-001), supplied by the owner: shown alone while the layer is hidden, the default. `tools/genicons.py` composites `negative.png` over it to make `cloud-cover-hide.png`, shown while the layer is shown, as it does for rotation. |
 
 ### D.3 Category markers: emoji, not artwork (decided by the owner 2026-09-23)

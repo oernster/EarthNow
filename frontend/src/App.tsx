@@ -12,6 +12,7 @@ import {SettingsDialog} from './components/SettingsDialog'
 import {lastRefreshed, StatusLine} from './components/StatusLine'
 import {StatusPanel, needsAttention} from './components/StatusPanel'
 import {TimeWindow} from './components/TimeWindow'
+import {ReplayControls} from './components/ReplayControls'
 import {settleKeyboard} from '../../installer/frontend/dist/settle-keyboard.js'
 import {donate} from './donate'
 import {icons} from './icons'
@@ -20,8 +21,11 @@ import {useRing} from './ring'
 import type {BurntAreasDTO, ChoiceDTO, CloudsDTO, EventDTO, SettingChoicesDTO, SettingsDTO, StartViewDTO, ViewDTO} from './types'
 import {REFRESH_TURN_MS, useHeld} from './useHeld'
 import {type LayerSource, useLayer} from './useLayer'
+import {useReplay} from './useReplay'
 import {useSun} from './useSun'
 
+// NONE is the empty filter list, one value so the replay's requests stay steady.
+const NONE: string[] = []
 const EMPTY_VIEW: ViewDTO = {windowKey: '', countLine: '', events: [], counts: {}, providers: [], notice: ''}
 // A refused start view opens the globe as before (FR-GLB-016).
 const NO_START: StartViewDTO = {found: false, lat: 0, lng: 0}
@@ -111,16 +115,23 @@ export default function App() {
         return () => { offChanged(); offProblem() }
     }, [load, onProblem, ready])
 
+    const dayNightShown = settings?.dayNightShown ?? false
+    const liveSun = useSun(dayNightShown, onProblem)
+    // Replay (3.2.14): while the scrubber is off its end, the frame stands in for
+    // the live view, sun and images.
+    const replay = useReplay(windowKey, settings?.hiddenCategories ?? NONE, settings?.hiddenProviders ?? NONE, onProblem)
+    const frame = replay.replaying ? replay.frame : null
+    const shown = frame?.view ?? view
+    const sun = frame?.sun ?? liveSun
     // FR-SEL-008: a selected event that leaves the view keeps its panel, marked.
-    const current = selected ? view.events.find(e => e.id === selected.id) : undefined
+    const current = selected ? shown.events.find(e => e.id === selected.id) : undefined
     const shownDetail = current ?? selected
     const speed = choices?.speeds.find(s => s.key === settings?.speed)
     const refreshing = useHeld(view.providers.some(p => p.refreshing), REFRESH_TURN_MS)
     // FR-CLD-011, FR-BA-012: each image layer's service joins the popover while
     // the layer is shown.
-    const statusProviders = [...view.providers, ...[clouds, burnt].filter(l => l?.shown).map(l => l!.provider)]
-    const dayNightShown = settings?.dayNightShown ?? false
-    const sun = useSun(dayNightShown, onProblem)
+    const replayClouds = frame && clouds?.shown ? [frame.cloudsProvider] : []
+    const statusProviders = [...view.providers, ...[clouds, burnt].filter(l => l?.shown).map(l => l!.provider), ...replayClouds]
 
     return <ProductName.Provider value={product}><div ref={shell} className="app">
         <Rail autoRotate={settings?.autoRotate ?? false}
@@ -143,22 +154,25 @@ export default function App() {
                 meets them in reading order, top to bottom (keeb invariant 1). */}
             <div className="top-bar">
                 <TimeWindow windows={windows} selected={windowKey} onChoose={k => change({windowKey: k})}/>
+                <ReplayControls position={replay.position} playing={replay.playing}
+                    onPlay={replay.play} onPause={replay.pause} onSeek={replay.seek}/>
             </div>
-            {speed && settings && start && <GlobeView ref={globe} start={start} events={view.events} selectedId={selected?.id ?? null}
+            {speed && settings && start && <GlobeView ref={globe} start={start} events={shown.events} selectedId={selected?.id ?? null}
                 autoRotate={settings.autoRotate} secondsPerRevolution={speed.secondsPerRevolution}
-                cloudImage={settings.cloudsShown ? cloudImage : ''}
-                burntImage={settings.burntShown ? burntImage : ''}
+                cloudImage={settings.cloudsShown ? (frame ? replay.cloudImage : cloudImage) : ''}
+                burntImage={settings.burntShown ? (frame ? replay.burntImage : burntImage) : ''}
                 dayNightShown={dayNightShown} sun={sun} trailsShown={settings.trailsShown}
                 onSelect={setSelected} onProblem={onProblem}/>}
-            <StatusLine countLine={view.countLine} providers={view.providers} problem={problem}
-                note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds} burnt={burnt}/>
+            <StatusLine countLine={shown.countLine} providers={view.providers} problem={problem}
+                note={lastRefresh === null ? '' : lastRefreshed(lastRefresh)} clouds={clouds} burnt={burnt}
+                replayLines={frame ? [frame.line, clouds?.shown ? frame.cloudsLine : ''] : []}/>
             {shownDetail && <DetailPanel event={shownDetail} inView={current !== undefined} onClose={() => setSelected(null)} onProblem={onProblem}/>}
         </main>
         <aside className="side">
             {/* The mark IS the heading: its artwork carries the product's name
                 (owner), so its alternative text is that name. */}
             <h1><img className="brand-mark" src={icons.appMark} alt={product} draggable={false}/></h1>
-            <Key counts={view.counts} providers={view.providers}
+            <Key counts={shown.counts} providers={view.providers}
                 hiddenCategories={hiddenCategories} hiddenProviders={hiddenProviders}
                 onToggleCategory={k => change({hiddenCategories: toggled(settings?.hiddenCategories ?? [], k)})}
                 onToggleProvider={n => change({hiddenProviders: toggled(settings?.hiddenProviders ?? [], n)})}
