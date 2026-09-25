@@ -226,7 +226,8 @@ what users see.
 ## macOS and Linux builds
 
 Three bash scripts, ported from PigeonPost with SymDiary's hardening, build
-EarthNow for the other two platforms (DEL-005 to DEL-007). Each has run on its
+EarthNow for the other two platforms and clean up after the Flatpak
+(DEL-005 to DEL-007). Each has run on its
 own platform: the Flatpak on the latest Ubuntu LTS, the notarised DMG on an
 Apple Silicon Mac, with the globe drawing on both. The release carries both
 files beside the Windows setup program.

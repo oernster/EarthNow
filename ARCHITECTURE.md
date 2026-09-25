@@ -244,6 +244,13 @@ It states the wire's shapes in [`types.ts`](frontend/src/types.ts). The facade
 in `app.go` owns no rules: it forwards to the application and runs the
 background work.
 
+Idle rotation lives in [`useIdleRotation.ts`](frontend/src/useIdleRotation.ts):
+when the idle delay runs out or rotation is switched on away from the fit
+altitude, it returns the camera there over the focus duration before turning;
+input during the return stops it (FR-GLB-018). The camera figures it shares
+with the rest of the page (`FOCUS_MS`, `HALF_STEP`, `nearAltitude`) live in
+`cursor.ts`; `fitOf` lives in `markers.ts`.
+
 ### Outside the layers
 
 `internal/product` holds the name, the file-system slug, the licence line, the
@@ -430,7 +437,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | GDACS flood polygons | A ring holding a value beyond 90 is read in the order that value proves; the rest follow the order the feed's proven rings show, latitude first when they show none (`order.go`, amendments 12 and 17) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. A fixed latitude-first rule: a correction upstream would draw every flood swapped. Deciding by which reading lands on a country: 27 of 57 rings read as land either way and a coastal Kenya flood read as Spain (measured over 30 days). |
 | The source link | The first source naming a page; a data file is shown as text (FR-SEL-009) | The first source: a storm's first source was a `.tcw` warning file, which downloaded. |
 | The donate address | Held by the Go side, which opens it through the same check as a source link: an https scheme, a host and a page rather than a data file (`SafeURL`, FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
-| Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600 the 70% globe area of NFR-UX-001 leaves them 55 px of height, less than one PigeonPost header. |
+| Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600, the minimum window when this was decided, the 70% globe area of NFR-UX-001 left them 55 px of height, less than one PigeonPost header. |
 | The keyboard | The WebView2 child focused directly, with the page asking again through `TakeKeyboard` (amendment 9) | `runtime.Show` alone: it lost a race inside Wails; the log measured the first focus failing. |
 | WebView2 data | Inside the data folder | The default: it falls to `%APPDATA%\EarthNow.exe`, outside the one folder NFR-PRIV-002 allows (measured). |
 | The log | Rotated while running at 5 MB, one previous file kept | Rotating only at start: EarthNow runs for days. |

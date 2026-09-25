@@ -42,8 +42,11 @@ source that reported it and how old that report is.
 - **Draws the globe** with NASA's Blue Marble imagery on a black background. It
   opens over your own country, as your computer's country or region setting
   names it (read on your machine and sent nowhere), then turns slowly from
-  there, pauses while you use it and turns again after ten seconds without
-  input. A button or the settings stop it; the settings also
+  there. It pauses while you use it. After ten seconds without input it
+  first brings the whole globe back into view, zooming out or in as needed,
+  then turns again. Switching rotation back on does the same; input during
+  that return stops it where it is. A button or the settings stop it; the
+  settings also
   offer three speeds. The wheel, the zoom buttons and the plus and minus keys
   zoom; Reset view brings the whole globe back.
 - **Shows the clouds** when asked, from EUMETSAT's world cloud map: a mosaic of
@@ -202,19 +205,6 @@ platforms; [DEVELOPMENT.md](DEVELOPMENT.md) covers them.
 - [REQUIREMENTS.md](REQUIREMENTS.md): the specification.
 - [TECH_DEBT.md](TECH_DEBT.md): what is open and what only looks like debt.
 
-## Supporting the project
-
-The donate button sits at the foot of the rail down the left side. It hands a
-PayPal page to your browser; EarthNow itself fetches nothing from that address.
-The address lives once, in `internal/product`; a structural test holds it
-there.
-
-EarthNow is free and stays free. A donation supports its maintenance and
-continued development. Nothing is held back without one: there is no paid
-tier, no licence key and no feature a donation unlocks.
-
-<a href="https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE"><img src="docs/donate.png" alt="Donate to EarthNow" width="120"></a>
-
 ## Data sources and credits
 
 The About dialog carries these credits:
@@ -231,6 +221,19 @@ The About dialog carries these credits:
 - Burnt areas: © European Union, Global Wildfire Information System (GWIS),
   Copernicus Emergency Management Service, CC BY 4.0; redrawn over the globe.
 - None of NASA, the USGS, the Smithsonian, EUMETSAT or GWIS endorses EarthNow.
+
+## Supporting the project
+
+The donate button sits at the foot of the rail down the left side. It hands a
+PayPal page to your browser; EarthNow itself fetches nothing from that address.
+The address lives once, in `internal/product`; a structural test holds it
+there.
+
+EarthNow is free and stays free. A donation supports its maintenance and
+continued development. Nothing is held back without one: there is no paid
+tier, no licence key and no feature a donation unlocks.
+
+<a href="https://www.paypal.com/ncp/payment/9LWU8TKV2MSRE"><img src="docs/donate.png" alt="Donate to EarthNow" width="120"></a>
 
 ## Licence
 

@@ -108,9 +108,9 @@ which wire the parts together and are checked by eye:
 | Functions | 85.06 |
 | Lines | 88.9 |
 
-These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
-placement, the cursor's tooltip, the focus animation) are tested against a
-stand-in for globe.gl; the drawing itself needs WebGL and real layout, which
+These are measured figures too. `GlobeView.tsx`'s own rules (marker
+placement, the cursor's tooltip, the focus animation) and the idle rotation it
+takes from `useIdleRotation.ts` are tested against a stand-in for globe.gl; the drawing itself needs WebGL and real layout, which
 jsdom does not have, so it is exercised by eye, in the checks below.
 
 ## What the tests prove
@@ -272,6 +272,11 @@ FR-RPL-021, FR-RPL-023, NFR-KBD-009).
 So is the cluster list: two quakes 2.0 km apart staying one cluster at the
 minimum altitude, the list opening within half a zoom step of it and
 choosing a member opening that event (FR-MRK-011, FR-MRK-012).
+So is idle rotation: input stopping it, the setting and its speed applied at
+once, rotation whatever the reduced-motion setting says and the return to the
+fit altitude from zoomed in or out before turning, stopped by input and taken
+again when rotation is switched on (FR-GLB-003, FR-GLB-004, FR-GLB-011,
+FR-GLB-012, FR-GLB-018).
 The noborderfocus rule has two guards,
 each proved by planting the defect back.
 
