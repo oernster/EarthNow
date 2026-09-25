@@ -157,7 +157,9 @@ The use cases, behind the ports in
   in its tests.
 - `Preferences` loads, normalises and saves the settings, telling the USGS
   adapter its minimum magnitude and saying in a notice when the settings file
-  was missing or unreadable (FR-SET-004).
+  was missing or unreadable (FR-SET-004). It also offers the replay speeds
+  with each one's pass in seconds (`ReplaySpeeds`, FR-RPL-025), so the page
+  holds no replay figure of its own.
 - `Clouds` runs the cloud layer. Like the scheduler it holds no timer: the
   facade asks whether a check is due, which is never while the layer is
   hidden (FR-CLD-005). A check reads the newest listed valid time once an
@@ -176,7 +178,7 @@ The use cases, behind the ports in
   from the span's start to the replay instant, counted up to it, the sun at
   it, which cloud image and which burnt days to draw. The page holds the
   position and the span's end; the domain's `window.Range` is the one rule
-  for what a live window and a replay each show (FR-RPL-009).
+  for what an ordinary window and a replay each show (FR-RPL-009).
 - `ReplayClouds` fetches a replay's cloud images on the driver's loop, one a
   round at 1024 by 512 after listing the span's times up to the newest image,
   in memory only and dropped when the replay ends (FR-RPL-015 to 018).
@@ -238,8 +240,8 @@ machine.
 ### UI
 
 The page in `frontend/src` draws the globe through globe.gl, the action rail on
-the left, the key on the right, the detail panel, the dialogs and the keyboard
-ring. It reaches the Go side through one module, [`api.ts`](frontend/src/api.ts).
+the left, the key on the right, the top bar with the time window and Replay's
+controls, the detail panel, the dialogs and the keyboard ring. It reaches the Go side through one module, [`api.ts`](frontend/src/api.ts).
 It states the wire's shapes in [`types.ts`](frontend/src/types.ts). The facade
 in `app.go` owns no rules: it forwards to the application and runs the
 background work.
@@ -250,6 +252,15 @@ altitude, it returns the camera there over the focus duration before turning;
 input during the return stops it (FR-GLB-018). The camera figures it shares
 with the rest of the page (`FOCUS_MS`, `HALF_STEP`, `nearAltitude`) live in
 `cursor.ts`; `fitOf` lives in `markers.ts`.
+
+Replay's state lives in [`useReplay.ts`](frontend/src/useReplay.ts): the
+position, whether it plays and the span's end, fixed when the replay starts
+and cleared only by Now or another window (FR-RPL-003, FR-RPL-021,
+FR-RPL-024). It plays one pass in the chosen speed's seconds (sent by
+the Go side) and asks for a frame at most every `FRAME_ASK_MS`.
+[`ReplayControls.tsx`](frontend/src/components/ReplayControls.tsx) draws
+Play/Pause, the scrubber, the speed button and Now (while replaying) on the
+top bar after the time window (FR-RPL-020).
 
 ### Outside the layers
 

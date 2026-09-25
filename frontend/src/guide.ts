@@ -107,7 +107,7 @@ export function guideSections(product: string): readonly GuideSection[] {
         {
             heading: 'Replay',
             paragraphs: [
-                'Play, beside the time window, replays the chosen window from its start, in 30 seconds at normal speed: events appear at their own times, storm tracks grow, the sun sweeps round and the burnt days build up. The slider beside it moves through the window by hand. The replay holds at the end of the window until Now returns to the present. The speed button beside Now plays it at half, normal or double speed, kept for next time.',
+                'Play, beside the time window, replays the chosen window from its start, in 30 seconds at normal speed: events appear at their own times, storm tracks grow, the sun sweeps round and the burnt days build up. The slider beside it moves through the window by hand. The replay holds at the end of the window until Now returns to the present. The speed button after the slider plays it at half, normal or double speed, kept for next time.',
                 'Replay shows what the sources hold now about those days. A source may since have revised or withdrawn a report, so it is not always what was known at the time.',
                 'Its clouds are softer images than the ordinary layer, fetched for the replay and let go when it ends. They arrive while it plays; the line beneath the globe counts them in.',
             ],

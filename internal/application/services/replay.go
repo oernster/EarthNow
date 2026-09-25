@@ -9,7 +9,7 @@ import (
 
 // Replay answers what a replay shows at a position along its span (3.2.14),
 // drawing on the other use cases for each layer. The span ends where the
-// scrubber left its end (FR-RPL-003); the page holds the position and the end.
+// replay started (FR-RPL-003); the page holds the position and the end.
 type Replay struct {
 	globe  *Globe
 	sun    *Sun

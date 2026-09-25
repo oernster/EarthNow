@@ -235,7 +235,7 @@ files beside the Windows setup program.
 | Script | Runs on | What it makes |
 |---|---|---|
 | `builddmg.sh` | an Apple Silicon Mac | `EarthNow.dmg`, signed and notarised; `ALLOW_UNNOTARIZED=1` for a local test build only |
-| `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow`, on the GNOME 50 runtime with webkit2gtk-4.1 |
+| `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow`, on the GNOME runtime with WebKitGTK |
 | `cleanup_flatpak.sh` | Linux | uninstalls it and removes only the flatpak artefacts; the user's settings and cache stay |
 
 ```bash

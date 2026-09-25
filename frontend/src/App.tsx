@@ -119,8 +119,8 @@ export default function App() {
 
     const dayNightShown = settings?.dayNightShown ?? false
     const liveSun = useSun(dayNightShown, onProblem)
-    // Replay (3.2.14): while the scrubber is off its end, the frame stands in for
-    // the live view, sun and images.
+    // Replay (3.2.14): while replaying, the frame stands in for the ordinary
+    // view, sun and images.
     // FR-RPL-025: the chosen speed with the one a press of the speed button moves
     // to, in the order the Go side offers them.
     const replaySpeeds = choices?.replaySpeeds ?? []

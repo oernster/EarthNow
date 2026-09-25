@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined on 2026-09-23, with amendments 1 to 43.**
+Status: **Baselined on 2026-09-23, with amendments 1 to 44.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -49,6 +49,7 @@ edits.
 | 41 | 2026-09-25 | FR-GLB-018 also covers switching auto-rotate on. | The owner zoomed in on an event, pressed Stop rotating then Start rotating: rotation began at the zoomed altitude, since only the idle delay's route returned to the fit altitude. A switch-on now takes the same route; a speed change while turning is not a switch-on and leaves the camera where it is. |
 | 42 | 2026-09-25 | Replay's return to now is explicit (FR-RPL-024) and its speed is chosen (FR-RPL-025); FR-RPL-002 to 005, 007, 020 to 022 and NFR-KBD-009 follow. | The owner asked for one action meaning now, since the product is EarthNow: time travel starts when the replay does and ends only by Now or another window, so the end of play and the scrubber's right end hold the span's last instant. The owner also asked for half, normal and double speed: a 7 day storm crossing reads fast in 30 s while a 1 h window reads slow. The owner chose text buttons, the speed remembered in settings. |
 | 43 | 2026-09-25 | FR-RPL-024: the Now button is hidden outside a replay and sits last in the row; FR-RPL-020 and NFR-KBD-009 follow. | The owner asked for Now to be hidden rather than disabled when there is no replay, since the disabled state wears a permanent red ring. Last in the row, it appears without moving the speed button. |
+| 44 | 2026-09-25 | Wording after amendments 42 and 43: the Span definition, FR-RPL-015 and NFR-PERF-008 follow the replay starting by Play or the scrubber and the chosen speed; 2.3's runtimes and DEL-005 name no third-party versions. | Found in the documentation pass for the replay's Now and speed. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -123,7 +124,7 @@ One term, one meaning, throughout.
 | **Burnt-area day** | One UTC calendar day of GWIS's burnt-area mapping: the image its WMS layer `nrt.ba` answers for `time=` that day. |
 | **Burnt-area layer** | The burnt-area days the time window overlaps (FR-BA-001), drawn together over the globe texture (FR-BA-006). |
 | **Replay instant** | The moment Replay shows: a position along the span (FR-RPL-001). |
-| **Span** | The chosen time window, ending where the scrubber left its right end (FR-RPL-003). |
+| **Span** | The chosen time window, ending at the instant the replay started, by Play or by the scrubber leaving its right end (FR-RPL-003). |
 | **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
 
 ### 1.5 References
@@ -180,7 +181,7 @@ network request of its own (NFR-SEC-002).
 | Item | Windows | macOS and Linux |
 |---|---|---|
 | OS | Windows 10 and 11, x64 | Linux (Flatpak, GNOME runtime; tested on the latest Ubuntu LTS) and macOS arm64 |
-| Web runtime | WebView2 (Evergreen) | WebKitGTK 4.1; WKWebView |
+| Web runtime | WebView2 (Evergreen) | WebKitGTK; WKWebView |
 | GPU | WebGL2 required | WebGL2 required (RSK-002, closed) |
 | Network | intermittent is normal; offline must be survivable | same |
 | Install | per user, no administrator rights | Flatpak user install; DMG drag-install |
@@ -213,7 +214,7 @@ claims are HYPOTHESES until the Phase 0 spike measures them (FR-SPK-001 to 007).
 | Camera focus animation | `pointOfView(coords, ms)` | `camera.flyTo` |
 | Offline texture | any equirectangular image | needs a tile-map imagery provider; default imagery calls `api.cesium.com` with an evaluation-only token |
 | Scope fit | a globe | a GIS engine; Plan 13 warns against becoming one |
-| WebGL | WebGL2 (three.js dropped WebGL1 at r163) | WebGL2 by default since 1.102 |
+| WebGL | WebGL2 (three.js has dropped WebGL1) | WebGL2 by default |
 | Clustering | none built in (unconfirmed; the spike checks) | built-in entity clustering |
 
 The weight, the default network dependency and the GIS orientation all count
@@ -611,7 +612,7 @@ revise or withdraw a report afterwards. The guide says so (FR-RPL-023).
 | FR-RPL-012 | Must | While replaying with the day and night layer shown, the globe view shall place the sun at the replay instant (FR-DAY-001). | The sun handed to the globe is the subsolar point of the replay instant. | T |
 | FR-RPL-013 | Must | While replaying with the burnt-area layer shown, the globe view shall draw the burnt-area days of the span from its first up to the replay instant's UTC day. | A 7 day span from 17 Sep: at 20 Sep 14:00 the image holds 17 to 20 Sep. | T |
 | FR-RPL-014 | Must | While replaying with the cloud layer shown, the globe view shall draw the replay cloud image whose valid time is the latest at or before the replay instant; before the first, none. | Images held at 12:00 and 15:00: 14:59 draws 12:00, 15:00 draws 15:00, 11:59 draws none. | T |
-| FR-RPL-015 | Must | When the scrubber leaves its end with the cloud layer shown, the cloud provider shall retrieve every valid time the span holds at 1024 by 512, oldest first, holding them in memory only and never in the cloud cache. | Fake source, 24 h span: eight GetMap requests at width 1024, each with its own time; the cache is not written. | T |
+| FR-RPL-015 | Must | While replaying (FR-RPL-003) with the cloud layer shown, the cloud provider shall retrieve every valid time the span holds at 1024 by 512, oldest first, holding them in memory only and never in the cloud cache. | Fake source, 24 h span: eight GetMap requests at width 1024, each with its own time; the cache is not written. | T |
 | FR-RPL-016 | Must | While the replay cloud images are arriving, the replay control shall state how many are held of how many the span holds, worded "Clouds 12 of 56"; play shall not wait for them. | Fake source slowed: the line counts up; the position advances meanwhile. | T |
 | FR-RPL-017 | Must | If a replay cloud image cannot be retrieved, then the replay shall draw the latest image held at or before the instant and state in the provider status popover which valid times are missing. | Fake source failing for 15:00: 16:00 draws 12:00; the popover names 15:00. | T |
 | FR-RPL-018 | Must | When the replay ends (FR-RPL-021, FR-RPL-024), the cloud provider shall release the replay cloud images. | After the replay ends, none is held and the ordinary cloud image draws. | T |
@@ -635,7 +636,7 @@ Every performance figure is measured on the reference machine.
 | NFR-PERF-004 | Must | When a refresh completes, the globe view shall remain interactive throughout, with no frame over 100 ms attributable to applying the new event set. | Frame-time log across 20 refreshes. |
 | NFR-PERF-006 | Must | While idle-rotating with the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over 60 s with both layers shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005 (amendment 27). |
 | NFR-PERF-007 | Must | While idle-rotating with the burnt-area layer showing 7 days, the day and night layer and the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the burnt-area spike, FR-BA-015, measures it). | Frame-time log over 60 s with every layer shown; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
-| NFR-PERF-008 | Must | While a 7 day replay plays with every layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over one 30 s pass; where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
+| NFR-PERF-008 | Must | While a 7 day replay plays with every layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target). | Frame-time log over one pass at normal speed (30 s); where the application carries none, the owner's judgement by eye, as for NFR-PERF-005. |
 | NFR-PERF-005 | Must | While idle-rotating with the cloud layer shown and 2,500 markers, the globe view shall hold NFR-PERF-002's median of 16.7 ms and 99th percentile of 33 ms (a target; the cloud spike, FR-CLD-015, measures it). | Frame-time log over 60 s with the layer shown. |
 | NFR-FRESH-001 | Must | The status model shall mark a provider stale when its last successful retrieval is older than three times its refresh interval. | T |
 | NFR-FRESH-002 | Must | The wording component shall render ages as: under 60 s "under a minute ago"; under 60 min "N min ago"; under 48 h "N h ago"; otherwise "N days ago", each rounded down. | T, table-driven. |
@@ -701,7 +702,7 @@ Every performance figure is measured on the reference machine.
 | DEL-002 | Must | 1 | The setup program shall follow the `installer` skill: screen stack (route, uninstall, running, progress, verdict), footer rebuilt per screen, route read once (install, update, downgrade, manage), 126 px mark with no version in the header, three-state ring, per-user install under `%LOCALAPPDATA%\Programs\EarthNow` and `HKCU`, running-app check before any file is touched, fenced extraction, a step log, a verdict at the end of every path. |
 | DEL-003 | Must | 1 | The install policy shall live in `internal/infrastructure/setup`; `installer/app.go` shall be a facade owning no install logic. |
 | DEL-004 | Must | 1 | One committed `.ico`, generated from the master by `tools/genicons.py`, shall be placed on both executables. |
-| DEL-005 | Should | 1 | `build_flatpak.sh` shall build a user Flatpak with application id `uk.codecrafter.EarthNow` on the GNOME runtime (webkit2gtk-4.1), passing `options.Linux` with a GPU policy that enables WebGL (RSK-002), ported from PigeonPost or SymDiary. |
+| DEL-005 | Should | 1 | `build_flatpak.sh` shall build a user Flatpak with application id `uk.codecrafter.EarthNow` on the GNOME runtime (WebKitGTK), passing `options.Linux` with a GPU policy that enables WebGL (RSK-002), ported from PigeonPost or SymDiary. |
 | DEL-006 | Should | 1 | `cleanup_flatpak.sh` shall uninstall the user Flatpak and remove only flatpak artefacts, in the house shape (bash, `set -euo pipefail`, `APP_ID`, `section()` helper, header stating it touches no other build outputs), ported from PigeonPost. |
 | DEL-007 | Should | 1 | `builddmg.sh` shall build a signed, notarised arm64 DMG stamped from `VERSION`, ported from SymDiary's port of PigeonPost's `builddmg.sh`; `ALLOW_UNNOTARIZED=1` for local builds only. |
 

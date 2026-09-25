@@ -59,7 +59,7 @@ describe('FR-RPL-008 the Play/Pause button', () => {
 })
 
 describe('NFR-KBD-009 the replay on the ring and the keys', () => {
-    it('is two stops after the time window; Space on the scrubber plays or pauses; a step seeks (FR-RPL-007)', () => {
+    it('is four stops after the time window while replaying; Space on the scrubber plays or pauses; a step seeks (FR-RPL-007)', () => {
         const onPause = vi.fn()
         const onSeek = vi.fn()
         render(<div><TimeWindow windows={[{key: '24h', label: '24 h'}, {key: '7d', label: '7 days'}]} selected="7d" onChoose={noop}/>

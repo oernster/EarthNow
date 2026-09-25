@@ -94,8 +94,9 @@ source that reported it and how old that report is.
   window from its start in 30 seconds at normal speed: events appear at their
   own times, storm tracks grow, the sun sweeps round, the burnt days build up
   and the clouds move. The slider beside it moves through the window by hand.
-  The replay holds at the end of the window until Now returns to the
-  present; the speed button beside Now plays at half, normal or double speed.
+  The replay holds at the end of the window; only Now (shown while
+  replaying) or another time window returns to the present. The speed
+  button after the slider plays at half, normal or double speed.
   Replay's clouds are smaller images fetched for it, held in memory and
   let go when it ends. It shows what the sources hold now about those days,
   which may since have been revised.
