@@ -402,7 +402,7 @@ that folder.
 `VERSION` holds the only version string (CON-005). `build.ps1` passes it to
 both programs through `-ldflags "-X main.appVersion=..."`; `appVersion` is a
 `var` in each because `-X` does nothing to a `const`. A binary built without
-the flag reports `0.0.0-dev`. The site under `docs/` cannot read `VERSION`, so
+the flag reports a development placeholder. The site under `docs/` cannot read `VERSION`, so
 `stamp_version.py` writes it between the page's version markers; `build.ps1`
 runs it before the gate.
 

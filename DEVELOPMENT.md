@@ -9,9 +9,9 @@ this is for someone building it.
 
 | Tool | Needed for | Get it |
 |---|---|---|
-| Go 1.26.3, which `go.mod` declares | everything | [go.dev/dl](https://go.dev/dl/) |
+| Go, at the version `go.mod` declares | everything | [go.dev/dl](https://go.dev/dl/) |
 | Node.js with npm; `package.json` pins no minimum | the page: lint, type check, tests and build | [nodejs.org](https://nodejs.org/) |
-| Wails CLI v2.12.0, the version of the Wails module `go.mod` requires | building the application and the setup program | `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0` |
+| Wails CLI, at the version of the Wails module `go.mod` requires | building the application and the setup program | `go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)` |
 | WebView2 runtime | running either program | [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/) |
 | Python 3, as `python` on the path | the notices check the gate ends with, standard library only | [python.org](https://www.python.org/downloads/) |
 | Pillow | regenerating the icons, plus the Linux Flatpak's icon sizes | `python -m pip install pillow` |
@@ -118,7 +118,7 @@ To run a built copy instead:
 ./build/bin/EarthNow.exe
 ```
 
-A binary built without `build.ps1` reports its version as `0.0.0-dev`.
+A binary built without `build.ps1` reports a development placeholder in place of a version.
 
 Everything EarthNow does is written to `%LOCALAPPDATA%\EarthNow\Log.txt`: the
 version at start, the settings file read, each fetch with its status, event

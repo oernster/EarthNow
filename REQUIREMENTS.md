@@ -203,7 +203,7 @@ network request of its own (NFR-SEC-002).
 Blue Marble texture.** The decision rests on published facts; its runtime
 claims are HYPOTHESES until the Phase 0 spike measures them (FR-SPK-001 to 007).
 
-| Criterion (Plan 9) | globe.gl 2.46.2 | CesiumJS 1.145.0 |
+| Criterion (Plan 9) | globe.gl | CesiumJS |
 |---|---|---|
 | Licence | MIT (read) | Apache-2.0 (read) |
 | Shipped size, measured on jsDelivr | 1.89 MB min, 526 KB gzip, three.js included | 6.0 MB min, 1.77 MB gzip; 79 MB npm unpacked |
@@ -222,7 +222,7 @@ EarthNow actually meets (see NFR-PERF-002). React integration uses
 component; the spike picks whichever keeps the globe instance under the app's control.
 
 **Linux risk carried forward (RSK-002):** Wails v2 on Linux defaults
-`WebviewGpuPolicy` to Never when `options.Linux` is nil (read in Wails v2.12.0
+`WebviewGpuPolicy` to Never when `options.Linux` is nil (read in the Wails
 source); WebGL2 availability in distribution WebKitGTK builds is
 unconfirmed. Release 2 must measure it on a real Linux machine before the
 Flatpak is promised. Measured at release: with the policy set to Always the
@@ -309,7 +309,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-GLB-014 | Must | When the application starts, the application shall read the operating system's country or region setting as an ISO 3166-1 alpha-2 code: on Windows the user's home location, on macOS the region of `AppleLocale`, on Linux the territory of `LC_ALL`, else of `LANG` (amendment 30, ASM-010). | Each platform's reading from a recorded value: `en_GB.UTF-8` gives GB; `C.UTF-8`, `POSIX` and an empty value give none. Windows, a Mac (`en_GB`) and a Linux desktop (`en_GB.UTF-8`) each read GB (amendment 38). | T |
 | FR-GLB-015 | Must | When the region read by FR-GLB-014 is in the label table (FR-GLB-017), the globe view shall open with that country's label point facing the viewer at the fit altitude (FR-GLB-013), before idle rotation begins (FR-GLB-002). | Given the region GB, the first view faces 54.40 N, 2.12 W; rotation then starts from there. | T |
 | FR-GLB-016 | Must | If no region can be read or the label table holds none for the region read, then the globe view shall open with the first release's launch view and the application shall log the reason (NFR-OBS-001). | Given no region (or the region 001, the world) the first view sets the altitude alone; the log names why. | T |
-| FR-GLB-017 | Must | The label table shall be generated from Natural Earth's admin-0 countries, the layer FR-GEO-008 embeds: each `ISO_A2_EH` code to its `LABEL_Y` and `LABEL_X`. Where a code names several rows, the generator shall keep the row whose `ISO_A2` is that code, else the row that is its own sovereign; if a code is still left with more than one row, then the generator shall refuse to write the table. | Natural Earth 5.1.1 gives one row each for AU, BR, FR and KZ (Australia, Brazil, France, Kazakhstan, measured); a planted second row stops the generator. | T |
+| FR-GLB-017 | Must | The label table shall be generated from Natural Earth's admin-0 countries, the layer FR-GEO-008 embeds: each `ISO_A2_EH` code to its `LABEL_Y` and `LABEL_X`. Where a code names several rows, the generator shall keep the row whose `ISO_A2` is that code, else the row that is its own sovereign; if a code is still left with more than one row, then the generator shall refuse to write the table. | Natural Earth gives one row each for AU, BR, FR and KZ (Australia, Brazil, France, Kazakhstan, measured); a planted second row stops the generator. | T |
 | FR-GLB-018 | Must | When the idle delay runs out (FR-GLB-002) with auto-rotate on or auto-rotate is switched on outside an idle delay (FR-GLB-011), with the camera altitude more than half a zoom step from the fit altitude (FR-GLB-013), whether zoomed in or out, the globe view shall return the camera to the fit altitude over the focus duration (NFR-UX-003), keeping the point it faces, then begin idle rotation; input during the return (FR-GLB-003) shall stop the camera where it is and start the idle delay again (amendments 40 and 41). | Zoomed to half the fit altitude or to twice it: 10 s after the last input the camera is sent to the fit altitude over 1,000 ms without rotating, then rotation starts. At the fit altitude rotation starts at once. Input during the return stops the camera where it is; no rotation follows until another idle delay has passed. Zoomed to 0.3, switching rotation off then on does the same; a speed change while turning sends the camera nowhere. | T + D |
 
 #### 3.2.2 Markers
