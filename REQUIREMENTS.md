@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 38.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 39.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -44,6 +44,7 @@ edits.
 | 36 | 2026-09-25 | 2.1 names five external systems with GWIS in its diagram; NFR-UX-004 lists the day and night button and the replay's Play/Pause button among its toggles; 2.3, CON-003 and D.3 read "macOS and Linux". | The code and the house platform order measured against the document in the 2.0.0 documentation pass: GWIS joined the hosts in amendment 33, both buttons show the state they switch to; every other surface names Windows, macOS, Linux in that order. No behaviour changes. |
 | 37 | 2026-09-25 | ASM-009 and ASM-011 are confirmed. NFR-LEG-002's GWIS credit gains "© European Union". | Read on 2026-09-25: NASA's media guidelines (R5) allow its imagery, texture maps included, in computer graphical simulations used factually without implied endorsement, with NASA credited; Black Marble is NASA's own work. GWIS's licence page (R13) states "Copyright © European Union" under CC BY 4.0, reuse allowed with credit given and changes indicated; it asks for no wording of its own. CC BY 4.0 asks that a supplied copyright notice be kept. The owner accepted the wording. No behaviour changes. |
 | 38 | 2026-09-25 | ASM-010 is confirmed. FR-GLB-014's check names all three platforms. | Measured by the owner on 2026-09-25: a Mac's `AppleLocale` reads `en_GB` and a Linux desktop's `LANG` reads `en_GB.UTF-8` with `LC_ALL` empty; both give GB; on each the globe opened facing the United Kingdom before rotation began. The Mac's value is added to the locale tests. No behaviour changes. |
+| 39 | 2026-09-25 | FR-BA-015's finished-day measurement is waived; FR-BA-003 stands unchanged. | The owner chose not to measure whether a finished day's GWIS image changes when retrieved again. The answer could only loosen FR-BA-003, whose hourly retrieval of every shown day is correct either way; the waiver costs repeat requests, never a wrong picture. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -555,8 +556,8 @@ nothing). The images also carry grey-white rings, all three channels alike, whos
 meaning GWIS's image does not state (measured 2026-09-25: 737 of 7,073 drawn
 pixels on 23 September, 4,575 of 14,887 on 24 September, which is most of that
 day's excess). They are drawn in red with the burnt ground; the owner chose to
-keep them. Whether a finished day's image later changes is not yet measured
-(FR-BA-015).
+keep them. Whether a finished day's image later changes is not measured:
+the owner waived it (amendment 39), since FR-BA-003's hourly retrieval is right whatever the answer (FR-BA-015).
 
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
@@ -575,7 +576,7 @@ keep them. Whether a finished day's image later changes is not yet measured
 | FR-BA-013 | Must | If GWIS answers with anything other than a PNG of the requested size, then the burnt-area provider shall treat the answer as a failed fetch (FR-BA-012). | An empty body with status 200 and an XML body with status 200 are both refused. | T |
 | FR-BA-017 | Must | If the burnt-area layer is shown with no burnt-area day of the window held and a fetch has failed, then the status area shall read "Burnt areas: the maps could not be retrieved", with the reason in the provider status popover. | Fake fetcher failing on a first run: the status line reads exactly that; the globe draws no burnt area. | T |
 | FR-BA-014 | Must | The cache shall keep the last good image of each burnt-area day with its retrieval instant and discard days older than the widest window's, so the layer draws offline at start, marked with its age (FR-STS-004). | Start offline with three days held: they draw and the status line gives their age. A held day of 10 Sep on 24 Sep is discarded. | T |
-| FR-BA-015 | Must | Before the burnt-area layer is built, a burnt-area spike shall measure, on the reference machine: whether a finished day's image changes when retrieved again a day later (the answer can only loosen FR-BA-003); the size and fetch time of one day at 2048 and at 4096 pixels wide, choosing the width; the look by eye; NFR-PERF-007's frame time. | Its measured results recorded in this section, as the cloud spike's are in 3.2.10. | D |
+| FR-BA-015 | Must | Before the burnt-area layer is built, a burnt-area spike shall measure, on the reference machine: the size and fetch time of one day at 2048 and at 4096 pixels wide, choosing the width; the look by eye; NFR-PERF-007's frame time. Whether a finished day's image changes when retrieved again is not measured: the owner waived it (amendment 39), since FR-BA-003's hourly retrieval is right whatever the answer. | Its measured results recorded in this section, as the cloud spike's are in 3.2.10. | D |
 | FR-BA-016 | Must | The guide shall say that GWIS maps burnt ground from satellites one UTC day at a time, that a burn shows on the day it was mapped rather than the day the fire began, that a small burn may not show at the drawn resolution and that a short window may show none yet. | The guide's burnt-area entry names all four. | T |
 
 #### 3.2.14 Replay (amendment 34)
