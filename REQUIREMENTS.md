@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 35.**
+Status: **Baselined, version 1.0 (2026-09-23), with amendments 1 to 36.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -41,6 +41,7 @@ edits.
 | 33 | 2026-09-25 | The burnt-area layer (3.2.13, FR-BA-001 to 017): a Settings switch drawing GWIS's burnt areas over the globe for every UTC day the time window overlaps, fetched only while shown, a day at a time. NFR-PRIV-001 allows `maps.effis.emergency.copernicus.eu`; NFR-LEG-002 credits GWIS and names it in the non-endorsement line; NFR-PERF-007, ASM-011, ASM-012, R12 and R13 added. Scope admits the layer; GWIS vector perimeters and NIFC perimeters join the Won't list. | Owner request: show where wildfires have burnt, worldwide. The owner rejected NIFC's perimeters as the United States only. Measured on 2026-09-25: GWIS's WMS layer `nrt.ba` answers one day per request (a range answers an empty body), keyless; each day's image keeps only 11 to 25% of the day before's pixels, so it is that day's mapping and never a running total; a day not yet begun in UTC answers a valid empty image. The owner chose the rule: a window shows every day it overlaps ("if a user selects a window they should see that window"), so 7 days draws eight days; a window holding nothing mapped says so in words. A Settings switch, since the rail is full at the minimum height (amendment 29), on by default (owner, after seeing it in the real window). GWIS's images also carry grey-white rings, drawn red with the rest; the owner chose to keep them. |
 | 34 | 2026-09-25 | Replay (3.2.14, FR-RPL-001 to 023): a timeline in the top bar, a Play/Pause button and a scrubber whose right end is now, replaying the chosen time window in 30 s. The view builds up from the span's start to the replayed instant: events, storm tracks, the sun, the burnt-area days and 3-hourly cloud images fetched at 1024 by 512 for the replay and held in memory only. NFR-PERF-008, NFR-KBD-009, Appendix D.2's `play.png` and `pause.png` added. Timeline playback and cloud animation leave 1.3's exclusions and 3.6's Won'ts. | Owner request: replay the Earth. The owner chose the chosen window over a fixed 7 days, every layer including the clouds, play and pause with a scrubber, 30 s a pass, a view that builds up rather than slides, clouds at 1024 wide and artwork of their own. Measured on 2026-09-25: EUMETSAT lists an image every 3 h from 2021-06-06 to now; a past image was 1.62 to 1.64 MB in 1.1 to 1.5 s at 2048 and 0.44 to 0.45 MB in 0.6 to 0.7 s at 1024 (three times each), so 7 days' 56 images come to about 25 MB at 1024 against 91 MB (multiplied, not measured). The events of the window are already held (DATA-009); the sun is computed. |
 | 35 | 2026-09-25 | FR-MRK-011 and 012 added: activating a cluster while the camera is at its closest zoom lists its members; choosing one opens its detail panel. | The owner could not open a cluster of three quakes near Chalkida. Reproduced with the clustering code on the USGS week: two M4.3 quakes 2.0 km apart stay one cluster even at the minimum altitude, so zooming never parted them and neither could be opened by pointer (the keyboard cursor could still reach them). FR-MRK-008 never said what happens once zooming can part nothing; the owner chose a list over fanning the markers out. |
+| 36 | 2026-09-25 | 2.1 names five external systems with GWIS in its diagram; NFR-UX-004 lists the day and night button and the replay's Play/Pause button among its toggles; 2.3, CON-003 and D.3 read "macOS and Linux". | The code and the house platform order measured against the document in the 2.0.0 documentation pass: GWIS joined the hosts in amendment 33, both buttons show the state they switch to; every other surface names Windows, macOS, Linux in that order. No behaviour changes. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -143,15 +144,16 @@ One term, one meaning, throughout.
 ### 2.1 Product perspective
 
 A new, standalone desktop build. No existing system is replaced. EarthNow talks
-to exactly four external systems in V1, all public and keyless; it talks to
-nothing else. The fourth, EUMETSAT, is asked only while the cloud layer is shown.
+to exactly five external systems, all public and keyless; it talks to nothing
+else. The fourth, EUMETSAT, is asked only while the cloud layer is shown or a
+replay needs its clouds; the fifth, GWIS, only while the burnt-area layer is shown.
 
 ```
    NASA EONET v3 ──┐                         ┌── Globe (WebGL, React)
    USGS feeds ─────┤                         │
    Smithsonian GVP ┼── Go backend ── bound ──┤
-   EUMETSAT WMS ───┘   (providers,  methods  └── Controls, detail panel
-                        store, cache)
+   EUMETSAT WMS ───┤   (providers,  methods  └── Controls, detail panel
+   GWIS WMS ───────┘    store, cache)
                           │
                     JSON files in %LOCALAPPDATA%
 ```
@@ -168,7 +170,7 @@ network request of its own (NFR-SEC-002).
 
 ### 2.3 Operating environment
 
-| Item | Windows | Linux and macOS |
+| Item | Windows | macOS and Linux |
 |---|---|---|
 | OS | Windows 10 and 11, x64 | Linux (Flatpak, GNOME runtime; tested on the latest Ubuntu LTS) and macOS arm64 |
 | Web runtime | WebView2 (Evergreen) | WebKitGTK 4.1; WKWebView |
@@ -182,7 +184,7 @@ network request of its own (NFR-SEC-002).
 |---|---|---|
 | CON-001 | Backend in Go; desktop shell Wails v2; frontend React with TypeScript built by Vite. | Owner decision. |
 | CON-002 | Architecture `UI → Application → Domain ← Infrastructure` under `internal/`, enforced by `tests/structural`. | House invariant. |
-| CON-003 | No CGO in the Windows build; the Linux and macOS builds need it, since Wails renders there through a C web view. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
+| CON-003 | No CGO in the Windows build; the macOS and Linux builds need it, since Wails renders there through a C web view. The cache is one JSON file per provider in the data folder, written atomically. | House rule; single static binary. The event sets are small (the largest measured feed 1.51 MB) and read whole, so a database buys nothing. |
 | CON-004 | Licence GPL-3.0 for EarthNow's own code (the `LICENSE` already committed). Every bundled dependency and data asset must carry a licence compatible with shipping inside a GPL-3.0 application, recorded in a third-party notices file. | Owner's committed licence. |
 | CON-005 | `VERSION` at repo root is the only version literal; `build.ps1` passes it through `-ldflags -X` against a `var`. | House versioning rule. |
 | CON-006 | Delivery follows the house Go + Wails Windows checklist: `build.ps1` plus an unskippable `test.ps1` gate; the setup program is a second Wails app under `installer/` built to the `installer` skill. | Owner request; house rule. |
@@ -630,7 +632,7 @@ Every performance figure is measured on the reference machine.
 | NFR-UX-001 | Must | The globe area (FR-GLB-013) shall occupy at least 70% of the window area at every window size from the minimum size upwards. | T (layout) at three sizes. |
 | NFR-UX-002 | Must | The main window shall have a minimum size of 960 by 700 pixels, the height that holds the action rail's ten buttons and the donate button (measured at 600: eight buttons of 54 px with 8 px gaps left 33 px above the donate button; each further button needs 62, so ten need 691; 700 is a target the real window confirms). | I; the rail's buttons all visible at the minimum size (D). |
 | NFR-UX-003 | Must | The camera focus animation shall last 1,000 ms. | T (constant) + D |
-| NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button, the cloud button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
+| NFR-UX-004 | Must | Every two-state toggle button shall show the state it switches TO, never the current state; its tooltip and accessible name shall name that action. This covers the rotation button, the cloud button, the day and night button, the replay's Play/Pause button and the setup program's theme toggle. | T per toggle: the icon and label after a press are the opposite pair. |
 | NFR-UX-005 | Must | The main window shall use one dark palette; it shall offer no light theme in V1. The setup program keeps the house light and dark toggle. | I |
 | NFR-UX-006 | Must | The main window's heading shall read "EarthNow"; the event count line (FR-CNT-001) carries the sense of now. | T |
 | NFR-KBD-001 | Must | The main window shall implement the keeb ring: Tab and Right forward, Shift+Tab and Left back, wrapping at both ends. | Vitest ring walk. |
@@ -825,7 +827,7 @@ Each category is drawn with one emoji, held in a single category table in the
 frontend (its one home; the filter control and the marker both read it). Every
 code point below was confirmed present in `C:\Windows\Fonts\seguiemj.ttf` on
 the reference machine (Windows 11) on 2026-09-23. Windows 10 coverage and the
-look under Linux and macOS fonts are unmeasured.
+look under macOS and Linux fonts are unmeasured.
 
 | Category | Emoji | Code point |
 |---|---|---|
