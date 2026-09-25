@@ -125,6 +125,40 @@ describe('the globe', () => {
         expect(globe.calls.filter(([name, args]) => name === 'pointOfView' && args.length === 2)).toHaveLength(2)
     })
 
+    it('FR-GLB-018 switching rotation back on while zoomed returns to the fit altitude first', () => {
+        const {view, globe} = draw(true)
+        const fit = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
+        const set = (autoRotate: boolean, secondsPerRevolution = 60) => view.rerender(<GlobeView events={[]}
+            selectedId={null} autoRotate={autoRotate} secondsPerRevolution={secondsPerRevolution} cloudImage="" burntImage=""
+            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        globe.altitude = 0.3
+        set(false)
+        set(true)
+        expect(globe.calls).toContainEqual(['pointOfView', [{altitude: fit}, FOCUS]])
+        expect(globe.controls.autoRotate).toBe(false)
+        act(() => { vi.advanceTimersByTime(FOCUS) })
+        expect(globe.controls.autoRotate).toBe(true)
+        // A speed change while turning is not a switch-on: the camera stays put.
+        globe.altitude = 0.3
+        const before = globe.calls.length
+        set(true, 120)
+        expect(globe.calls.slice(before).some(([name, args]) => name === 'pointOfView' && args.length === 2)).toBe(false)
+    })
+
+    it('FR-GLB-018 switching rotation on inside the idle delay waits for the delay to end', () => {
+        const {view, globe, host} = draw(true)
+        globe.altitude = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
+        const set = (autoRotate: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={autoRotate}
+            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false}
+            start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        fireEvent.pointerDown(host)
+        set(false)
+        set(true)
+        expect(globe.controls.autoRotate).toBe(false)
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        expect(globe.controls.autoRotate).toBe(true)
+    })
+
     it('FR-GLB-004 and FR-GLB-011 apply the setting and its speed at launch and at once on a change', () => {
         const {view, globe} = draw(true)
         expect(globe.controls.autoRotateSpeed).toBe(1)

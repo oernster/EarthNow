@@ -34,14 +34,17 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
     const returning = useRef(false)
 
     const idle = useRef<IdleRotation | null>(null)
+    // returnThenTurn is resume below, kept for the setting being switched on.
+    const returnThenTurn = useRef<(() => void) | null>(null)
     if (idle.current === null) {
         const rotate = () => {
             timer.current = null
             returning.current = false
             if (globe.current) globe.current.controls().autoRotate = wanted.current
         }
-        // resume runs when the idle delay runs out: away from the fit altitude
-        // the camera returns to it first, then turns (FR-GLB-018).
+        // resume runs when the idle delay runs out or the setting is switched on:
+        // away from the fit altitude the camera returns to it first, then turns
+        // (FR-GLB-018).
         const resume = () => {
             const g = globe.current
             if (!g || !wanted.current || nearAltitude(g.pointOfView().altitude, fitOf(g))) {
@@ -75,11 +78,14 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
             }
         }
         idle.current = {pause, attach}
+        returnThenTurn.current = resume
     }
 
-    // Switching the setting on starts rotation at once unless input is still
-    // inside its idle delay (FR-GLB-004, FR-GLB-012).
+    // Switching the setting on returns to the fit altitude and turns, unless input
+    // is still inside its idle delay (FR-GLB-004, FR-GLB-012, FR-GLB-018). A speed
+    // change while on is not a switch-on and leaves the camera where it is.
     useEffect(() => {
+        const switchedOn = autoRotate && !wanted.current
         wanted.current = autoRotate
         speed.current = ORBIT_SECONDS_AT_UNIT_SPEED / secondsPerRevolution
         const g = globe.current
@@ -87,7 +93,9 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
         const controls = g.controls()
         controls.autoRotateSpeed = speed.current
         if (!autoRotate) controls.autoRotate = false
-        else if (timer.current === null) controls.autoRotate = true
+        else if (timer.current !== null) return
+        else if (switchedOn) returnThenTurn.current?.()
+        else controls.autoRotate = true
     }, [globe, autoRotate, secondsPerRevolution])
 
     return idle.current

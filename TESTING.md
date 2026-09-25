@@ -103,10 +103,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 87.01 |
-| Branches | 80 |
+| Statements | 87.08 |
+| Branches | 80.37 |
 | Functions | 85.06 |
-| Lines | 88.83 |
+| Lines | 88.9 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (rotation, marker
 placement, the cursor's tooltip, the focus animation) are tested against a
@@ -369,7 +369,7 @@ recorded there, in section 3.1.
 | Replay plays the chosen window in 30 s with events appearing, tracks growing, the sun sweeping and the burnt days building; the replay clouds arrive while it plays; the controls sit on the top bar's one row at the minimum window; frame time holds through a 7 day pass with every layer shown (FR-RPL-020, NFR-PERF-008) | Choose 7 days with every layer shown and press Play; drag the slider; press Play at the end; resize to 960 by 700. Smoothness is judged by eye, as for NFR-PERF-005. |
 | A storm's track fades from faint to strong and ends in its marker without crowding the globe (FR-TRL-002) | Show the 7 day window with a storm in it; look, then clear Settings' box. |
 | The globe opens facing your country, then turns from there, on Windows, a Mac and Linux (FR-GLB-014, FR-GLB-015) | Launch; your country faces you before rotation begins. The log's "Start view:" line names the region and the point. |
-| Idle rotation first brings the whole globe back into view, smoothly, from zoomed in or out; a drag during that return stops it where it is (FR-GLB-018) | Zoom in on an event and leave the mouse alone for 10 s: the globe eases back to its usual size over a second, then turns. Zoom out and do the same. Drag while it eases back: it stops at once and turns only after another 10 s. |
+| Idle rotation first brings the whole globe back into view, smoothly, from zoomed in or out; a drag during that return stops it where it is (FR-GLB-018) | Zoom in on an event and leave the mouse alone for 10 s: the globe eases back to its usual size over a second, then turns. Zoom out and do the same. Zoom in, press Stop rotating then Start rotating: the same return, then it turns. Drag while it eases back: it stops at once and turns only after another 10 s. |
 | Setup (DEL-002) | Install, update, go back, repair, reinstall and uninstall, each with EarthNow running; inspect the folders and the Apps list afterwards. |
 
 ## See also
