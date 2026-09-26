@@ -14,18 +14,21 @@ interface Fake {
     calls: Array<[string, unknown[]]>
     // altitude is what pointOfView() reports, as the camera would.
     altitude: number
+    // scene is a real one, so the hooks GlobeView sets on it can be run.
+    scene: THREE.Scene
 }
 const made: Fake[] = []
 
 // makeGlobe answers a chainable recorder: every setter records its arguments and
 // answers the recorder, as globe.gl's builder does.
 function makeGlobe(): unknown {
-    const fake: Fake = {controls: {autoRotate: false, autoRotateSpeed: 0, minDistance: 0, maxDistance: 0}, calls: [], altitude: 1.6}
+    const fake: Fake = {controls: {autoRotate: false, autoRotateSpeed: 0, minDistance: 0, maxDistance: 0}, calls: [], altitude: 1.6, scene: new THREE.Scene()}
     made.push(fake)
     const camera = new THREE.PerspectiveCamera(50, 1.5)
     const known: Record<string, (...a: unknown[]) => unknown> = {
         controls: () => fake.controls,
         camera: () => camera,
+        scene: () => fake.scene,
         getGlobeRadius: () => 100,
         _destructor: () => undefined,
     }
@@ -189,6 +192,24 @@ describe('the globe', () => {
         expect(placed).toEqual([{kind: 'event', lat: 61.899, lng: -150.919, event: quake}])
         expect(globe.calls).toContainEqual(['objectLat', ['lat']])
         expect(globe.calls).toContainEqual(['objectLng', ['lng']])
+    })
+
+    // Markers skip the globe's depth so none is cut in half at the edge; each
+    // frame hides those beyond the horizon in its place.
+    it('hides a marker beyond the horizon each frame and shows it facing the camera', () => {
+        const {globe} = draw(false, [quake])
+        const placed = globe.calls.filter(([name]) => name === 'objectsData').at(-1)![1][0] as unknown[]
+        const make = globe.calls.find(([name]) => name === 'objectThreeObject')![1][0] as (d: object) => THREE.Object3D
+        const marker = make(placed[0] as object)
+        marker.position.set(0, 0, 101)
+        const frame = (z: number) => {
+            const eye = new THREE.PerspectiveCamera()
+            eye.position.set(0, 0, z)
+            globe.scene.onBeforeRender(null as never, globe.scene, eye, null as never, null as never, null as never)
+            return marker.visible
+        }
+        expect(frame(-300)).toBe(false)
+        expect(frame(300)).toBe(true)
     })
 
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
