@@ -103,10 +103,10 @@ which wire the parts together and are checked by eye:
 
 | Page measure | Floor |
 |---|---|
-| Statements | 87.13 |
-| Branches | 81.07 |
-| Functions | 85.1 |
-| Lines | 88.94 |
+| Statements | 87.68 |
+| Branches | 81.65 |
+| Functions | 85.54 |
+| Lines | 89.46 |
 
 These are measured figures too. `GlobeView.tsx`'s own rules (marker
 placement, the cursor's tooltip, the focus animation) and the idle rotation it
