@@ -51,7 +51,11 @@ function cached(key: string, draw: (ctx: CanvasRenderingContext2D) => void): THR
     // (measured 2026-09-23 against three 0.186).
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
-    const made = new THREE.SpriteMaterial({map: texture, depthWrite: false})
+    // A sprite always faces the camera, so near the globe's edge it stands
+    // upright on the surface and its lower half sinks into the sphere; tested
+    // against the globe's depth, that half was cut off. The markers are drawn
+    // over the globe instead and overHorizon hides those on its far side.
+    const made = new THREE.SpriteMaterial({map: texture, depthWrite: false, depthTest: false})
     materials.set(key, made)
     return made
 }
@@ -90,6 +94,16 @@ export function sprite(e: EventDTO, selected: boolean, scale: number): THREE.Spr
         if (selected) ring(ctx, RING_COLOUR)
     })
     return sized(new THREE.Sprite(made), markerSize(e.band), scale)
+}
+
+/**
+ * overHorizon reports whether a marker at world position p stands on the
+ * camera's side of the globe (radius, centred on the origin): the surface point
+ * under it can see the camera when its outward direction dotted with the
+ * camera's position reaches the radius.
+ */
+export function overHorizon(p: THREE.Vector3, camera: THREE.Vector3, radius: number): boolean {
+    return p.dot(camera) >= radius * p.length()
 }
 
 // A cluster wears its most numerous category's emoji where a marker's would be.

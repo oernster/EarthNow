@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {fitAltitude, rescale, sprite, viewHalfAngle} from './markers'
+import {fitAltitude, MARKER_ALTITUDE, overHorizon, rescale, sprite, viewHalfAngle} from './markers'
 import type {EventDTO} from './types'
 
 const wildfire = {category: 'WILDFIRE', band: 0} as EventDTO
@@ -15,6 +15,32 @@ describe('marker textures', () => {
     it.each([false, true])('are marked sRGB (selected %s)', selected => {
         const material = sprite(wildfire, selected, 1).material as THREE.SpriteMaterial
         expect(material.map?.colorSpace).toBe(THREE.SRGBColorSpace)
+    })
+
+    // Depth tested, a marker near the globe's edge sank half into the sphere and
+    // was drawn cut in half; overHorizon hides the far side instead.
+    it('are drawn over the globe rather than into it', () => {
+        const material = sprite(wildfire, false, 1).material as THREE.SpriteMaterial
+        expect(material.depthTest).toBe(false)
+    })
+})
+
+describe('markers beyond the horizon', () => {
+    const radius = 100
+    const marker = new THREE.Vector3(0, 0, radius * (1 + MARKER_ALTITUDE))
+    // A camera 300 units out sees the surface up to acos(100 / 300) from the
+    // point beneath it, about 70.5 degrees.
+    const camera = (degrees: number) => {
+        const a = THREE.MathUtils.degToRad(degrees)
+        return new THREE.Vector3(300 * Math.sin(a), 0, 300 * Math.cos(a))
+    }
+
+    it.each([0, 45, 70])('show when the camera stands %s degrees round', degrees => {
+        expect(overHorizon(marker, camera(degrees), radius)).toBe(true)
+    })
+
+    it.each([71, 90, 180])('hide when the camera stands %s degrees round', degrees => {
+        expect(overHorizon(marker, camera(degrees), radius)).toBe(false)
     })
 })
 

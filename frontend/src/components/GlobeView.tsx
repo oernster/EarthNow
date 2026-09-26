@@ -9,7 +9,7 @@ import {api} from '../api'
 import {clusterTitle, eventTitle} from '../categories'
 import {atClosest, clusterEvents, layoutKey, type MarkerItem, separatingAltitude} from '../clusters'
 import {FOCUS_MS, MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
-import {clusterSprite, fitAltitude, fitOf, MARKER_ALTITUDE, rescale, sprite, viewHalfAngle} from '../markers'
+import {clusterSprite, fitAltitude, fitOf, MARKER_ALTITUDE, overHorizon, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
 import {trailed} from '../trails'
 import {useGlobeLayers} from '../useGlobeLayers'
@@ -254,6 +254,12 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
         const radius = g.getGlobeRadius()
         controls.minDistance = radius * (1 + MIN_ALTITUDE)
         controls.maxDistance = radius * (1 + MAX_ALTITUDE)
+        // The markers ignore the globe's depth (markers.ts), so each frame hides
+        // those beyond the horizon before three culls the invisible.
+        const at = new THREE.Vector3()
+        g.scene().onBeforeRender = (_renderer, _scene, eye) => sprites.current.forEach(s => {
+            s.visible = overHorizon(s.getWorldPosition(at), eye.position, radius)
+        })
         const camera = g.camera() as THREE.PerspectiveCamera
         const fit = () => {
             // A host with no size yet has no aspect: a fit then sets the camera to
