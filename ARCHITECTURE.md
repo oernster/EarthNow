@@ -117,12 +117,16 @@ Pure Go over values handed in; no clock, no disk, no network.
 - `event`: `Event` and its observations, the provider and category
   vocabularies (DATA-001, DATA-002), the earthquake size bands of FR-MRK-003
   and the rule that a source link is a page rather than a data file (FR-SEL-009).
+  An ongoing event carries its `Report`: the week it covers and the day it was
+  issued, current for 14 days after that day (FR-PRV-015, FR-PRV-016).
   It also words an earthquake's depth: one decimal with USGS's band (shallow
   below 70 km, intermediate below 300, deep beyond), a negative depth as
   that far above sea level and exactly 10 km marked as often USGS's fixed
   depth (FR-SEL-010 to 012).
-- `freshness`: age wording (NFR-FRESH-002, FR-SEL-004) and the rule that a
-  provider is stale three intervals after its last success (NFR-FRESH-001).
+- `freshness`: age wording (NFR-FRESH-002, FR-SEL-004), an ongoing event's
+  report week and the notice for a report too old to show (FR-PRV-016); also
+  the rule that a provider is stale three intervals after its last success
+  (NFR-FRESH-001).
 - `region`: a bare region code or a locale name's territory as an ISO alpha-2
   code (GB from GB, en_GB.UTF-8, en-GB or macOS's en_US@rg=gbzzzz); none for
   C, POSIX, a bare language or a UN area such as 001 (FR-GLB-014).
@@ -132,7 +136,8 @@ Pure Go over values handed in; no clock, no disk, no network.
   6 degrees below the horizon to 1 at 6 above (FR-DAY-002); the share of a
   cloud's opacity kept at night, from 25% (FR-DAY-009).
 - `window`: the five windows of FR-TW-001 with 24 h the default; which
-  observation of an event falls inside a window (DATA-003, DATA-004); a
+  observation of an event falls inside a window, an ongoing event being inside
+  every range that reaches its report week's first day (DATA-003, DATA-004); a
   severe storm's trail, its positions inside the window oldest first ending
   at the marker, none with fewer than two (FR-TRL-001).
 
@@ -145,9 +150,10 @@ The use cases, behind the ports in
 
 - `Globe` refreshes one provider at a time and answers the view for a window
   and a filter: the events shown, the count per category, each provider's
-  status and any standing notice.
+  status (a report too old to show among it) and any standing notice.
 - `Store` holds each provider's latest set. A failed provider keeps its last
-  set; the others are unaffected (FR-PRV-008).
+  set; the others are unaffected (FR-PRV-008). It leaves out an ongoing event
+  whose report is past its currency, judged by its own clock (FR-PRV-016).
 - `Scheduler` decides when each provider is next due, with the backoff that
   doubles up to 30 minutes after a failure (FR-PRV-006) and the 30-second
   cooldown between manual refreshes (FR-PRV-010), answering when the last one
@@ -218,7 +224,9 @@ machine.
   for, its size read before the pixels are decoded (FR-CLD-012, FR-BA-013).
 - `cache` keeps one JSON file per provider, stamped with a schema version and
   written beside the old one then renamed over it, so an interrupted write
-  leaves the previous set whole (NFR-REL-005, CON-003). The cloud image and its
+  leaves the previous set whole (NFR-REL-005, CON-003). What it is handed is
+  what some window can still show: an event sighted inside the last 7 days or
+  an ongoing one whose report is current (DATA-009). The cloud image and its
   valid time are kept the same way in `cloud.json`, through the same reader and
   writer (FR-CLD-014); so are the burnt-area days in `burnt.json` (FR-BA-014).
 - `settings` reads and writes `settings.json` with its own capped read and
@@ -241,8 +249,9 @@ machine.
 
 The page in `frontend/src` draws the globe through globe.gl, the action rail on
 the left, the key on the right, the top bar with the time window and Replay's
-controls, the detail panel, the dialogs and the keyboard ring. It reaches the Go side through one module, [`api.ts`](frontend/src/api.ts).
-It states the wire's shapes in [`types.ts`](frontend/src/types.ts). The facade
+controls, the detail panel, the dialogs and the keyboard ring. It reaches the
+Go side through one module, [`api.ts`](frontend/src/api.ts); it states the
+wire's shapes in [`types.ts`](frontend/src/types.ts). The facade
 in `app.go` owns no rules: it forwards to the application and runs the
 background work.
 
@@ -413,8 +422,8 @@ that folder.
 `VERSION` holds the only version string (CON-005). `build.ps1` passes it to
 both programs through `-ldflags "-X main.appVersion=..."`; `appVersion` is a
 `var` in each because `-X` does nothing to a `const`. A binary built without
-the flag reports a development placeholder. The site under `docs/` cannot read `VERSION`, so
-`stamp_version.py` writes it between the page's version markers; `build.ps1`
+the flag reports a development placeholder. The site under `docs/` cannot read
+`VERSION`, so `stamp_version.py` writes it between the page's version markers; `build.ps1`
 runs it before the gate.
 
 ## Decisions

@@ -69,18 +69,21 @@ source that reported it and how old that report is.
   the first run; Settings hides it. The maps are fetched only while shown and
   kept for use offline.
 - **Places every event** with its category's emoji: earthquake, volcano,
-  wildfire, severe storm, flood, ice or other.
-  Earthquakes are sized by magnitude. Markers that overlap on screen draw as
-  one cluster with its count; activating a cluster zooms in until its members
-  separate. One still together at the closest zoom lists its members instead;
-  choosing one opens its detail. A storm draws a faint track through the positions its source gave
-  inside the time window, fading with age; Settings can hide it.
+  wildfire, severe storm, flood, ice or other. Other holds the rest: quarry
+  blasts and explosions from the USGS, plus any kind EONET reports that has no
+  category of its own, such as a landslide. Earthquakes are sized by
+  magnitude. Markers that overlap on screen draw as one cluster with its
+  count; activating a cluster zooms in until its members separate. One still
+  together at the closest zoom lists its members instead; choosing one opens
+  its detail. A storm draws a faint track through the positions its source
+  gave inside the time window, fading with age; Settings can hide it.
 - **Names where it is.** Hovering a marker shows the event with its nearest
   populated place, its country, the distance and the compass direction, worked
   out on your own machine from embedded Natural Earth data.
 - **Opens the detail** of an event: title, category, provider, position, the
   event time and the retrieval time (each as an age, in UTC and in local time;
-  an event its source dates by day alone has no local time), any measurement,
+  an event its source dates by day alone has no local time; a volcano gives
+  the week its report covers and the day it was issued), any measurement,
   an earthquake's depth with USGS's shallow, intermediate or deep band, then a
   link to the source page, which opens in your browser. An event its
   source has closed is marked as ended.
@@ -89,7 +92,9 @@ source that reported it and how old that report is.
 - **Filters** by category and by provider from the key down the right side,
   which also counts the events shown in each category. The time window picks
   1 h, 6 h, 24 h, 3 days or 7 days. An event dated more than 15 minutes ahead
-  of your clock waits until its time arrives.
+  of your clock waits until its time arrives. A volcano in the latest weekly
+  report is still erupting, so it shows in every window until that report is
+  more than 14 days old.
 - **Replays the window.** Play, beside the time window, plays the chosen
   window from its start in 30 seconds at normal speed: events appear at their
   own times, storm tracks grow, the sun sweeps round, the burnt days build up
@@ -113,7 +118,8 @@ source that reported it and how old that report is.
   the globe opens on it and says how old it is.
 - **Is honest about age.** Nothing is labelled live. A source that has not
   answered for three of its intervals is marked stale. The provider status
-  panel gives each source's state and the reason for any failed fetch.
+  panel gives each source's state, the reason for any failed fetch and when
+  the volcano report is too old to show.
 - **Explains itself.** Help opens a guide to every control, the About details,
   the licence and the third-party notices.
 

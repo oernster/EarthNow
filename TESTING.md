@@ -122,6 +122,14 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 - **The time window**: membership; the newest observation inside a window as
   the event time and position; the `ClockSkew` bound, both at it and one
   second past it.
+- **Ongoing volcanoes**: shown in every window from 1 h to 7 days; in a replay
+  from their report week's first day, absent the minute before; the report
+  current at 14 days after its issue and past it a nanosecond later, its
+  volcanoes then gone from windows and replays alike with the status saying
+  why; the cache keeping them while current; the report week worded within a
+  month, across two and across New Year (FR-TW-002, FR-RPL-009, FR-PRV-016,
+  FR-SEL-004, DATA-009). The window rule and the store's currency check were
+  each proved by planting them away.
 - **The scheduler** on a fake clock: each provider on its own interval, the
   backoff doubling to its ceiling, recovery after a success, the manual refresh
   and its cooldown with the time of the last one (FR-PRV-010); which
@@ -184,11 +192,15 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 ### The adapters
 
 - **Each provider** parses a feed captured from the real source (in its
-  `testdata`), through a fake fetcher: the request URL, the categories mapped,
-  malformed items dropped and counted, withdrawn earthquakes left out, each
-  GDACS polygon read in the order its own coordinates prove (else the order the
-  feed's proven polygons show) and the volcano report's Latin-1 decoded. Which
-  source link counts as a page is tested in the domain.
+  `testdata`), through a fake fetcher: the request URL, the categories mapped
+  (EONET's landslides, drought and dust haze to Other), malformed items dropped
+  and counted, withdrawn earthquakes left out, each GDACS polygon read in the
+  order its own coordinates prove (else the order the feed's proven polygons
+  show) and the volcano report's Latin-1 decoded. The report week is read from
+  each title, a first day without a year taking the last day's (the year
+  before across New Year); an item whose week cannot be read is dropped and
+  counted (FR-PRV-015). Which source link counts as a page is tested in the
+  domain.
 - **The cloud adapter** reads the layer's capabilities document captured from
   EUMETSAT (in its `testdata`) and draws images made in the test: the newest
   valid time, the GetMap query, the drawn pixels against the domain's ramp and
@@ -245,7 +257,10 @@ the keyboard repair shared with the setup page, the keyboard ring (with the
 page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
 the Help surfaces with the rail's order, the detail panel's Depth row shown
 or left out and the guide's note on the fixed depth (FR-SEL-010, FR-SEL-013,
-FR-SEL-014), the storms handed to the globe as paths with their colour ramp,
+FR-SEL-014), an ongoing volcano's event time given as its report week with no
+exact time (FR-SEL-004), the status popover's notice for a report too old to
+show (FR-PRV-016), the key's seven categories with an unknown one falling to
+Other (DATA-002), the storms handed to the globe as paths with their colour ramp,
 none while switched off (proved by planting the switch away) and the Settings
 box (FR-TRL-002 to FR-TRL-004). The refresh indicator is covered too:
 the status line's wording, the turning Refresh button held for one turn and
