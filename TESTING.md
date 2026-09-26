@@ -196,7 +196,9 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   (EONET's landslides, drought and dust haze to Other), malformed items dropped
   and counted, withdrawn earthquakes left out, each GDACS polygon read in the
   order its own coordinates prove (else the order the feed's proven polygons
-  show) and the volcano report's Latin-1 decoded. The report week is read from
+  show) and the volcano report's Latin-1 decoded, the apostrophes and
+  subscript twos its encoding loses put back while a real question mark is kept
+  (DATA-013, proved by planting the mending away). The report week is read from
   each title, a first day without a year taking the last day's (the year
   before across New Year); an item whose week cannot be read is dropped and
   counted (FR-PRV-015). Which source link counts as a page is tested in the

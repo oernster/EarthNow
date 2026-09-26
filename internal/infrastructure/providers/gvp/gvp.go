@@ -158,7 +158,7 @@ func mapItem(w wireItem) (event.Event, bool) {
 		ProviderEventID: id,
 		Category:        event.Volcano,
 		Title:           strings.TrimSpace(parts[0]) + ", " + strings.ToLower(activity),
-		Description:     plainText(w.Description),
+		Description:     mended(plainText(w.Description)),
 		Observations:    []event.Observation{{At: issueDay, Precision: event.Day, Where: where}},
 		Status:          event.StatusOpen,
 		SourceURL:       strings.TrimSpace(w.GUID),
