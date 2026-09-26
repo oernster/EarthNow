@@ -147,6 +147,11 @@ func mapItem(w wireItem) (event.Event, bool) {
 		return event.Event{}, false
 	}
 	y, m, d := issued.UTC().Date()
+	issueDay := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	from, to, ok := reportWeek(parts[1])
+	if !ok {
+		return event.Event{}, false
+	}
 	activity := strings.TrimSpace(parts[2])
 	return event.Event{
 		Provider:        event.GVP,
@@ -154,11 +159,51 @@ func mapItem(w wireItem) (event.Event, bool) {
 		Category:        event.Volcano,
 		Title:           strings.TrimSpace(parts[0]) + ", " + strings.ToLower(activity),
 		Description:     plainText(w.Description),
-		Observations:    []event.Observation{{At: time.Date(y, m, d, 0, 0, 0, 0, time.UTC), Precision: event.Day, Where: where}},
+		Observations:    []event.Observation{{At: issueDay, Precision: event.Day, Where: where}},
 		Status:          event.StatusOpen,
 		SourceURL:       strings.TrimSpace(w.GUID),
 		Extras:          event.Extras{SourceCategory: activity},
+		Report:          event.Report{WeekFrom: from, WeekTo: to, Issued: issueDay},
 	}, true
+}
+
+// weekPrefix opens a title's week part: "Report for 10 September-16 September 2026".
+const weekPrefix = "Report for "
+
+// Layouts of the week's two days. Measured on 2026-09-23 and 2026-09-26: the
+// last day carries its year and the first carries none. A first day with a
+// year is accepted too, since how a week crossing New Year is written has not
+// been seen.
+const (
+	dayWithYear    = "2 January 2006"
+	dayWithoutYear = "2 January"
+)
+
+// reportWeek reads a title's week part as its first and last UTC days
+// (FR-PRV-015). A first day without a year takes the last day's, less one when
+// its month falls after the last day's month; false when either day is unreadable.
+func reportWeek(part string) (time.Time, time.Time, bool) {
+	rest, found := strings.CutPrefix(strings.TrimSpace(part), weekPrefix)
+	first, last, split := strings.Cut(rest, "-")
+	if !found || !split {
+		return time.Time{}, time.Time{}, false
+	}
+	to, err := time.Parse(dayWithYear, strings.TrimSpace(last))
+	if err != nil {
+		return time.Time{}, time.Time{}, false
+	}
+	if from, err := time.Parse(dayWithYear, strings.TrimSpace(first)); err == nil {
+		return from, to, true
+	}
+	from, err := time.Parse(dayWithoutYear, strings.TrimSpace(first))
+	if err != nil {
+		return time.Time{}, time.Time{}, false
+	}
+	year := to.Year()
+	if from.Month() > to.Month() {
+		year--
+	}
+	return time.Date(year, from.Month(), from.Day(), 0, 0, 0, 0, time.UTC), to, true
 }
 
 // volcanoNumber is the id after "#vn_" in a guid; "" when there is none.

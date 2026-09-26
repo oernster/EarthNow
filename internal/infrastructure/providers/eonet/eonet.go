@@ -27,16 +27,15 @@ const Interval = 10 * time.Minute
 const hoursPerDay = 24
 
 // categories is DATA-006: EONET's category ids to the internal vocabulary. An
-// id missing here maps to Other with the id kept in Extras.
+// id missing here maps to Other with the id kept in Extras; landslides,
+// drought and dustHaze do, since EONET published none in the year to
+// 2026-09-26 (amendment 45).
 var categories = map[string]event.Category{
 	"earthquakes":  event.Earthquake,
 	"volcanoes":    event.Volcano,
 	"wildfires":    event.Wildfire,
 	"severeStorms": event.SevereStorm,
 	"floods":       event.Flood,
-	"landslides":   event.Landslide,
-	"drought":      event.Drought,
-	"dustHaze":     event.Dust,
 	"seaLakeIce":   event.Ice,
 }
 

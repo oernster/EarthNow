@@ -23,7 +23,7 @@ import type {ProviderDTO} from './types'
 const key = (k: string) => fireEvent.keyDown(document.activeElement ?? document.body, {key: k})
 
 const provider = (over: Partial<ProviderDTO> = {}): ProviderDTO =>
-    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', ...over})
+    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', notice: '', ...over})
 
 describe('a reading body', () => {
     beforeEach(layOut)
@@ -183,6 +183,13 @@ describe('FR-STS-003 the provider status popover', () => {
         expect(needsAttention([provider({stale: true})], '')).toBe(true)
         expect(needsAttention([provider({problem: 'x'})], '')).toBe(true)
         expect(needsAttention([provider()], 'notice')).toBe(true)
+        expect(needsAttention([provider({notice: 'too old'})], '')).toBe(true)
+    })
+
+    it('FR-PRV-016 says when the latest report is too old to show', () => {
+        render(<StatusPanel providers={[provider({name: 'GVP', notice: 'The latest report, issued 17 Sep 2026, is too old to show'})]}
+            notice="" onClose={() => undefined}/>)
+        expect(screen.getByText('The latest report, issued 17 Sep 2026, is too old to show.')).toBeTruthy()
     })
 })
 
@@ -285,7 +292,7 @@ describe('FR-PRV-001 an ended event', () => {
         ;(window as unknown as {go: unknown}).go = {main: {App: {Place: () => Promise.resolve('')}}}
         const e = {id: 'EONET:1', provider: 'EONET', category: 'WILDFIRE', title: 'Fire', description: '', lat: 1, lng: 2,
             at: '2026-09-20T00:00:00Z', dayOnly: true, reported: 'r', retrievedAt: '2026-09-23T00:00:00Z', retrieved: 'x',
-            measurement: '', depth: '', trail: [], band: 0, sourceUrl: '', sourceText: '', ended: true}
+            measurement: '', depth: '', trail: [], band: 0, sourceUrl: '', sourceText: '', ended: true, ongoing: false}
         const {unmount} = render(<DetailPanel event={e} inView onClose={() => undefined} onProblem={() => undefined}/>)
         await act(async () => undefined)
         expect(screen.getByText('EONET has marked this event as ended.')).toBeTruthy()

@@ -24,6 +24,9 @@ export interface EventDTO {
     sourceUrl: string
     sourceText: string
     ended: boolean
+    // An event in progress from a report (FR-PRV-015): reported names its
+    // report week and no exact time is shown (FR-SEL-004).
+    ongoing: boolean
 }
 
 export interface ProviderDTO {
@@ -35,6 +38,9 @@ export interface ProviderDTO {
     retrieved: string
     problem: string
     nextAttempt: string
+    // A standing fact about what the provider holds, not a failure: its latest
+    // report is too old to show (FR-PRV-016). Empty when none.
+    notice: string
 }
 
 export interface ViewDTO {

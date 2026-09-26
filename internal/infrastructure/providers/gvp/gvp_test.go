@@ -22,6 +22,36 @@ func fixture(t *testing.T) []byte {
 	return body
 }
 
+// testWeek is a readable week part, as the live feed words one.
+const testWeek = "Report for 10 September-16 September 2026"
+
+func TestFRPRV015_TheReportWeekIsReadFromTheTitle(t *testing.T) {
+	t.Parallel()
+	d := func(year int, month time.Month, dayOfMonth int) time.Time {
+		return time.Date(year, month, dayOfMonth, 0, 0, 0, 0, time.UTC)
+	}
+	cases := []struct {
+		part     string
+		from, to time.Time
+	}{
+		{"Report for 10 September-16 September 2026", d(2026, 9, 10), d(2026, 9, 16)},
+		{" Report for 27 August-2 September 2026 ", d(2026, 8, 27), d(2026, 9, 2)},
+		{"Report for 31 December-6 January 2027", d(2026, 12, 31), d(2027, 1, 6)},
+		{"Report for 31 December 2026-6 January 2027", d(2026, 12, 31), d(2027, 1, 6)},
+	}
+	for _, c := range cases {
+		from, to, ok := reportWeek(c.part)
+		if !ok || !from.Equal(c.from) || !to.Equal(c.to) || from.Location() != time.UTC {
+			t.Errorf("%q = %v to %v (%v), want %v to %v", c.part, from, to, ok, c.from, c.to)
+		}
+	}
+	for _, bad := range []string{"", "w", "Report for w", "Report for 10 September", "Report for x-16 September 2026", "Report for 10 September-16 September"} {
+		if _, _, ok := reportWeek(bad); ok {
+			t.Errorf("%q was read as a week", bad)
+		}
+	}
+}
+
 type fakeFetcher struct {
 	body   []byte
 	err    error
@@ -56,6 +86,10 @@ func TestFRPRV015_ParseCapturedFeed(t *testing.T) {
 	if !o.At.Equal(time.Date(2026, 9, 17, 0, 0, 0, 0, time.UTC)) {
 		t.Errorf("date = %v", o.At)
 	}
+	want := event.Report{WeekFrom: time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC), WeekTo: time.Date(2026, 9, 16, 0, 0, 0, 0, time.UTC), Issued: o.At}
+	if krakatau.Report != want || !krakatau.Ongoing() {
+		t.Errorf("report = %+v, want %+v", krakatau.Report, want)
+	}
 	if krakatau.SourceURL != "https://volcano.si.edu/reports_weekly.cfm#vn_262000" || !event.IsPage(krakatau.SourceURL) {
 		t.Errorf("source = %q", krakatau.SourceURL)
 	}
@@ -70,18 +104,21 @@ func TestUnusableItemsAreDroppedAndCounted(t *testing.T) {
 		return "<item><title>" + title + "</title><guid>" + guid + "</guid><pubDate>" + date +
 			"</pubDate><georss:point>" + point + "</georss:point></item>"
 	}
-	good := item("A (B) - Report for x - Continuing Eruptive Activity", "u#vn_1", "Thu, 17 Sep 2026 01:20:04 -0400", "1 2")
+	const date = "Thu, 17 Sep 2026 01:20:04 -0400"
+	const titled = "A (B) - " + testWeek + " - c"
+	good := item("A (B) - "+testWeek+" - Continuing Eruptive Activity", "u#vn_1", date, "1 2")
 	body := `<?xml version="1.0" encoding="ISO-8859-1"?><rss xmlns:georss="http://www.georss.org/georss"><channel>` +
 		good +
-		item("no parts", "u#vn_2", "Thu, 17 Sep 2026 01:20:04 -0400", "1 2") +
-		item("A (B) - w - c", "no number", "Thu, 17 Sep 2026 01:20:04 -0400", "1 2") +
-		item("A (B) - w - c", "u#vn_3", "not a date", "1 2") +
-		item("A (B) - w - c", "u#vn_4", "Thu, 17 Sep 2026 01:20:04 -0400", "1") +
-		item("A (B) - w - c", "u#vn_5", "Thu, 17 Sep 2026 01:20:04 -0400", "x 2") +
-		item("A (B) - w - c", "u#vn_6", "Thu, 17 Sep 2026 01:20:04 -0400", "91 2") +
+		item("no parts", "u#vn_2", date, "1 2") +
+		item(titled, "no number", date, "1 2") +
+		item(titled, "u#vn_3", "not a date", "1 2") +
+		item(titled, "u#vn_4", date, "1") +
+		item(titled, "u#vn_5", date, "x 2") +
+		item(titled, "u#vn_6", date, "91 2") +
+		item("A (B) - Report for w - c", "u#vn_7", date, "1 2") +
 		"</channel></rss>"
 	events, dropped, err := Parse([]byte(body))
-	if err != nil || len(events) != 1 || dropped != 6 {
+	if err != nil || len(events) != 1 || dropped != 7 {
 		t.Fatalf("events %d, dropped %d, err %v", len(events), dropped, err)
 	}
 }
@@ -102,7 +139,7 @@ func TestADocumentThatIsNotTheFeedIsAnError(t *testing.T) {
 func TestLatin1DecodesEveryByteAsItsCodePoint(t *testing.T) {
 	t.Parallel()
 	body := []byte("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><rss xmlns:georss=\"http://www.georss.org/georss\"><channel>" +
-		"<item><title>Nevado del Ruiz (Colombia) - Report for w - Continuing Eruptive Activity</title><description>Se\xf1al</description>" +
+		"<item><title>Nevado del Ruiz (Colombia) - " + testWeek + " - Continuing Eruptive Activity</title><description>Se\xf1al</description>" +
 		"<guid>u#vn_351020</guid><pubDate>Thu, 17 Sep 2026 01:20:04 -0400</pubDate><georss:point>4.892 -75.324</georss:point></item>" +
 		"</channel></rss>")
 	events, _, err := Parse(body)

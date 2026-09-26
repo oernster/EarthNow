@@ -15,9 +15,6 @@ export const CATEGORIES: readonly CategoryInfo[] = [
     {key: 'WILDFIRE', emoji: '🔥', name: 'Wildfire'},
     {key: 'SEVERE_STORM', emoji: '🌀', name: 'Severe storm'},
     {key: 'FLOOD', emoji: '🌊', name: 'Flood'},
-    {key: 'LANDSLIDE', emoji: '🪨', name: 'Landslide'},
-    {key: 'DROUGHT', emoji: '🏜️', name: 'Drought'},
-    {key: 'DUST', emoji: '💨', name: 'Dust and haze'},
     {key: 'ICE', emoji: '🧊', name: 'Ice'},
     {key: 'OTHER', emoji: '📍', name: 'Other'},
 ]

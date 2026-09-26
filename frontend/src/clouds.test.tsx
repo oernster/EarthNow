@@ -21,7 +21,7 @@ function rail(cloudsShown: boolean, onToggleClouds: () => void = noop) {
         onSettings={noop} onHelp={noop} onDonate={noop}/>)
 }
 
-const eumetsat: ProviderDTO = {name: 'EUMETSAT', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 2 min ago', problem: '', nextAttempt: ''}
+const eumetsat: ProviderDTO = {name: 'EUMETSAT', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 2 min ago', problem: '', nextAttempt: '', notice: ''}
 
 function clouds(patch: Partial<CloudsDTO> = {}): CloudsDTO {
     return {shown: true, line: 'Clouds: image of 15:00 UTC, 3 h ago', validTime: '2026-09-24T15:00:00Z', notice: '', provider: eumetsat, ...patch}

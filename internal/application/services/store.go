@@ -92,14 +92,16 @@ func (s *Store) Visible(w window.Window, f Filter) []Shown {
 }
 
 // Within answers the events inside a range and not filtered out, newest first:
-// the live window's range or a replay's (FR-RPL-009).
+// the live window's range or a replay's (FR-RPL-009). An ongoing event whose
+// report is past its currency is never shown (FR-PRV-016).
 func (s *Store) Within(r window.Range, f Filter) []Shown {
+	now := s.clock.Now()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var out []Shown
 	for _, snap := range s.sets {
 		for _, e := range snap.Events {
-			if f.hides(e) {
+			if f.hides(e) || (e.Ongoing() && !e.Report.Current(now)) {
 				continue
 			}
 			if o, ok := r.Latest(e); ok {

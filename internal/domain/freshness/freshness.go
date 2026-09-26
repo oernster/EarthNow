@@ -65,6 +65,36 @@ func Reported(o event.Observation, now time.Time) string {
 	return "Observed " + Age(o.At, now)
 }
 
+// Layouts for a report week's first day, shortened by what it shares with the
+// last: "10 to 16 Sep 2026", "27 Aug to 2 Sep 2026", "31 Dec 2026 to 6 Jan 2027".
+const (
+	sameMonthLayout = "2"
+	sameYearLayout  = "2 Jan"
+)
+
+// Continuing is FR-SEL-004's wording for an ongoing event: its report week and
+// issue day, with no age, since the activity is still going on.
+func Continuing(r event.Report) string {
+	return fmt.Sprintf("Continuing: report for %s, issued %s", week(r.WeekFrom, r.WeekTo), r.Issued.UTC().Format(dateLayout))
+}
+
+func week(from, to time.Time) string {
+	from, to = from.UTC(), to.UTC()
+	layout := dateLayout
+	switch {
+	case from.Year() == to.Year() && from.Month() == to.Month():
+		layout = sameMonthLayout
+	case from.Year() == to.Year():
+		layout = sameYearLayout
+	}
+	return from.Format(layout) + " to " + to.Format(dateLayout)
+}
+
+// TooOld is FR-PRV-016's notice for a report past its currency.
+func TooOld(r event.Report) string {
+	return fmt.Sprintf("The latest report, issued %s, is too old to show", r.Issued.UTC().Format(dateLayout))
+}
+
 // CountLine is FR-CNT-001: "3 events in the last 24 h".
 func CountLine(n int, windowLabel string) string {
 	return fmt.Sprintf("%s in the last %s", events(n), windowLabel)

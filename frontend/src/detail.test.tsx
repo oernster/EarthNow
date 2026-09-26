@@ -17,7 +17,7 @@ const full: EventDTO = {
     id: 'USGS/ak1', provider: 'USGS', category: 'EARTHQUAKE', title: 'M 3.1 near Montana', description: '',
     lat: 61.899, lng: -150.919, at: AT, dayOnly: false, reported: 'Reported 2 h ago', retrievedAt: RETRIEVED_AT,
     retrieved: 'Retrieved 1 h ago', measurement: 'Magnitude 3.1', depth: '18.4 km, shallow', trail: [], band: 2, sourceUrl: 'https://earthquake.usgs.gov/e',
-    sourceText: '', ended: false,
+    sourceText: '', ended: false, ongoing: false,
 }
 const noop = () => undefined
 
@@ -69,6 +69,12 @@ describe('the detail panel', () => {
             expect(text).toContain(`${iso.slice(0, 10)} ${iso.slice(11, 19)} UTC`)
             expect(text).toContain(`${new Date(iso).toLocaleString()} local`)
         }
+    })
+
+    it('FR-SEL-004 gives an ongoing event its report week and no exact time', async () => {
+        const reported = 'Continuing: report for 10 to 16 Sep 2026, issued 17 Sep 2026'
+        await show({...full, provider: 'GVP', category: 'VOLCANO', at: '2026-09-17T00:00:00Z', dayOnly: true, reported, ongoing: true})
+        expect(row('Event time')).toBe(reported)
     })
 
     it('FR-GEO-007 repeats the place line', async () => {

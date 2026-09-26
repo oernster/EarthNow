@@ -14,7 +14,7 @@ interface Props {
 
 /** needsAttention says whether the status has anything to report beyond the ordinary. */
 export function needsAttention(providers: ProviderDTO[], notice: string): boolean {
-    return notice !== '' || providers.some(p => p.stale || p.problem !== '')
+    return notice !== '' || providers.some(p => p.stale || p.problem !== '' || p.notice !== '')
 }
 
 function state(p: ProviderDTO): string {
@@ -28,6 +28,7 @@ export function StatusPanel({providers, notice, onClose}: Props) {
         {providers.map(p => <section key={p.name} className="status-entry">
             <h3>{p.name}</h3>
             <p>{state(p)}</p>
+            {p.notice && <p className="warn">{p.notice}.</p>}
             {p.problem && <p className="warn">The last attempt failed: {p.problem}</p>}
             {p.problem && p.nextAttempt && <p>{p.nextAttempt.charAt(0).toUpperCase() + p.nextAttempt.slice(1)}.</p>}
         </section>)}

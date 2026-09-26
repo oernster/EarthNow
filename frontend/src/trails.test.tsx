@@ -11,7 +11,7 @@ import {useGlobeLayers} from './useGlobeLayers'
 function event(id: string, trail: [number, number][]): EventDTO {
     return {id, provider: 'EONET', category: 'SEVERE_STORM', title: id, description: '', lat: 0, lng: 0, at: '',
         dayOnly: false, reported: '', retrievedAt: '', retrieved: '', measurement: '', depth: '', trail, band: 0,
-        sourceUrl: '', sourceText: '', ended: false}
+        sourceUrl: '', sourceText: '', ended: false, ongoing: false}
 }
 const storm = event('Polo', [[10, -60], [12, -62], [14, -63]])
 const quake = event('quake', [])

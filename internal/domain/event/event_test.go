@@ -30,7 +30,7 @@ func TestNFRSEC003_NewPointRefusesOffTheEarth(t *testing.T) {
 
 func TestDATA002_CategoriesInKeyOrder(t *testing.T) {
 	t.Parallel()
-	want := []Category{Earthquake, Volcano, Wildfire, SevereStorm, Flood, Landslide, Drought, Dust, Ice, Other}
+	want := []Category{Earthquake, Volcano, Wildfire, SevereStorm, Flood, Ice, Other}
 	got := Categories()
 	if len(got) != len(want) {
 		t.Fatalf("got %d categories, want %d", len(got), len(want))

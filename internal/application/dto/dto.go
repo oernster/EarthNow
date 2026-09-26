@@ -29,6 +29,10 @@ type Event struct {
 	SourceText string       `json:"sourceText"`
 	// Ended is true when the source has closed the event (FR-PRV-001).
 	Ended bool `json:"ended"`
+	// Ongoing is true for an event in progress from a report (FR-PRV-015):
+	// Reported then names its report week and the page shows no exact time
+	// (FR-SEL-004).
+	Ongoing bool `json:"ongoing"`
 }
 
 // Provider is one source's state for the status area.
@@ -42,6 +46,9 @@ type Provider struct {
 	Problem    string `json:"problem"`
 	// NextAttempt is filled only while Problem is: "next attempt in 4 min".
 	NextAttempt string `json:"nextAttempt"`
+	// Notice is a standing fact about what the provider holds, not a failure:
+	// its latest report is too old to show (FR-PRV-016). Empty when none.
+	Notice string `json:"notice"`
 }
 
 // View is everything the globe shows for one window and filter.

@@ -16,7 +16,7 @@ import {type LayerSource, useLayer} from './useLayer'
 
 const noop = () => undefined
 
-const gwis: ProviderDTO = {name: 'GWIS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 12 min ago', problem: '', nextAttempt: ''}
+const gwis: ProviderDTO = {name: 'GWIS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 12 min ago', problem: '', nextAttempt: '', notice: ''}
 
 function burnt(patch: Partial<BurntAreasDTO> = {}): BurntAreasDTO {
     return {shown: true, line: 'Burnt areas: 17 to 23 Sep (UTC), retrieved 12 min ago', key: '2026-09-23@1', notice: '', provider: gwis, ...patch}

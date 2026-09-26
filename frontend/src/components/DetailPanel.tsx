@@ -59,7 +59,8 @@ export function DetailPanel({event, inView, onClose, onProblem}: Props) {
                 <dt>Category</dt><dd>{cat.name}</dd>
                 {place && <><dt>Where</dt><dd>{place}</dd></>}
                 <dt>Position</dt><dd>{event.lat.toFixed(COORD_DECIMALS)}, {event.lng.toFixed(COORD_DECIMALS)}</dd>
-                <dt>Event time</dt><dd>{event.reported}<br/>{utc(event.at, event.dayOnly)}{eventLocal && <><br/>{eventLocal} local</>}</dd>
+                {/* FR-SEL-004: an ongoing event has its report week and no exact time. */}
+                <dt>Event time</dt><dd>{event.reported}{!event.ongoing && <><br/>{utc(event.at, event.dayOnly)}{eventLocal && <><br/>{eventLocal} local</>}</>}</dd>
                 {event.measurement && <><dt>Measurement</dt><dd>{event.measurement}</dd></>}
                 {event.depth && <><dt>Depth</dt><dd>{event.depth}</dd></>}
                 {event.description && <><dt>Source text</dt><dd>{event.description}</dd></>}

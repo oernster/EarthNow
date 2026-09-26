@@ -32,15 +32,12 @@ export interface GuideSection {
 // COVERS says what each category holds, keyed by the category table's keys.
 export const COVERS: Readonly<Record<string, string>> = {
     EARTHQUAKE: 'earthquakes from the USGS, at or above the minimum magnitude chosen in Settings, plus any earthquake EONET reports.',
-    VOLCANO: 'volcanoes in the Smithsonian and USGS weekly volcanic activity report (GVP), dated by the day the report was issued, plus any EONET tracks.',
+    VOLCANO: 'volcanoes in the latest Smithsonian and USGS weekly volcanic activity report (GVP), each shown as still erupting, plus any EONET tracks.',
     WILDFIRE: 'wildfires tracked by EONET.',
     SEVERE_STORM: 'tropical cyclones and other severe storms tracked by EONET.',
     FLOOD: 'floods tracked by EONET.',
-    LANDSLIDE: 'landslides tracked by EONET.',
-    DROUGHT: 'droughts tracked by EONET.',
-    DUST: 'dust storms and haze tracked by EONET.',
     ICE: 'sea and lake ice, such as icebergs, tracked by EONET.',
-    OTHER: 'any EONET event in a category not listed above.',
+    OTHER: 'anything else a source reports: quarry blasts and explosions from the USGS; any EONET event in a category not listed above, such as a landslide, a drought or dust haze.',
 }
 
 /** guideSections answers the guide, the donate entry named for product. */
@@ -72,6 +69,7 @@ export function guideSections(product: string): readonly GuideSection[] {
             heading: 'The time window',
             paragraphs: [
                 'The buttons above the globe choose how far back to look. An event is shown when its own time falls inside the chosen window, ending now.',
+                'A volcano in the latest weekly report is still erupting, so it shows in every window. Once that report is more than 14 days old, its volcanoes are no longer shown and the provider status says why.',
                 'The line beneath the globe counts the events shown and names the window it applies to.',
             ],
         },
@@ -79,7 +77,7 @@ export function guideSections(product: string): readonly GuideSection[] {
             heading: 'How times are worded',
             paragraphs: [
                 'Each event carries the time its source gives it. An exact time reads as "Observed 14 min ago"; a source that gives only a date reads as "Reported for 18 Sep 2026, 5 days ago".',
-                'A volcano\'s report covers the week before it is issued, so it reads as reported for that day.',
+                'A volcano reads as continuing, with the week its report covers and the day it was issued: "Continuing: report for 10 to 16 Sep 2026, issued 17 Sep 2026".',
                 'An earthquake\'s detail gives its depth with USGS\'s band: shallow above 70 km, intermediate to 300 km, deep beyond. When USGS cannot compute a depth it assigns 10 km, a fixed depth, so a depth of exactly 10 km is marked as often fixed rather than measured.',
                 'Separately, each source shows when it was last retrieved, for example "retrieved 3 min ago". The detail panel gives every time three ways: in words, in UTC and in your own time zone.',
                 'A storm draws a faint track behind its marker through the positions its source gave inside the chosen time window, fading with age. It shows where the storm has been, never a forecast; Settings can hide it.',

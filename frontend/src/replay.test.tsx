@@ -28,7 +28,7 @@ function frame(patch: Partial<ReplayFrameDTO> = {}): ReplayFrameDTO {
         view: {windowKey: '7d', countLine: '1 event up to 21 Sep 00:00 UTC in the last 7 days', events: [], counts: {}, providers: [], notice: ''},
         at: '2026-09-21T00:00:00Z', line: 'Replay: 21 Sep 00:00 UTC', sun: {lat: 0, lng: 0, twilightDegrees: 6, cloudNightFloor: 0.25},
         cloudTime: '', cloudsLine: '', burntKey: '',
-        cloudsProvider: {name: 'EUMETSAT (replay)', loading: false, refreshing: false, stale: false, retrieved: '', problem: '', nextAttempt: ''},
+        cloudsProvider: {name: 'EUMETSAT (replay)', loading: false, refreshing: false, stale: false, retrieved: '', problem: '', nextAttempt: '', notice: ''},
         ...patch,
     }
 }

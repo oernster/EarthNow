@@ -90,17 +90,25 @@ func (g *Globe) save(p event.Provider) {
 		return
 	}
 	snap, _ := g.store.Snapshot(p)
-	snap.Events = showable(snap.Events, g.clock.Now().Add(-window.Widest.Length))
+	snap.Events = showable(snap.Events, g.clock.Now())
 	if err := cache.Save(p, snap); err != nil {
 		g.setNotice("Events could not be cached: " + err.Error())
 	}
 }
 
-// showable keeps each event with at least one sighting at or after cutoff,
-// whole, sightings before it included.
-func showable(events []event.Event, cutoff time.Time) []event.Event {
+// showable keeps each event some window can still show at now, whole: one
+// with a sighting inside the widest window (sightings before it included) or
+// an ongoing one whose report is current (FR-PRV-016).
+func showable(events []event.Event, now time.Time) []event.Event {
+	cutoff := now.Add(-window.Widest.Length)
 	kept := make([]event.Event, 0, len(events))
 	for _, e := range events {
+		if e.Ongoing() {
+			if e.Report.Current(now) {
+				kept = append(kept, e)
+			}
+			continue
+		}
 		for _, o := range e.Observations {
 			if !o.At.Before(cutoff) {
 				kept = append(kept, e)
@@ -231,6 +239,7 @@ func (g *Globe) statuses(now time.Time) []dto.Provider {
 		if held {
 			status.Retrieved = freshness.Retrieved(snap.RetrievedAt, now)
 			status.Stale = freshness.Stale(snap.RetrievedAt, now, p.Interval())
+			status.Notice = reportNotice(snap.Events, now)
 		} else {
 			status.Loading = a.running || a.failed == nil
 		}
@@ -240,6 +249,21 @@ func (g *Globe) statuses(now time.Time) []dto.Provider {
 		out = append(out, status)
 	}
 	return out
+}
+
+// reportNotice is FR-PRV-016's notice when the newest report a provider holds
+// is past its currency; empty when it holds none or it is current.
+func reportNotice(events []event.Event, now time.Time) string {
+	var newest event.Report
+	for _, e := range events {
+		if e.Ongoing() && e.Report.Issued.After(newest.Issued) {
+			newest = e.Report
+		}
+	}
+	if newest.Issued.IsZero() || newest.Current(now) {
+		return ""
+	}
+	return freshness.TooOld(newest)
 }
 
 func toDTO(s Shown, now time.Time) dto.Event {
@@ -260,6 +284,10 @@ func toDTO(s Shown, now time.Time) dto.Event {
 		Band:        event.Band(s.Event, o),
 		SourceURL:   SafeURL(s.Event.SourceURL),
 		Ended:       s.Event.Ended(),
+	}
+	if s.Event.Ongoing() {
+		out.Ongoing = true
+		out.Reported = freshness.Continuing(s.Event.Report)
 	}
 	if out.SourceURL == "" {
 		out.SourceText = s.Event.SourceURL

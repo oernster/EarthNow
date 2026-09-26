@@ -69,7 +69,7 @@ source that reported it and how old that report is.
   the first run; Settings hides it. The maps are fetched only while shown and
   kept for use offline.
 - **Places every event** with its category's emoji: earthquake, volcano,
-  wildfire, severe storm, flood, landslide, drought, dust, ice or other.
+  wildfire, severe storm, flood, ice or other.
   Earthquakes are sized by magnitude. Markers that overlap on screen draw as
   one cluster with its count; activating a cluster zooms in until its members
   separate. One still together at the closest zoom lists its members instead;

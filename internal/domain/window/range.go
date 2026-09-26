@@ -41,7 +41,16 @@ func (r Range) Contains(at time.Time) bool {
 // Latest answers the event's newest observation inside the range; false when
 // none falls inside it, which means the event is not shown. That observation's
 // time is the event time and its position the marker position (DATA-003).
+// An ongoing event is in progress from its report week's first day up to now,
+// so it is inside every range reaching that day (FR-TW-002, FR-RPL-009); its
+// report's currency is the store's to judge, since only the store knows now.
 func (r Range) Latest(e event.Event) (event.Observation, bool) {
+	if e.Ongoing() {
+		if len(e.Observations) == 0 || e.Report.WeekFrom.After(r.To) {
+			return event.Observation{}, false
+		}
+		return e.Observations[len(e.Observations)-1], true
+	}
 	for i := len(e.Observations) - 1; i >= 0; i-- {
 		if o := e.Observations[i]; r.Contains(o.At) {
 			return o, true

@@ -10,7 +10,7 @@ import type {EventDTO} from './types'
 function quake(id: string, lat: number, lng: number): EventDTO {
     return {id, provider: 'USGS', category: 'EARTHQUAKE', title: `M 4.3 ${id}`, description: '', lat, lng, at: '', dayOnly: false,
         reported: 'Observed 3 h ago', retrievedAt: '', retrieved: '', measurement: '', depth: '', trail: [], band: 1,
-        sourceUrl: '', sourceText: '', ended: false}
+        sourceUrl: '', sourceText: '', ended: false, ongoing: false}
 }
 
 // Two M4.3 quakes 15 km NW of Mantoudi, Greece, 2.0 km apart (USGS, 2026-09-25).

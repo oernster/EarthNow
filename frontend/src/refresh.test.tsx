@@ -11,7 +11,7 @@ import {REFRESH_TURN_MS, useHeld} from './useHeld'
 const noop = () => undefined
 
 const usgs = (over: Partial<ProviderDTO>): ProviderDTO =>
-    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved under a minute ago', problem: '', nextAttempt: '', ...over})
+    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved under a minute ago', problem: '', nextAttempt: '', notice: '', ...over})
 
 function refreshButton(refreshing: boolean): HTMLElement {
     render(<Rail autoRotate={false} attention={false} refreshing={refreshing} onToggleRotate={noop} cloudsShown={false} onToggleClouds={noop} dayNightShown={false} onToggleDayNight={noop} onResetView={noop}

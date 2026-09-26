@@ -21,17 +21,15 @@ const (
 	Wildfire    Category = "WILDFIRE"
 	SevereStorm Category = "SEVERE_STORM"
 	Flood       Category = "FLOOD"
-	Landslide   Category = "LANDSLIDE"
-	Drought     Category = "DROUGHT"
-	Dust        Category = "DUST"
 	Ice         Category = "ICE"
 	Other       Category = "OTHER"
 )
 
 // Categories answers the whole vocabulary in DATA-002 order, the order the key
-// and the filter list it in (FR-KEY-001).
+// and the filter list it in (FR-KEY-001). A kind no provider has been measured
+// to publish has no category of its own; it is Other (amendment 45).
 func Categories() []Category {
-	return []Category{Earthquake, Volcano, Wildfire, SevereStorm, Flood, Landslide, Drought, Dust, Ice, Other}
+	return []Category{Earthquake, Volcano, Wildfire, SevereStorm, Flood, Ice, Other}
 }
 
 // Provider names the public source an event came from.
@@ -117,6 +115,8 @@ type Event struct {
 	Status          string
 	SourceURL       string
 	Extras          Extras
+	// Report is the report an ongoing event comes from; zero for any other.
+	Report Report
 }
 
 // StatusOpen and StatusClosed are EONET's two states for an event. A closed event

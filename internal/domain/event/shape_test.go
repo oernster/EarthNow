@@ -22,14 +22,16 @@ func fieldNames(v any) []string {
 func TestDATA001_TheEventHoldsWhatItLists(t *testing.T) {
 	t.Parallel()
 	want := map[string][]string{
-		"Event":       {"Provider", "ProviderEventID", "Category", "Title", "Description", "Observations", "UpdatedAt", "Status", "SourceURL", "Extras"},
+		"Event":       {"Provider", "ProviderEventID", "Category", "Title", "Description", "Observations", "UpdatedAt", "Status", "SourceURL", "Extras", "Report"},
 		"Observation": {"At", "Precision", "Where", "Measurement"},
+		"Report":      {"WeekFrom", "WeekTo", "Issued"},
 		"Extras":      {"SourceCategory", "DepthKm", "TsunamiFlag", "MagnitudeType"},
 		"Measurement": {"Value", "Unit"},
 	}
 	got := map[string][]string{
 		"Event": fieldNames(Event{}), "Observation": fieldNames(Observation{}),
 		"Extras": fieldNames(Extras{}), "Measurement": fieldNames(Measurement{}),
+		"Report": fieldNames(Report{}),
 	}
 	for name, fields := range want {
 		if !slices.Equal(got[name], fields) {

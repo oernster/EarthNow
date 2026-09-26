@@ -1,6 +1,6 @@
 # EarthNow: Software Requirements Specification
 
-Status: **Baselined on 2026-09-23, with amendments 1 to 44.**
+Status: **Baselined on 2026-09-23, with amendments 1 to 45.**
 Changes from here arrive as numbered amendments with a reason, never as silent
 edits.
 
@@ -50,6 +50,7 @@ edits.
 | 42 | 2026-09-25 | Replay's return to now is explicit (FR-RPL-024) and its speed is chosen (FR-RPL-025); FR-RPL-002 to 005, 007, 020 to 022 and NFR-KBD-009 follow. | The owner asked for one action meaning now, since the product is EarthNow: time travel starts when the replay does and ends only by Now or another window, so the end of play and the scrubber's right end hold the span's last instant. The owner also asked for half, normal and double speed: a 7 day storm crossing reads fast in 30 s while a 1 h window reads slow. The owner chose text buttons, the speed remembered in settings. |
 | 43 | 2026-09-25 | FR-RPL-024: the Now button is hidden outside a replay and sits last in the row; FR-RPL-020 and NFR-KBD-009 follow. | The owner asked for Now to be hidden rather than disabled when there is no replay, since the disabled state wears a permanent red ring. Last in the row, it appears without moving the speed button. |
 | 44 | 2026-09-25 | Wording after amendments 42 and 43: the Span definition, FR-RPL-015 and NFR-PERF-008 follow the replay starting by Play or the scrubber and the chosen speed; 2.3's runtimes and DEL-005 name no third-party versions. | Found in the documentation pass for the replay's Now and speed. No behaviour changes. |
+| 45 | 2026-09-26 | A volcano in the current weekly report is ongoing: it counts in every window its report week reaches, up to now, rather than on its issue day alone (FR-PRV-015, FR-TW-002, FR-RPL-009, FR-SEL-004, DATA-001, DATA-004, the Ongoing definition). FR-PRV-016 added: a report issued more than 14 days ago shows none of its volcanoes and the status popover says why. DATA-002 drops LANDSLIDE, DROUGHT and DUST; DATA-006 maps EONET's landslides, drought and dustHaze to OTHER; FR-MRK-002, FR-FLT-001 and Appendix D.3 follow. | The owner found no volcano in any window and doubted it. Reproduced on 2026-09-26 with the application's own adapters and window code against the live feeds: 0 volcanoes at every window from 1 h to 7 days while the GVP feed held 20, every item issued 17 Sep for the week of 10 to 16 Sep; the 7 day window began on 19 Sep. The report due on 24 Sep was not in the feed (the Smithsonian's report page was down, so whether it exists is unknown). Issue-day dating shows volcanoes in the 24 h window only on the day a report appears, while each item says the activity continues; EONET listed no volcano after 15 Jun. 14 days is two weekly cycles, so one late report never empties the globe while a dead feed stops showing after a week's grace. Over the 365 days to 2026-09-26 EONET published 9,226 events: floods, sea and lake ice, severe storms, volcanoes and wildfires, none of LANDSLIDE, DROUGHT or DUST; no other provider maps to them, so their 0 claimed a quiet Earth where no source looks. EONET still lists those ids, so one may yet arrive: deleting the rows alone would draw it with no row to filter it by, while rows shown only when filled would make the key change shape (rejected in amendment 15). The owner chose ongoing volcanoes and the three kinds folded into Other. |
 
 Source: `EarthWatch-Implementation-Plan.md` (Oliver Ernster, supplied
 2026-09-23), renamed to EarthNow by the owner. Section references of the form
@@ -125,7 +126,9 @@ One term, one meaning, throughout.
 | **Burnt-area layer** | The burnt-area days the time window overlaps (FR-BA-001), drawn together over the globe texture (FR-BA-006). |
 | **Replay instant** | The moment Replay shows: a position along the span (FR-RPL-001). |
 | **Span** | The chosen time window, ending at the instant the replay started, by Play or by the scrubber leaving its right end (FR-RPL-003). |
-| **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano dated by its report's issue day (FR-PRV-015). |
+| **Day precision** | An event dated by day alone: an EONET event whose every geometry date is exactly 00:00:00Z (DATA-005) or a volcano placed by its report's issue day (FR-PRV-015). |
+| **Report week** | The week a GVP weekly report covers, read from its item titles ("Report for 10 September-16 September 2026"), each day a UTC calendar day. |
+| **Ongoing** | An event the source reports as continuing rather than as a moment: a volcano in the current GVP report (FR-PRV-015). It is in progress from its report week's first day up to now, until FR-PRV-016's limit ends it. |
 
 ### 1.5 References
 
@@ -320,7 +323,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
 | FR-MRK-001 | Must | The globe view shall draw one marker per displayed event at the event's marker position (DATA-003). | A USGS fixture event at (61.899, -150.919) draws at that position. | T (projection) + D |
-| FR-MRK-002 | Must | The globe view shall draw each marker with its category's emoji from the category table (Appendix D.3). | Each of the ten categories renders its own glyph. | D |
+| FR-MRK-002 | Must | The globe view shall draw each marker with its category's emoji from the category table (Appendix D.3). | Each of the seven categories renders its own glyph. | D |
 | FR-MRK-003 | Must | The globe view shall size an earthquake marker by magnitude band (bands: below 3.0, 3.0 to 4.5, 4.5 to 6, 6 and above). | Fixture quakes of 1.8, 3.1, 5.0 and 6.7 draw at four distinct sizes. | T |
 | FR-MRK-004 | Must | The globe view shall draw every non-earthquake marker at one fixed size. | EONET markers carry equal size whatever their magnitude value. | T |
 | FR-MRK-005 | Must | When the pointer hovers a marker, the globe view shall show a tooltip holding the category's emoji and the event title, with the place line beneath (FR-GEO-001). | D | D |
@@ -338,7 +341,8 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 |---|---|---|---|---|
 | FR-PRV-001 | Must | The EONET provider shall retrieve every event of the widest time window (7 days), open and closed, from `/api/v3/events?status=all&days=7`; the detail panel shall say when the source has marked an event as ended. | Request URL asserted in a test with a fake HTTP client. | T |
 | FR-PRV-002 | Must | The EONET provider shall parse the response body as JSON whatever `Content-Type` the server declares. | Measured 2026-09-23: EONET labels a JSON body `application/rss+xml` even when `Accept: application/json` is sent. Fixture served with that header parses. | T |
-| FR-PRV-015 | Must | The GVP provider shall retrieve `https://volcano.si.edu/news/WeeklyVolcanoRSS.xml` hourly and map each item to a Volcano event at its `georss:point`, dated by the item's publish date at day precision, titled by the volcano and the week's activity and linked to the item's `guid` page; the feed's declared ISO-8859-1 shall be decoded. | The captured feed yields 20 events, Krakatau at (-6.1009, 105.4233) dated 17 Sep 2026; an unusable item is dropped and counted. | T |
+| FR-PRV-015 | Must | The GVP provider shall retrieve `https://volcano.si.edu/news/WeeklyVolcanoRSS.xml` hourly and map each item to an ongoing Volcano event at its `georss:point`, carrying its report week and the item's publish date as the report's issue day, titled by the volcano and the week's activity and linked to the item's `guid` page; the feed's declared ISO-8859-1 shall be decoded. The report week's first day takes the year of its last day, less one when its month falls after the last day's month; an item whose report week cannot be read is unusable (FR-PRV-013). | The captured feed yields 20 events, Krakatau at (-6.1009, 105.4233), report week 10 to 16 Sep 2026, issued 17 Sep 2026; "Report for 31 December-6 January 2027" reads 31 Dec 2026 to 6 Jan 2027; an unusable item is dropped and counted. | T |
+| FR-PRV-016 | Must | If the GVP report's issue day is more than the report currency limit (14 days) before the current instant, then the event query shall include none of its volcanoes and the provider status popover shall state the report's issue date and that it is too old to show. | Report issued 17 Sep: all 20 shown on 1 Oct 00:00, none on 2 Oct 00:00 and the popover's GVP entry reads "The latest report, issued 17 Sep 2026, is too old to show". | T |
 | FR-PRV-003 | Must | The USGS provider shall retrieve the week feed at the highest published threshold not above the configured minimum magnitude, then keep only events at or above that minimum (default 2.5, amendment 11: `2.5_week.geojson` taken whole). USGS publishes feeds only at all, 1.0, 2.5, 4.5 and significant. | Request URL asserted. | T |
 | FR-PRV-004 | Must | The USGS provider shall send `If-Modified-Since` carrying the `Last-Modified` value of its previous successful response. | Measured: USGS sends `Last-Modified`. Second request carries the header; a 304 keeps the stored events. | T |
 | FR-PRV-005 | Must | The refresh scheduler shall fetch each provider on its own refresh interval (USGS 60 s, matching its measured `max-age=60`; EONET 10 min). | Fake clock advances 60 s; exactly one USGS fetch occurs. | T |
@@ -357,9 +361,9 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | ID | Pri | Requirement | Acceptance | Verify |
 |---|---|---|---|---|
 | FR-TW-001 | Must | The time window control shall offer 1 h, 6 h, 24 h, 3 days and 7 days. | T | T |
-| FR-TW-002 | Must | While a time window is selected, the event query shall include an event only if its event time falls within that window, ending at the current instant. | Fake clock at 12:00; events at 11:30 and 10:30 with 1 h selected yield only the first. | T |
+| FR-TW-002 | Must | While a time window is selected, the event query shall include an event only if its event time falls within that window, ending at the current instant; an ongoing event is included in every window, since it is in progress at the window's end (FR-PRV-016 apart). | Fake clock at 12:00; events at 11:30 and 10:30 with 1 h selected yield only the first. A volcano of the report week 10 to 16 Sep, fake clock at 26 Sep 12:00: included at 1 h and at 7 days. | T |
 | FR-TW-003 | Must | When the application starts with no saved choice, the time window control shall select 24 h. | T | T |
-| FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002, in DATA-002 order, whether or not the store holds an event of that category; the key's rows are those toggles (FR-KEY-001). | A store with only quakes and storms still offers all ten toggles, the other eight reading 0 (FR-KEY-004), plus "All events". | T |
+| FR-FLT-001 | Must | The filter control shall offer one toggle per category in DATA-002, in DATA-002 order, whether or not the store holds an event of that category; the key's rows are those toggles (FR-KEY-001). | A store with only quakes and storms still offers all seven toggles, the other five reading 0 (FR-KEY-004), plus "All events". | T |
 | FR-FLT-002 | Must | When a category toggle is switched off, the globe view shall hide that category's markers. | T | T |
 | FR-FLT-003 | Must | When "All events" is activated, the filter control shall switch every category toggle on. | T | T |
 | FR-FLT-004 | Must | The filter control shall offer one toggle per provider. | Switching off USGS hides every USGS event. | T |
@@ -388,7 +392,7 @@ Nothing past Phase 0 is built until every Must here is demonstrated.
 | FR-GEO-007 | Must | The detail panel shall repeat the place line for the selected event. | T | T |
 | FR-GEO-008 | Must | The populated places, country boundaries and Antarctic ice shelves shall come from Natural Earth (public domain, R6), embedded in the application and credited in the third-party notices. | I on `THIRD_PARTY_NOTICES`. | I |
 | FR-SEL-003 | Must | The detail panel shall show each time as freshness wording (NFR-FRESH-002), as an exact UTC timestamp and as the same instant in the machine's local time zone. | T | T |
-| FR-SEL-004 | Must | Where the event time has day precision (DATA-005), the detail panel shall show the date alone and word freshness in days. | Sea-ice fixture dated 2026-09-18T00:00:00Z on 2026-09-23 reads "Reported for 18 Sep 2026, 5 days ago", never "Observed 5 days 11 h ago". | T |
+| FR-SEL-004 | Must | Where the event time has day precision (DATA-005), the detail panel shall show the date alone and word freshness in days; for an ongoing event it shall show the report week and the issue day in place of any freshness. | Sea-ice fixture dated 2026-09-18T00:00:00Z on 2026-09-23 reads "Reported for 18 Sep 2026, 5 days ago", never "Observed 5 days 11 h ago". An ongoing volcano reads "Continuing: report for 10 to 16 Sep 2026, issued 17 Sep 2026", with no freshness in days and no exact instant. | T |
 | FR-SEL-005 | Must | When the source link is activated, the application shall open it in the system browser. | T (fake opener receives the URL) | T |
 | FR-SEL-006 | Must | If an event's source URL is not an absolute `https` URL, then the detail panel shall show it as text rather than a link. | `javascript:` and `http:` fixtures render as plain text. | T |
 | FR-SEL-009 | Must | Where a provider gives several sources for an event, the detail panel shall link the first that names a page (no file ending; else a web page ending such as `.html` or `.shtml`); if none does, it shall show the first source as text rather than as a link. | Polo's fixture (JTWC `.tcw` then NHC `.shtml`) links the NHC page; a `.tcw` alone renders as text. | T |
@@ -606,7 +610,7 @@ revise or withdraw a report afterwards. The guide says so (FR-RPL-023).
 | FR-RPL-006 | Must | When Pause is activated, the replay control shall stop the position where it is. | Pausing at 10 s holds 1/3 through any later time. | T |
 | FR-RPL-007 | Must | When the scrubber is dragged or stepped, the replay control shall pause and move the position to the scrubber's; the right end stays in the replay (FR-RPL-002). | Dragging during play stops play at the dragged position; dragging to the right end while replaying keeps replaying. | T |
 | FR-RPL-008 | Must | While playing, the Play/Pause button shall show the `pause` artwork with the tooltip and accessible name "Pause replay"; otherwise the `play` artwork with "Play replay" (NFR-UX-004). | The name reads "Play replay", then "Pause replay" after a press. | T |
-| FR-RPL-009 | Must | While replaying, the event query shall include an event only if one of its observations falls from the span's start up to the replay instant, at its latest such observation (DATA-003 with the replay instant as the window's end). | A quake at 20 Sep 10:00 in a 7 day span ending 24 Sep 12:00: absent at a replay instant of 20 Sep 09:59, present at 10:00. A storm fixed at 19 and 21 Sep sits at its 19 Sep fix on 20 Sep. | T |
+| FR-RPL-009 | Must | While replaying, the event query shall include an event only if one of its observations falls from the span's start up to the replay instant, at its latest such observation (DATA-003 with the replay instant as the window's end); an ongoing event is included once the replay instant reaches its report week's first day. | A quake at 20 Sep 10:00 in a 7 day span ending 24 Sep 12:00: absent at a replay instant of 20 Sep 09:59, present at 10:00. A storm fixed at 19 and 21 Sep sits at its 19 Sep fix on 20 Sep. A volcano of the week 18 to 24 Sep is absent at 17 Sep 23:59 and present at 18 Sep 00:00. | T |
 | FR-RPL-010 | Must | While replaying, a severe storm's trail shall join its fixes from the span's start up to the replay instant (FR-TRL-001 over that range). | The storm above has one point on 20 Sep and no trail; two on 21 Sep. | T |
 | FR-RPL-011 | Must | While replaying, the count line shall read "N events up to <replay instant> UTC in the last <window>" (FR-CNT-001). | 3 events at 20 Sep 14:00 in 7 days: "3 events up to 20 Sep 14:00 UTC in the last 7 days". | T |
 | FR-RPL-012 | Must | While replaying with the day and night layer shown, the globe view shall place the sun at the replay instant (FR-DAY-001). | The sun handed to the globe is the subsolar point of the replay instant. | T |
@@ -681,13 +685,13 @@ Every performance figure is measured on the reference machine.
 
 | ID | Pri | Requirement |
 |---|---|---|
-| DATA-001 | Must | The domain shall define `Event` with: provider and provider event id (together its id), category, title, description (source text only), status, updated at, source URL, extras (a closed set of named provider details: source category, depth in kilometres, tsunami flag, magnitude type) and its observations, oldest first, every source point retained, each with its time, that time's precision, its position and its measurement (value and unit) where the source gave one. The retrieved-at instant belongs to the provider's snapshot in the store, not to each event. Absent source fields stay absent; none is defaulted to a plausible value. |
-| DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, LANDSLIDE, DROUGHT, DUST, ICE, OTHER. |
+| DATA-001 | Must | The domain shall define `Event` with: provider and provider event id (together its id), category, title, description (source text only), status, updated at, source URL, extras (a closed set of named provider details: source category, depth in kilometres, tsunami flag, magnitude type) and its observations, oldest first, every source point retained, each with its time, that time's precision, its position and its measurement (value and unit) where the source gave one; an ongoing event also holds its report: the report week's first and last days and the issue day. The retrieved-at instant belongs to the provider's snapshot in the store, not to each event. Absent source fields stay absent; none is defaulted to a plausible value. |
+| DATA-002 | Must | The category vocabulary shall be: EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, ICE, OTHER. A kind no provider was measured to publish in the year to 2026-09-26 has no category of its own (amendment 45). |
 | DATA-003 | Must | An event's marker position shall be its latest source point within the time window; for a polygon, the mean of its outer ring's vertices. A GDACS polygon holding a vertex value beyond 90 is read in the order that value proves (only a longitude exceeds 90); any other GDACS polygon is read in the order the feed's proven GDACS polygons more often show, latitude first when they show none or tie. |
-| DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window; GVP the report's issue day (FR-PRV-015). |
+| DATA-004 | Must | Event time shall be, per provider: USGS `properties.time` (ms since epoch, UTC); EONET the date of the latest geometry within the window; GVP ongoing across its report week up to now, ordered among other events by the report's issue day (FR-PRV-015). |
 | DATA-005 | Must | An EONET event whose every geometry date is exactly 00:00:00Z shall have all its observations marked day precision; an event with any other time of day keeps instant precision throughout. Measured 2026-09-23: every sea-ice date in the 7-day set was 00:00Z; wildfire times carried minutes; Hurricane Polo's 6-hourly track held a genuine 00:00Z fix beside 06:00, 12:00 and 18:00. A single-point event reported at exactly midnight is still read as a date; the error falls on the side of less claimed precision. |
 | DATA-012 | Must | A USGS feature shall map to EARTHQUAKE only when its `type` is `earthquake`; any other type (quarry blast, explosion, ice quake) shall map to OTHER with the type kept as the source category. A feature whose status is `deleted` shall not be shown. |
-| DATA-006 | Must | EONET categories shall map: earthquakes to EARTHQUAKE, volcanoes to VOLCANO, wildfires to WILDFIRE, severeStorms to SEVERE_STORM, floods to FLOOD, landslides to LANDSLIDE, drought to DROUGHT, dustHaze to DUST, seaLakeIce to ICE; snow, tempExtremes, waterColor, manmade and any unknown id to OTHER, the original id kept in metadata. The 13 source ids were read from `/api/v3/categories` on 2026-09-23. |
+| DATA-006 | Must | EONET categories shall map: earthquakes to EARTHQUAKE, volcanoes to VOLCANO, wildfires to WILDFIRE, severeStorms to SEVERE_STORM, floods to FLOOD, seaLakeIce to ICE; landslides, drought, dustHaze, snow, tempExtremes, waterColor, manmade and any unknown id to OTHER, the original id kept in metadata. The 13 source ids were read from `/api/v3/categories` on 2026-09-23. |
 | DATA-007 | Must | The mapping shall be data in the EONET adapter, never conditionals in the UI or the domain. |
 | DATA-008 | Must | A re-fetched event with an existing id shall replace the stored one; no two stored events shall share an id. |
 | DATA-009 | Must | The cache shall hold, per provider: the last successful event set, its retrieved-at instant and its `Last-Modified` value. It shall discard events older than the widest window (7 days). |
@@ -840,6 +844,9 @@ code point below was confirmed present in `C:\Windows\Fonts\seguiemj.ttf` on
 the reference machine (Windows 11) on 2026-09-23. Windows 10 coverage and the
 look under macOS and Linux fonts are unmeasured.
 
+LANDSLIDE, DROUGHT and DUST, with their emoji, left the table in amendment 45;
+those kinds are drawn as OTHER.
+
 | Category | Emoji | Code point |
 |---|---|---|
 | EARTHQUAKE | 〰️ (a seismograph trace; Unicode has no earthquake emoji) | U+3030 |
@@ -847,9 +854,6 @@ look under macOS and Linux fonts are unmeasured.
 | WILDFIRE | 🔥 | U+1F525 |
 | SEVERE_STORM | 🌀 | U+1F300 |
 | FLOOD | 🌊 | U+1F30A |
-| LANDSLIDE | 🪨 | U+1FAA8 |
-| DROUGHT | 🏜️ | U+1F3DC |
-| DUST | 💨 | U+1F4A8 |
 | ICE | 🧊 | U+1F9CA |
 | OTHER | 📍 | U+1F4CD |
 

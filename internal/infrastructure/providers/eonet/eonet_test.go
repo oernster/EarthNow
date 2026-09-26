@@ -141,6 +141,23 @@ func TestDATA006_UnknownAndUnmappedCategoriesAreOther(t *testing.T) {
 	}
 }
 
+// Amendment 45: EONET published no landslide, drought or dust haze in the year
+// to 2026-09-26, so those kinds have no category of their own and are Other,
+// EONET's own id kept on the event.
+func TestDATA006_KindsNoSourceFeedsAreOther(t *testing.T) {
+	t.Parallel()
+	for _, id := range []string{"landslides", "drought", "dustHaze"} {
+		body := `{"events":[{"id":"X","title":"x","categories":[{"id":"` + id + `"}],"geometry":[{"date":"2026-09-20T01:00:00Z","type":"Point","coordinates":[1,2]}]}]}`
+		events, _, err := Parse([]byte(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if e := byID(t, events, "X"); e.Category != event.Other || e.Extras.SourceCategory != id {
+			t.Errorf("%s = %+v, want Other keeping its id", id, e)
+		}
+	}
+}
+
 func TestDATA003_PolygonIsPlacedAtItsCentroid(t *testing.T) {
 	t.Parallel()
 	body := `{"events":[
