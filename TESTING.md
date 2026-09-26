@@ -292,6 +292,9 @@ file from before the speed starting at normal (FR-RPL-025).
 So is the cluster list: two quakes 2.0 km apart staying one cluster at the
 minimum altitude, the list opening within half a zoom step of it and
 choosing a member opening that event (FR-MRK-011, FR-MRK-012).
+So are the markers at the globe's edge: drawn over the globe rather than
+into it (proved by planting the depth test back), shown up to the horizon and
+hidden past it, each frame.
 So is idle rotation: input stopping it, the setting and its speed applied at
 once, rotation whatever the reduced-motion setting says and the return to the
 fit altitude from zoomed in or out before turning, stopped by input and taken
@@ -376,7 +379,7 @@ recorded there, in section 3.1.
 | The Phase 0 spike (FR-SPK-001, FR-SPK-002, FR-SPK-003, FR-SPK-004, FR-SPK-005, FR-SPK-006, FR-SPK-007) | Its measured results, section 3.1 of REQUIREMENTS.md. |
 | The globe draws with its texture, turns from launch and again after 10 s idle, follows a drag and centres a selected event at unchanged altitude (FR-GLB-001, FR-GLB-002, FR-GLB-005, FR-GLB-007) | Leave it, drag it, select an event on the far side. |
 | Reset view returns to the fit altitude; the whole globe fits the globe area; the focus animation looks like one second (FR-GLB-008, FR-GLB-013, NFR-UX-003) | Zoom, reset, resize the window. |
-| Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look. |
+| Every category's emoji draws; hover shows the tooltip; the selection ring shows; no marker animates; a marker or cluster near the globe's edge draws whole until it passes behind (FR-MRK-002, FR-MRK-005, FR-MRK-006, FR-MRK-009) | Look; leave the globe turning and watch markers and cluster badges reach the edge. |
 | A cluster zooms until its members separate (FR-MRK-008) | Activate a cluster. |
 | Activating a marker opens its detail (FR-SEL-001) | Click one. |
 | The key never overlaps the globe; rail and donate tooltips are not clipped (FR-KEY-003, FR-RAIL-003, FR-DON-007) | At the minimum window size, 960 by 700 (NFR-UX-002). |
