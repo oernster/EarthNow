@@ -213,8 +213,8 @@ platforms; [DEVELOPMENT.md](DEVELOPMENT.md) covers them.
   person makes.
 - [REQUIREMENTS.md](REQUIREMENTS.md): the specification.
 - [TECH_DEBT.md](TECH_DEBT.md): what is open and what only looks like debt.
-- [`DECISIONS-TRADEOFFS.md`](DECISIONS-TRADEOFFS.md) sets out the decisions
-  EarthNow rests on, with what each one gains and what it costs.
+- [DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md): the decisions EarthNow
+  rests on, with what each one gains and what it costs.
 
 ## Data sources and credits
 

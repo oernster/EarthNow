@@ -275,10 +275,10 @@ bash build_flatpak.sh
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
 | `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
-| `stamp_version.py` | stamps `VERSION` into the site's version pill; `build.ps1` runs it first |
+| `stamp_version.py` | stamps `VERSION` into the site's version tokens and links its stylesheet by content; `build.ps1` runs it first |
 | `builddmg.sh`, `build_flatpak.sh`, `cleanup_flatpak.sh` | the macOS and Linux builds |
 | `assets/` | the master artwork |
-| `docs/` | the GitHub Pages site: one hand-written page, no build step |
+| `docs/` | the GitHub Pages site: four hand-written pages (home, features, why and install) sharing one stylesheet, no build step |
 
 ## Standing rules
 

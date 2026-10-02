@@ -69,28 +69,35 @@ arrive from Go as data.
 
 ### One client, a list of hosts and a size cap
 
-All network traffic goes through one client. It reaches only the hosts named
-in the composition root, follows a redirect only to one of them, gives up on a
-request after 30 seconds and refuses a body over 16 MB (the largest feed
-measured was 1.51 MB).
+All network traffic goes through one client. It reaches only the hosts the
+application names, follows a redirect only to one of them, gives up on a
+request that hangs and refuses a body far larger than any feed measured. Each
+source is told the media types it serves; no parser trusts the type a source
+labels its answer with.
 
-- **Rather than:** the standard client, which follows a redirect anywhere.
+- **Rather than:** the standard client, which follows a redirect anywhere; one
+  request header for every source.
 - **Gains:** the README's list of hosts is a property of the code; an allowed
   host answering with a redirect cannot carry the request elsewhere (a case
-  that was reproduced before it was closed).
+  that was reproduced before it was closed). Every source answers: the
+  Smithsonian's feed refuses a request asking only for JSON (measured) while
+  EONET labels its JSON as RSS.
 - **Costs:** a new source is an edit to that list as well as an adapter.
 
 ### Two layers ask only while shown
 
 The cloud layer reaches EUMETSAT only while it is shown or while a replay
 needs its clouds; the burnt-area layer reaches GWIS only while it is shown.
-Hidden, each asks nothing at all. The clouds start hidden.
+Hidden, each asks nothing at all. The clouds start hidden. While shown, the
+cloud layer reads its own layer's small listing about once an hour and fetches
+an image only when a newer one is listed.
 
 - **Rather than:** fetching every layer in the background whether shown or
-  not.
-- **Gains:** hiding a layer means nothing is sent to its source.
+  not; reading the whole service's listing, 282 KB against 6.4 KB (measured).
+- **Gains:** hiding a layer means nothing is sent to its source; most cloud
+  checks cost a few kilobytes.
 - **Costs:** the burnt areas and day and night start shown, so a first run
-  does contact GWIS.
+  does contact GWIS. A new cloud image can wait up to an hour to appear.
 
 ### No account, no telemetry, no update check
 
@@ -209,16 +216,6 @@ source is fetching, the line says so and the button turns.
 - **Costs:** pressed at every chance, Refresh asks EONET up to 120 times an
   hour; the owner accepted that.
 
-### Each adapter says what it accepts
-
-Each adapter states the media types it asks for; no parser trusts the type
-a source labels its answer with.
-
-- **Rather than:** one request header for every source.
-- **Gains:** every source answers. The Smithsonian's feed refuses a request
-  asking only for JSON (measured); EONET labels its JSON as RSS.
-- **Costs:** none recorded.
-
 ### The last good set kept as a file per source
 
 Each source's last successful set is kept as one JSON file, written beside
@@ -330,8 +327,7 @@ before it counts.
 ### An ice shelf is Antarctica
 
 Natural Earth's Antarctic ice shelves are embedded beside the countries, so a
-point on the Ross or Ronne shelf names Antarctica. A point at exactly 180
-degrees east is looked up at 180 west, where the split polygon carries it.
+point on the Ross or Ronne shelf names Antarctica.
 
 - **Rather than:** the countries alone, which draw Antarctica only to its
   grounded coast, so a shelf read as open sea.
@@ -389,32 +385,16 @@ word "live"; a structural test holds that.
 
 The cloud image and the burnt areas are fetched, checked and drawn in Go,
 then handed to the page as finished pictures laid on spheres over the globe.
+An answer counts only if it is a picture of exactly the size asked for;
+anything else is a failed fetch.
 
-- **Rather than:** drawing them on the page, which would have to fetch them.
+- **Rather than:** drawing them on the page, which would have to fetch them;
+  trusting the status code, when the cloud service reports errors as XML with
+  a success status.
 - **Gains:** the page keeps its rule of no network origin; the drawing rules
-  sit in the domain, where they are tested.
+  sit in the domain, where they are tested; an error page is never drawn as
+  cloud.
 - **Costs:** each image crosses to the page as encoded text.
-
-### The newest cloud image found cheaply
-
-The cloud layer reads its own layer's capabilities document for the newest
-image time about once an hour. It fetches an image only when that time is
-new.
-
-- **Rather than:** the whole service's document: 282 KB against 6.4 KB
-  (measured).
-- **Gains:** most checks cost a few kilobytes.
-- **Costs:** a new image can wait up to an hour to appear.
-
-### A map answer must be the picture asked for
-
-Both map sources must answer with a PNG of exactly the size asked for, its
-size read before the pixels are decoded. Anything else is a failed fetch.
-
-- **Rather than:** trusting the status code. The cloud service reports
-  errors as XML with a success status.
-- **Gains:** an error page is never drawn as cloud.
-- **Costs:** none recorded.
 
 ### Burnt areas a day at a time
 
@@ -429,30 +409,26 @@ clouds. A day that fails keeps its held image while the others draw.
   costs one day.
 - **Costs:** up to eight requests a round.
 
-### The sun worked out from the time
+### Day and night from the time, on the globe's own material
 
-The sun's position comes from NOAA's solar position equations, written in
-the Go domain; the page asks for it once a minute while the layer shows.
-Tests hold it within 0.1 degrees of NOAA's own calculator.
+The sun's position comes from NOAA's solar position equations, worked out in
+the Go domain from the time alone; the page asks for it about once a minute
+while the layer shows. Tests hold it within 0.1 degrees of NOAA's own
+calculator. The globe keeps the library's own lit material: NASA's night
+lights are added to it and one light factor per point dims the day and
+reveals the lights. Hidden, the globe draws exactly as before. Clouds over the
+night side dim to a floor.
 
-- **Rather than:** the npm package the globe library's day and night example
-  uses, which would put astronomy on the page; that example also fetches its
-  textures from a network address the page may not reach.
-- **Gains:** no request; one home for the figures.
-- **Costs:** the equations are EarthNow's own to maintain.
-
-### Day and night lights the globe's own material
-
-The globe keeps the library's own lit material; NASA's night lights are added
-to it and one light factor per point dims the day and reveals the lights.
-Hidden, the factor is 1 everywhere, so the globe draws exactly as before.
-Clouds over the night side dim to a floor.
-
-- **Rather than:** the example's own unlit shader, which would change the day
-  side and leave hiding the layer unable to restore the globe.
-- **Gains:** switching the layer off truly switches it off.
-- **Costs:** the light is injected into the rendering library's shader
-  source; a test fails if a part it relies on is renamed.
+- **Rather than:** the npm package and the unlit shader of the globe library's
+  own day and night example. The package would put astronomy on the page;
+  the example also fetches its textures from a network address the page may
+  not reach; the shader would change the day side and leave hiding the layer
+  unable to restore the globe.
+- **Gains:** no request; one home for the figures; switching the layer off
+  truly switches it off.
+- **Costs:** the equations are EarthNow's own to maintain; the light is
+  injected into the rendering library's shader source, so a test fails if a
+  part it relies on is renamed.
 
 ### The Earth is never drawn
 
@@ -481,12 +457,17 @@ The globe is globe.gl on three.js with the Blue Marble texture bundled.
 
 Each category is drawn as its emoji on a sprite; categories differ by emoji,
 never by colour alone. The emoji are written in one table that the key,
-markers, clusters and tooltips all read.
+markers, clusters and tooltips all read. Since a sprite always faces the
+camera, markers are drawn over the globe rather than tested against its
+depth, with those beyond the horizon hidden before each frame.
 
-- **Rather than:** thousands of page elements moved every frame.
+- **Rather than:** thousands of page elements moved every frame; the depth
+  test, under which a marker near the edge stood upright and sank half into
+  the sphere.
 - **Gains:** smooth: the spike measured 2,501 sprites at a median frame of
-  10.00 ms.
-- **Costs:** each picture is drawn and cached by the page itself.
+  10.00 ms. A marker reaching the edge is drawn whole until it passes behind.
+- **Costs:** each picture is drawn and cached by the page itself; a check over
+  every marker on every frame.
 
 ### Markers keep their size on screen
 
@@ -508,17 +489,6 @@ apart. One still together at the closest zoom lists its members instead.
   which left two quakes 2.0 km apart unreachable by pointer.
 - **Gains:** every event can be opened.
 - **Costs:** clustering is EarthNow's own code to maintain.
-
-### Markers drawn whole at the edge
-
-Markers are drawn over the globe rather than tested against its depth; before
-each frame those beyond the horizon are hidden.
-
-- **Rather than:** the depth test. A sprite always faces the camera, so near
-  the edge it stood upright and sank half into the sphere.
-- **Gains:** a marker reaching the edge is drawn whole until it passes
-  behind.
-- **Costs:** a check over every marker on every frame.
 
 ### Rotation follows its own switch
 
@@ -567,17 +537,6 @@ move. Half and double speed are offered.
 - **Costs:** it shows what the sources hold now about those days, which may
   since have been revised.
 
-### The page keeps the clock
-
-The page holds the replay's position and plays it on animation frames. It
-asks Go for a frame at most every 100 ms and for an image only when the frame
-names a new one.
-
-- **Rather than:** Go driving the clock and pushing frames.
-- **Gains:** no timer on the Go side for what is an animation; the page asks
-  at its own pace.
-- **Costs:** none recorded.
-
 ### Replay's clouds are smaller and kept in memory
 
 A replay fetches its three-hourly cloud images at half the live image's width
@@ -606,8 +565,8 @@ the row.
 
 ### An action rail down the left
 
-The actions sit in a rail down the left side, 68 pixels wide; the key sits
-on the right. The globe area keeps at least 70% of the window, which a test
+The actions sit in a narrow rail down the left side; the key sits on the
+right. The globe area keeps at least 70% of the window, which a test
 checks.
 
 - **Rather than:** full-width bars. At the minimum window when this was
@@ -738,16 +697,6 @@ nothing there.
   lines to a user's log.
 - **Costs:** none recorded.
 
-### The site's stylesheet is named by its content
-
-Each local stylesheet and script on the site is linked with a hash of its
-content. The version is stamped into the site from the one version file.
-
-- **Rather than:** plain links, which let a browser pair a new page with a
-  cached old stylesheet.
-- **Gains:** a change to the site is seen at once.
-- **Costs:** the stamp must run before a release, which the build does.
-
 ## Engineering
 
 ### Layers with one place where they meet
@@ -794,7 +743,9 @@ the emoji there. Everything else reads them.
 - **Rather than:** copies written where they are needed.
 - **Gains:** a change is made once and cannot drift.
 - **Costs:** static files such as the website have to be stamped or generated
-  from the source.
+  from the source. The build stamps the version into the site and links its
+  stylesheet by a hash of its content, so a browser never pairs a new page
+  with a cached old stylesheet.
 
 ### The wire is checked from both sides
 
@@ -811,10 +762,14 @@ refusal; a call that does not will not compile.
 ### Use cases hold no timers
 
 The scheduler, the layers and Replay's cloud fetcher hold no timer. The
-facade asks what is due and when to wake.
+facade asks what is due and when to wake. A replay's position is kept by the
+page, which plays it on animation frames and asks Go for each frame at its
+own pace.
 
-- **Rather than:** timers inside the use cases.
-- **Gains:** every timing rule runs on a fake clock in its tests.
+- **Rather than:** timers inside the use cases; Go driving the replay's clock
+  and pushing frames.
+- **Gains:** every timing rule runs on a fake clock in its tests; no timer on
+  the Go side for what is an animation.
 - **Costs:** the facade carries the loop that does the waiting.
 
 ### Background work cannot take the application down
