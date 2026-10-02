@@ -58,6 +58,9 @@ In order, it:
 2. Runs `stamp_version.py`, which writes that version into every
    `<!--VERSION-->` token of the site under `docs/`, so the site never offers an
    older number than the setup program. It touches nothing already current.
+   It also versions the site's stylesheet and script links by content
+   (`styles.css?v=<hash>`), so a browser never pairs a new page with a cached
+   old stylesheet.
 3. Sets `CGO_ENABLED=0` for everything that follows.
 4. Runs [`test.ps1`](TESTING.md). A failure stops the build; there is no switch
    to skip it.
