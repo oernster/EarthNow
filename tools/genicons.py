@@ -26,7 +26,8 @@ would put a megabyte and more behind one badge.
 
 The donate mark: cropped to its artwork and scaled by height to four times the
 rail glyph, never squared, since a wide picture on a square canvas spends its
-height on nothing (FR-DON-002). The same render goes to the site (FR-DON-010).
+height on nothing (FR-DON-002). The site's docs/donate.png is not written here:
+it is the small mark every project site shares byte for byte (FR-DON-010).
 
 The GitHub Pages site under docs/ also takes the application's mark as its icon
 and a small copy of the page's NASA texture for its turning globe (CON-009).
@@ -120,12 +121,9 @@ DONATE_HEIGHT = 4 * RAIL_GLYPH_PX
 # small copies of the artwork, written here beside the application's.
 SITE = REPO / "docs"
 
-# DONATE_OUTPUTS receive the same render in one loop, so no copy can drift from
-# another: the rail's button and the site's (FR-DON-010).
-DONATE_OUTPUTS = (
-    REPO / "frontend" / "src" / "assets" / DONATE_MASTER,
-    SITE / DONATE_MASTER,
-)
+# DONATE_OUTPUTS receive the render: the rail's button only. The site keeps the
+# shared mark every project site carries (FR-DON-010), so it is never derived.
+DONATE_OUTPUTS = (REPO / "frontend" / "src" / "assets" / DONATE_MASTER,)
 
 # APP_MARK_OUTPUTS are the application's mark at the rail icon size: beside the
 # heading in the key column and as the site's icon.

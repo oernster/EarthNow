@@ -148,9 +148,10 @@ Both scripts are run by hand; their output is committed.
   which `build.ps1` puts on both executables;
 - the setup page's header mark (256 pixels) and its sun and moon (128 pixels)
   into `installer/frontend/dist`;
-- the donate mark into `frontend/src/assets/donate.png` and `docs/donate.png`
-  from one render, cropped to its artwork and scaled by height to four times
-  the rail's 48-pixel glyph;
+- the donate mark into `frontend/src/assets/donate.png`, cropped to its
+  artwork and scaled by height to four times the rail's 48-pixel glyph (the
+  site's `docs/donate.png` is the mark every project site shares, never
+  generated);
 - the application icon, from one call, for the page's own mark and as the
   site's `docs/icon.png`;
 - `docs/earth.jpg`, the page's NASA texture at 760 pixels high, for the
