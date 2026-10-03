@@ -41,11 +41,24 @@ type Store struct {
 	mu    sync.RWMutex
 	clock ports.Clock
 	sets  map[event.Provider]Snapshot
+	// minimum is the reader's minimum magnitude, applied to what is shown.
+	minimum float64
 }
 
-// NewStore builds an empty store reading the time from clock.
+// NewStore builds an empty store reading the time from clock, showing every
+// magnitude until told a minimum.
 func NewStore(clock ports.Clock) *Store {
-	return &Store{clock: clock, sets: map[event.Provider]Snapshot{}}
+	return &Store{clock: clock, sets: map[event.Provider]Snapshot{}, minimum: event.NoMinimum}
+}
+
+// SetMinimum is the minimum magnitude shown from now on (FR-SET-002). It filters
+// the view, never the held set: a minimum raised while USGS cannot be reached
+// hides the quakes below it at once. The offline copy keeps them, so lowering
+// it again brings them back.
+func (s *Store) SetMinimum(minimum float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.minimum = minimum
 }
 
 // Apply records a successful fetch. A not-modified answer keeps the stored
@@ -93,7 +106,8 @@ func (s *Store) Visible(w window.Window, f Filter) []Shown {
 
 // Within answers the events inside a range and not filtered out, newest first:
 // the live window's range or a replay's (FR-RPL-009). An ongoing event whose
-// report is past its currency is never shown (FR-PRV-016).
+// report is past its currency is never shown (FR-PRV-016), nor a quake below
+// the minimum magnitude (FR-SET-002).
 func (s *Store) Within(r window.Range, f Filter) []Shown {
 	now := s.clock.Now()
 	s.mu.RLock()
@@ -101,7 +115,7 @@ func (s *Store) Within(r window.Range, f Filter) []Shown {
 	var out []Shown
 	for _, snap := range s.sets {
 		for _, e := range snap.Events {
-			if f.hides(e) || (e.Ongoing() && !e.Report.Current(now)) {
+			if f.hides(e) || !event.MeetsMinimum(e, s.minimum) || (e.Ongoing() && !e.Report.Current(now)) {
 				continue
 			}
 			if o, ok := r.Latest(e); ok {

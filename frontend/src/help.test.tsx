@@ -23,7 +23,7 @@ import type {ProviderDTO} from './types'
 const key = (k: string) => fireEvent.keyDown(document.activeElement ?? document.body, {key: k})
 
 const provider = (over: Partial<ProviderDTO> = {}): ProviderDTO =>
-    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', notice: '', ...over})
+    ({name: 'USGS', loading: false, refreshing: false, stale: false, retrieved: 'Retrieved 3 min ago', problem: '', nextAttempt: '', notice: '', dropped: '', ...over})
 
 describe('a reading body', () => {
     beforeEach(layOut)
@@ -190,6 +190,13 @@ describe('FR-STS-003 the provider status popover', () => {
         render(<StatusPanel providers={[provider({name: 'GVP', notice: 'The latest report, issued 17 Sep 2026, is too old to show'})]}
             notice="" onClose={() => undefined}/>)
         expect(screen.getByText('The latest report, issued 17 Sep 2026, is too old to show.')).toBeTruthy()
+    })
+
+    it('FR-PRV-013 says how many items the last answer could not use; asks for attention', () => {
+        const dropped = '3 items in the last answer could not be read and are not shown'
+        render(<StatusPanel providers={[provider({dropped})]} notice="" onClose={() => undefined}/>)
+        expect(screen.getByText(dropped + '.')).toBeTruthy()
+        expect(needsAttention([provider({dropped})], '')).toBe(true)
     })
 })
 

@@ -104,8 +104,9 @@ type wireEvent struct {
 }
 
 // Parse maps an EONET events body. A body that is not the expected document
-// is an error; a single unusable event is dropped and counted (FR-PRV-012,
-// FR-PRV-013). The Content-Type is never consulted (FR-PRV-002).
+// is an error, as is one whose every event is unusable; a single unusable event
+// is dropped and counted (FR-PRV-012, FR-PRV-013). The Content-Type is never
+// consulted (FR-PRV-002).
 func Parse(body []byte) ([]event.Event, int, error) {
 	var doc struct {
 		Events *[]wireEvent `json:"events"`
@@ -126,6 +127,9 @@ func Parse(body []byte) ([]event.Event, int, error) {
 			continue
 		}
 		out = append(out, e)
+	}
+	if err := event.CheckUsable(len(out), dropped); err != nil {
+		return nil, dropped, fmt.Errorf("parsing events: %w", err)
 	}
 	return out, dropped, nil
 }

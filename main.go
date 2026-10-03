@@ -68,6 +68,13 @@ const responseCap = 16 << 20
 // requestTimeout bounds one fetch so a hung source cannot stall its refresh.
 const requestTimeout = 30 * time.Second
 
+// clientFor is the one way a network client is built: each adapter's holds its
+// own host alone (NFR-PRIV-001), so one source's redirect cannot reach another's
+// host, nor a layer's while that layer is hidden. The cap and timeout are shared.
+func clientFor(host string) *httpfetch.Client {
+	return httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, host)
+}
+
 // systemClock is the real clock, injected wherever the time is needed.
 type systemClock struct{}
 
@@ -116,9 +123,8 @@ func main() {
 	log.SetOutput(keepLog())
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	client := httpfetch.New(&http.Client{Timeout: requestTimeout}, responseCap, eonet.Host, usgs.Host, gvp.Host, clouds.Host, gwis.Host)
-	quakes := usgs.New(client, usgs.AllMagnitudes)
-	providers := []ports.Provider{eonet.New(client), quakes, gvp.New(client)}
+	quakes := usgs.New(clientFor(usgs.Host), usgs.AllMagnitudes)
+	providers := []ports.Provider{eonet.New(clientFor(eonet.Host)), quakes, gvp.New(clientFor(gvp.Host))}
 	clock := systemClock{}
 	globe := services.NewGlobe(services.NewStore(clock), clock, providers)
 	dir, err := dataDir()
@@ -133,27 +139,29 @@ func main() {
 		log.Printf("no data folder: %v", err)
 		dir = ""
 	}
-	// The settings load before the first fetch, so it asks with the saved minimum.
+	// The settings load before the first fetch, so it asks with the saved minimum;
+	// the globe is told it too, so the view honours it before any fetch succeeds.
 	settingsStore := settings.New(dir)
-	prefs := services.NewPreferences(settingsStore, quakes.SetMinimum)
+	prefs := services.NewPreferences(settingsStore, quakes.SetMinimum, globe.SetMinimum)
 	prefs.Load()
 	log.Printf("settings: %s; notice %q", settingsStore.Path(), prefs.Notice())
 	globe.RestoreCached()
 	// FR-CLD-005: the cloud service is reached only while the layer is shown;
 	// the use case asks nothing while hidden, so its host being allowed costs
-	// nothing then (NFR-PRIV-001).
-	cloudLayer := services.NewClouds(clock, clouds.New(client, clouds.BaseURL), cache.NewCloud(layerDir, responseCap))
+	// nothing then (NFR-PRIV-001). Live and replay clouds share its one client.
+	cloudClient := clientFor(clouds.Host)
+	cloudLayer := services.NewClouds(clock, clouds.New(cloudClient, clouds.BaseURL), cache.NewCloud(layerDir, responseCap))
 	cloudLayer.Restore()
 	cloudLayer.SetShown(prefs.Current().CloudsShown)
 	// FR-BA-005: GWIS is reached only while the burnt-area layer is shown.
-	burntLayer := services.NewBurntAreas(clock, gwis.New(client, gwis.BaseURL), cache.NewBurnt(layerDir, responseCap))
+	burntLayer := services.NewBurntAreas(clock, gwis.New(clientFor(gwis.Host), gwis.BaseURL), cache.NewBurnt(layerDir, responseCap))
 	burntLayer.Restore()
 	burntLayer.SetWindow(prefs.Current().WindowKey)
 	burntLayer.SetShown(prefs.Current().BurntShown)
 	// Replay's cloud images come from the same service at a smaller size, held
 	// in memory only (FR-RPL-015).
 	sun := services.NewSun(clock)
-	replayClouds := services.NewReplayClouds(clock, clouds.New(client, clouds.BaseURL))
+	replayClouds := services.NewReplayClouds(clock, clouds.New(cloudClient, clouds.BaseURL))
 	replay := services.NewReplay(globe, sun, cloudLayer, burntLayer, replayClouds)
 	help := Help{
 		About:   dto.About{Name: product.Name, Version: appVersion, Copyright: product.Copyright, Licence: product.Licence, Attributions: product.Attributions()},

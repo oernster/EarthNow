@@ -123,6 +123,20 @@ func TestUnusableItemsAreDroppedAndCounted(t *testing.T) {
 	}
 }
 
+// FR-PRV-012: items present and every one unusable is a parse failure, not an
+// empty set; a channel with no items is a genuine empty set (audit round 2, E-1).
+func TestFRPRV012_ItemsPresentAndNoneUsableIsAnError(t *testing.T) {
+	t.Parallel()
+	const open = `<?xml version="1.0" encoding="ISO-8859-1"?><rss xmlns:georss="http://www.georss.org/georss"><channel>`
+	const bad = "<item><title>no parts</title><guid>u#vn_1</guid></item>"
+	if events, dropped, err := Parse([]byte(open + bad + bad + "</channel></rss>")); !errors.Is(err, event.ErrNoneUsable) || dropped != 2 {
+		t.Errorf("Parse = %d events, dropped %d, %v; want ErrNoneUsable", len(events), dropped, err)
+	}
+	if events, dropped, err := Parse([]byte(open + "</channel></rss>")); err != nil || len(events) != 0 || dropped != 0 {
+		t.Errorf("an empty channel gave %d, %d, %v", len(events), dropped, err)
+	}
+}
+
 func TestADocumentThatIsNotTheFeedIsAnError(t *testing.T) {
 	t.Parallel()
 	for _, body := range []string{

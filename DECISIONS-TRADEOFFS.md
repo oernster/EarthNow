@@ -67,22 +67,33 @@ arrive from Go as data.
 - **Gains:** one place to read to know what EarthNow contacts.
 - **Costs:** every image crosses from Go to the page as encoded text.
 
-### One client, a list of hosts and a size cap
+### One client package, one host per adapter, https only and a size cap
 
-All network traffic goes through one client. It reaches only the hosts the
-application names, follows a redirect only to one of them, gives up on a
-request that hangs and refuses a body far larger than any feed measured. Each
-source is told the media types it serves; no parser trusts the type a source
-labels its answer with.
+All network traffic goes through one client package. Each adapter is given a
+client of its own host alone, built by one constructor in the composition
+root. A client sends a request only over https to its host and follows a
+redirect only over https to it; a plain http address is refused, first request
+or redirect, before anything is dialled. It gives up on a request that hangs
+and refuses a body far larger than any feed measured. Each source is told the
+media types it serves; no parser trusts the type a source labels its answer
+with. The client uses Go's standard transport, which honours a proxy named in
+the `HTTPS_PROXY` environment variable (read in Go's source; Windows' own proxy
+setting is not read): when one is set, that proxy host is contacted as well as
+the source.
 
-- **Rather than:** the standard client, which follows a redirect anywhere; one
-  request header for every source.
+- **Rather than:** the standard client, which follows a redirect anywhere and
+  to plain http; one client holding every host, under which an EONET redirect
+  to EUMETSAT was followed with the cloud layer hidden (measured in audit); one
+  request header for every source; refusing every proxy, which would break the
+  app where a proxy is the only way out.
 - **Gains:** the README's list of hosts is a property of the code; an allowed
   host answering with a redirect cannot carry the request elsewhere (a case
-  that was reproduced before it was closed). Every source answers: the
-  Smithsonian's feed refuses a request asking only for JSON (measured) while
-  EONET labels its JSON as RSS.
-- **Costs:** a new source is an edit to that list as well as an adapter.
+  that was reproduced before it was closed), nor drop it to cleartext where an
+  answer could be rewritten on the path, nor reach a hidden layer's host. Every
+  source answers: the Smithsonian's feed refuses a request asking only for JSON
+  (measured) while EONET labels its JSON as RSS.
+- **Costs:** a new source is a new client as well as an adapter; a source that
+  moved to another host would fail until its host is changed in the code.
 
 ### Two layers ask only while shown
 
@@ -191,6 +202,18 @@ one, 1.0, 3.0 and 4.5 as well.
 - **Gains:** more of the world's activity at a count the globe draws smoothly.
 - **Costs:** small local quakes are hidden until asked for.
 
+The minimum applies twice by one rule: to what each USGS answer keeps; to what
+the globe shows from the set it holds. A minimum raised while USGS cannot
+be reached hides the quakes below it at once; the held set and its file keep
+them, so lowering it again offline brings them back.
+
+- **Rather than:** dropping the held set when the minimum rises. Offline, that
+  would empty the earthquakes until USGS answered (quakes above the new minimum
+  included) and cut the offline copy for a change of view.
+- **Gains:** the globe always agrees with Settings; the offline copy is never
+  cut by a setting.
+- **Costs:** the file can hold quakes the globe is not showing.
+
 ### Each source on its own clock
 
 USGS is asked every minute, matching its feed's measured cache lifetime;
@@ -227,6 +250,20 @@ the globe opens on these sets, each marked with its age.
   survives being offline; a file from another schema version is simply read
   as absent.
 - **Costs:** a whole file is rewritten after every fetch.
+
+An answer that lists items yet yields none that can be used is a failed fetch,
+not an empty set: the set and its file are kept and the status gives the
+reason. One rule in the domain serves all three sources. An answer listing no
+items is a true empty set; USGS quakes that are all below the minimum are too,
+since that filter is the reader's.
+
+- **Rather than:** taking such an answer as a source with nothing to report.
+  A change to a feed's format then emptied that source from the globe,
+  overwrote its file and showed it fresh and fault free (measured in audit).
+- **Gains:** a format change is seen as a fault and costs no stored events.
+  When some items are unusable, the status popover says how many.
+- **Costs:** none measured; a source genuinely listing only broken items would
+  show its last good set, marked with its age, until it mends them.
 
 ### A failed source costs only itself
 

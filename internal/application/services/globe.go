@@ -20,10 +20,13 @@ const timeLayout = time.RFC3339
 // secureScheme is the only scheme a source link may carry to be a link (FR-SEL-006).
 const secureScheme = "https"
 
-// attempt is what the last fetch of one provider did.
+// attempt is what the last fetch of one provider did. dropped is the count of
+// unusable items in the last answer read (FR-PRV-013), kept across a 304 and a
+// failure, since the set held is still the one that answer gave.
 type attempt struct {
 	running bool
 	failed  error
+	dropped int
 }
 
 // Globe is the use case the window drives: refresh the providers, then answer
@@ -36,7 +39,10 @@ type Globe struct {
 	attempts  map[event.Provider]attempt
 	geocoder  ports.Geocoder
 	cache     ports.SnapshotCache
-	notice    string
+	// noCache is NoCache while there is no cache at all; empty otherwise.
+	noCache string
+	// notices holds each provider's cache problem until its next good save.
+	notices map[event.Provider]string
 }
 
 // UseCache keeps each provider's set across runs. Without one the events live
@@ -58,13 +64,15 @@ func (g *Globe) RestoreCached() {
 	cache := g.cache
 	g.mu.Unlock()
 	if cache == nil {
-		g.setNotice(NoCache)
+		g.mu.Lock()
+		g.noCache = NoCache
+		g.mu.Unlock()
 		return
 	}
 	for _, p := range g.providers {
 		snap, held, err := cache.Load(p.Name())
 		if err != nil {
-			g.setNotice("Cached events could not be read: " + err.Error())
+			g.setNotice(p.Name(), "Cached events could not be read: "+err.Error())
 			continue
 		}
 		if held {
@@ -73,15 +81,21 @@ func (g *Globe) RestoreCached() {
 	}
 }
 
-func (g *Globe) setNotice(n string) {
+// setNotice records a provider's cache problem; an empty one clears it.
+func (g *Globe) setNotice(p event.Provider, n string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.notice = n
+	if n == "" {
+		delete(g.notices, p)
+		return
+	}
+	g.notices[p] = n
 }
 
 // save writes a provider's set to the cache after a successful fetch, less any
 // event with no sighting inside the widest window, which no window can show
-// (DATA-009).
+// (DATA-009). A good save clears that provider's notice, as the image layers'
+// do: its file is whole again, whatever was wrong with it before.
 func (g *Globe) save(p event.Provider) {
 	g.mu.Lock()
 	cache := g.cache
@@ -92,8 +106,10 @@ func (g *Globe) save(p event.Provider) {
 	snap, _ := g.store.Snapshot(p)
 	snap.Events = showable(snap.Events, g.clock.Now())
 	if err := cache.Save(p, snap); err != nil {
-		g.setNotice("Events could not be cached: " + err.Error())
+		g.setNotice(p, "Events could not be cached: "+err.Error())
+		return
 	}
+	g.setNotice(p, "")
 }
 
 // showable keeps each event some window can still show at now, whole: one
@@ -121,8 +137,12 @@ func showable(events []event.Event, now time.Time) []event.Event {
 
 // NewGlobe builds the use case over its collaborators.
 func NewGlobe(store *Store, clock ports.Clock, providers []ports.Provider) *Globe {
-	return &Globe{store: store, clock: clock, providers: providers, attempts: map[event.Provider]attempt{}}
+	return &Globe{store: store, clock: clock, providers: providers, attempts: map[event.Provider]attempt{}, notices: map[event.Provider]string{}}
 }
+
+// SetMinimum is the minimum magnitude the globe shows from now on (FR-SET-002),
+// at once and whether or not USGS can be reached; see Store.SetMinimum.
+func (g *Globe) SetMinimum(minimum float64) { g.store.SetMinimum(minimum) }
 
 // SetGeocoder supplies the geocoder once its data has loaded; until then place
 // lines are empty rather than blocking the window.
@@ -150,23 +170,39 @@ type Outcome struct {
 	Dropped     int
 }
 
-// Refresh fetches one provider, conditional on its stored validator.
+// Refresh fetches one provider, conditional on its stored validator. A failed
+// fetch, a parse failure among them (FR-PRV-012), keeps the stored set and the
+// cache as they were.
 func (g *Globe) Refresh(ctx context.Context, p ports.Provider) (Outcome, error) {
-	g.record(p.Name(), attempt{running: true})
+	name := p.Name()
+	dropped := g.begin(name)
 	validator := ""
-	if snap, ok := g.store.Snapshot(p.Name()); ok {
+	if snap, ok := g.store.Snapshot(name); ok {
 		validator = snap.Validator
 	}
 	fetched, err := p.Fetch(ctx, validator)
 	if err != nil {
-		g.record(p.Name(), attempt{failed: err})
+		g.record(name, attempt{failed: err, dropped: dropped})
 		return Outcome{}, err
 	}
-	g.store.Apply(p.Name(), fetched)
-	g.record(p.Name(), attempt{})
-	g.save(p.Name())
-	snap, _ := g.store.Snapshot(p.Name())
+	if !fetched.NotModified {
+		dropped = fetched.Dropped
+	}
+	g.store.Apply(name, fetched)
+	g.record(name, attempt{dropped: dropped})
+	g.save(name)
+	snap, _ := g.store.Snapshot(name)
 	return Outcome{NotModified: fetched.NotModified, Count: len(snap.Events), Dropped: fetched.Dropped}, nil
+}
+
+// begin marks a provider's fetch as running and answers the dropped count of
+// the last answer read, which stands until another answer is read.
+func (g *Globe) begin(p event.Provider) int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	dropped := g.attempts[p].dropped
+	g.attempts[p] = attempt{running: true, dropped: dropped}
+	return dropped
 }
 
 func (g *Globe) record(p event.Provider, a attempt) {
@@ -222,48 +258,8 @@ func (g *Globe) view(w window.Window, shown []Shown, countLine string) dto.View 
 		view.Events = append(view.Events, toDTO(s, now))
 	}
 	view.Providers = g.statuses(now)
-	g.mu.Lock()
-	view.Notice = g.notice
-	g.mu.Unlock()
+	view.Notice = g.noticeLine()
 	return view
-}
-
-func (g *Globe) statuses(now time.Time) []dto.Provider {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	out := make([]dto.Provider, 0, len(g.providers))
-	for _, p := range g.providers {
-		a := g.attempts[p.Name()]
-		status := dto.Provider{Name: string(p.Name())}
-		snap, held := g.store.Snapshot(p.Name())
-		if held {
-			status.Retrieved = freshness.Retrieved(snap.RetrievedAt, now)
-			status.Stale = freshness.Stale(snap.RetrievedAt, now, p.Interval())
-			status.Notice = reportNotice(snap.Events, now)
-		} else {
-			status.Loading = a.running || a.failed == nil
-		}
-		if a.failed != nil {
-			status.Problem = a.failed.Error()
-		}
-		out = append(out, status)
-	}
-	return out
-}
-
-// reportNotice is FR-PRV-016's notice when the newest report a provider holds
-// is past its currency; empty when it holds none or it is current.
-func reportNotice(events []event.Event, now time.Time) string {
-	var newest event.Report
-	for _, e := range events {
-		if e.Ongoing() && e.Report.Issued.After(newest.Issued) {
-			newest = e.Report
-		}
-	}
-	if newest.Issued.IsZero() || newest.Current(now) {
-		return ""
-	}
-	return freshness.TooOld(newest)
 }
 
 func toDTO(s Shown, now time.Time) dto.Event {

@@ -115,11 +115,15 @@ source that reported it and how old that report is.
   than once every 30 seconds; its icon turns and the status line says which
   sources are refreshing until they answer, then the time of the last refresh.
 - **Survives being offline.** Each source's last good set is kept on disk, so
-  the globe opens on it and says how old it is.
+  the globe opens on it and says how old it is. An answer whose items are all
+  unusable (what a change to a feed's format looks like) counts as a failed
+  fetch: the last good set and its file are kept.
 - **Is honest about age.** Nothing is labelled live. A source that has not
   answered for three of its intervals is marked stale. The provider status
-  panel gives each source's state, the reason for any failed fetch and when
-  the volcano report is too old to show.
+  panel gives each source's state, the reason for any failed fetch, how many
+  items its last answer could not use and when the volcano report is too old
+  to show. A minimum magnitude raised in Settings applies to the globe at once,
+  even while USGS cannot be reached.
 - **Explains itself.** Help opens a guide to every control, the About details,
   the licence and the third-party notices.
 
@@ -129,9 +133,12 @@ source that reported it and how old that report is.
   `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov` and `volcano.si.edu`. While
   the clouds are shown or a replay fetches its clouds it also contacts
   `view.eumetsat.int`; while the burnt areas are shown,
-  `maps.effis.emergency.copernicus.eu`. It contacts no others: the HTTP client
-  refuses any other host. What the platform's web view itself contacts
-  (WebView2, WKWebView or WebKitGTK) is its maker's.
+  `maps.effis.emergency.copernicus.eu`. It contacts no others: each source's
+  HTTP client allows its own host alone and speaks https only, refusing a
+  redirect to any other host or to plain http. If the `HTTPS_PROXY` environment
+  variable names a proxy, requests go through it, so that proxy is contacted
+  too (Windows' own proxy setting is not read). What the platform's web view
+  itself contacts (WebView2, WKWebView or WebKitGTK) is its maker's.
 - **No request from the page.** Every fetch is made by the Go side; the page's
   Content-Security-Policy allows it no other origin.
 - **No update check, no tray icon, no start with Windows.**

@@ -118,6 +118,19 @@ func TestFRPRV013_UnusableEventsAreDroppedAndCounted(t *testing.T) {
 	}
 }
 
+// FR-PRV-012: events present and every one unusable is a parse failure, not an
+// empty set; an empty list is a genuine empty set (audit round 2, E-1).
+func TestFRPRV012_EventsPresentAndNoneUsableIsAnError(t *testing.T) {
+	t.Parallel()
+	body := `{"events":[{"id":"","title":"no id"},{"id":"E1","title":"","geometry":[]},{"id":"E2","title":"no sighting","geometry":[]}]}`
+	if events, dropped, err := Parse([]byte(body)); !errors.Is(err, event.ErrNoneUsable) || dropped != 3 {
+		t.Errorf("Parse = %d events, dropped %d, %v; want ErrNoneUsable", len(events), dropped, err)
+	}
+	if events, dropped, err := Parse([]byte(`{"events":[]}`)); err != nil || len(events) != 0 || dropped != 0 {
+		t.Errorf("an empty list gave %d, %d, %v", len(events), dropped, err)
+	}
+}
+
 func TestDATA006_UnknownAndUnmappedCategoriesAreOther(t *testing.T) {
 	t.Parallel()
 	body := `{"events":[
@@ -199,10 +212,11 @@ func TestDATA003_PolygonAcrossTheAntimeridianStaysInThePacific(t *testing.T) {
 func TestDATA003_PolygonVertexOutsideTheEarthIsDropped(t *testing.T) {
 	t.Parallel()
 	body := `{"events":[
-	 {"id":"X","title":"vertex off the Earth","geometry":[{"date":"2026-09-20T01:00:00Z","type":"Polygon","coordinates":[[[-300,0],[300,0],[0,2]]]}]}
+	 {"id":"X","title":"vertex off the Earth","geometry":[{"date":"2026-09-20T01:00:00Z","type":"Polygon","coordinates":[[[-300,0],[300,0],[0,2]]]}]},
+	 {"id":"OK","title":"kept","geometry":[{"date":"2026-09-20T01:00:00Z","type":"Point","coordinates":[1,2]}]}
 	]}`
 	events, dropped, err := Parse([]byte(body))
-	if err != nil || dropped != 1 || len(events) != 0 {
+	if err != nil || dropped != 1 || len(events) != 1 || events[0].ProviderEventID != "OK" {
 		t.Errorf("Parse: %d events, dropped %d, %v; want the event dropped", len(events), dropped, err)
 	}
 }

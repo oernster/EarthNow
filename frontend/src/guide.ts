@@ -54,7 +54,7 @@ export function guideSections(product: string): readonly GuideSection[] {
                 {icon: icons.zoomIn, name: RAIL_LABELS.zoomIn, text: 'moves the camera closer; the mouse wheel does the same.'},
                 {icon: icons.zoomOut, name: RAIL_LABELS.zoomOut, text: 'moves the camera further away.'},
                 {icon: icons.refresh, name: RAIL_LABELS.refresh, text: 'fetches every source at once; it can be used again after a short pause.'},
-                {icon: icons.status, name: RAIL_LABELS.status, text: 'each source\'s state, why a fetch failed and when the next attempt is. A dot on the button means there is something to read.'},
+                {icon: icons.status, name: RAIL_LABELS.status, text: 'each source\'s state, why a fetch failed, when the next attempt is and how many items of its last answer could not be read. A dot on the button means there is something to read.'},
                 {icon: icons.settings, name: RAIL_LABELS.settings, text: 'idle rotation, its speed, the smallest earthquake shown and whether storm tracks and burnt areas show.'},
                 {icon: icons.help, name: RAIL_LABELS.help, text: 'this guide, About, the licence and the third-party notices.'},
                 {icon: icons.donate, name: donateLabel(product), text: 'opens the donation page in your browser. Nothing is held back without a donation.'},

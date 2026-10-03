@@ -14,10 +14,10 @@ import (
 // allowed host is followed; an endless one stops.
 func TestNFRPRIV001_ARedirectIsHeldToTheAllowedHosts(t *testing.T) {
 	t.Parallel()
-	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("elsewhere")) }))
+	other := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("elsewhere")) }))
 	t.Cleanup(other.Close)
 	var allowed *httptest.Server
-	allowed = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	allowed = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/away":
 			http.Redirect(w, r, other.URL+"/x", http.StatusFound)
@@ -31,7 +31,7 @@ func TestNFRPRIV001_ARedirectIsHeldToTheAllowedHosts(t *testing.T) {
 	}))
 	t.Cleanup(allowed.Close)
 	u, _ := url.Parse(allowed.URL)
-	c := New(&http.Client{}, capBytes, u.Host)
+	c := New(allowed.Client(), capBytes, u.Host)
 	if got, err := c.Get(context.Background(), allowed.URL+"/away", ""); !errors.Is(err, ErrHostNotAllowed) {
 		t.Errorf("a redirect to another host gave %q, %v; want ErrHostNotAllowed", got.Body, err)
 	}

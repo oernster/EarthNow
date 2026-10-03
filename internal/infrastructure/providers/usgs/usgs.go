@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,7 +24,7 @@ const Host = "earthquake.usgs.gov"
 const Interval = time.Minute
 
 // AllMagnitudes is the minimum that keeps every event, "all" in settings.
-var AllMagnitudes = math.Inf(-1)
+var AllMagnitudes = event.NoMinimum
 
 // feed is one published threshold: the feeds exist only at these (measured).
 type feed struct {
@@ -148,7 +147,9 @@ type wireFeature struct {
 }
 
 // Parse maps a feed body, keeping events at or above minimum. A malformed
-// feature is dropped and counted; a withdrawn one is left out uncounted.
+// feature is dropped and counted; a withdrawn one is left out uncounted. Features
+// present and every one malformed is an error (FR-PRV-012); usable ones all
+// below the minimum are an empty set, since the filter is the reader's.
 func Parse(body []byte, minimum float64) ([]event.Event, int, error) {
 	var doc struct {
 		Features *[]wireFeature `json:"features"`
@@ -160,7 +161,7 @@ func Parse(body []byte, minimum float64) ([]event.Event, int, error) {
 		return nil, 0, fmt.Errorf("parsing feed: no features list")
 	}
 	var out []event.Event
-	dropped := 0
+	usable, dropped := 0, 0
 	for _, f := range *doc.Features {
 		if f.Properties.Status == deletedStatus {
 			continue
@@ -170,10 +171,13 @@ func Parse(body []byte, minimum float64) ([]event.Event, int, error) {
 			dropped++
 			continue
 		}
-		if minimum != AllMagnitudes && (f.Properties.Mag == nil || *f.Properties.Mag < minimum) {
-			continue
+		usable++
+		if event.MeetsMinimum(e, minimum) {
+			out = append(out, e)
 		}
-		out = append(out, e)
+	}
+	if err := event.CheckUsable(usable, dropped); err != nil {
+		return nil, dropped, fmt.Errorf("parsing feed: %w", err)
 	}
 	return out, dropped, nil
 }

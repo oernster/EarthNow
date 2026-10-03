@@ -114,6 +114,26 @@ func TestFRPRV013_MalformedFeaturesDroppedWithdrawnOnesLeftOut(t *testing.T) {
 	}
 }
 
+// FR-PRV-012: features present and every one malformed is a parse failure.
+// Usable features all below the minimum are not: the source answered well and
+// the reader's filter left nothing, so a malformed one beside them is dropped
+// and counted as ever (FR-PRV-013). Withdrawn ones alone are an empty set.
+func TestFRPRV012_FeaturesPresentAndNoneUsableIsAnError(t *testing.T) {
+	t.Parallel()
+	const bad = `{"id":"notime","properties":{"mag":3},"geometry":{"coordinates":[1,2,3]}}`
+	if events, dropped, err := Parse([]byte(`{"features":[`+bad+`,`+bad+`]}`), AllMagnitudes); !errors.Is(err, event.ErrNoneUsable) || dropped != 2 {
+		t.Errorf("Parse = %d events, dropped %d, %v; want ErrNoneUsable", len(events), dropped, err)
+	}
+	small := `{"id":"small","properties":{"mag":1,"time":1},"geometry":{"coordinates":[1,2]}}`
+	if events, dropped, err := Parse([]byte(`{"features":[`+bad+`,`+small+`]}`), 4.5); err != nil || len(events) != 0 || dropped != 1 {
+		t.Errorf("a usable quake below the minimum gave %d, %d, %v; want an empty set and one dropped", len(events), dropped, err)
+	}
+	gone := `{"id":"gone","properties":{"time":1,"status":"deleted"},"geometry":{"coordinates":[1,2]}}`
+	if events, dropped, err := Parse([]byte(`{"features":[`+gone+`]}`), AllMagnitudes); err != nil || len(events) != 0 || dropped != 0 {
+		t.Errorf("withdrawn only gave %d, %d, %v", len(events), dropped, err)
+	}
+}
+
 type fakeFetcher struct {
 	resp      httpfetch.Response
 	err       error

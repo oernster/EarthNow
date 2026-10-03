@@ -15,6 +15,7 @@ import (
 // Sentinel failures, each worded where it is raised.
 var (
 	ErrHostNotAllowed = errors.New("host not allowed")
+	ErrNotHTTPS       = errors.New("not an https address")
 	ErrTooLarge       = errors.New("response larger than the size cap")
 	ErrStatus         = errors.New("unexpected HTTP status")
 )
@@ -37,26 +38,47 @@ type Client struct {
 // check below replaces its default.
 const maxRedirects = 10
 
-// New builds a client that reaches only hosts and refuses bodies over maxBytes.
-// It works on its own copy of httpClient, whose redirects are held to the same
-// hosts: without that, an allowed host answering 302 would hand the request to
-// any host at all (NFR-PRIV-001, reproduced 2026-09-24).
+// secureScheme is the only scheme the client sends a request over, first hop
+// and every redirect alike.
+const secureScheme = "https"
+
+// New builds a client that reaches only hosts over https only; it refuses
+// bodies over maxBytes. It works on its own copy of httpClient, whose redirects
+// are held to the same hosts and scheme. Without that, an allowed host answering
+// 302 would hand the request to any host at all (NFR-PRIV-001, reproduced
+// 2026-09-24); it could also drop the request to cleartext on its own name,
+// where the answer could be rewritten on the path. Each adapter is given a client of its own host, so
+// one provider's redirect cannot reach another's host or a hidden layer's.
 func New(httpClient *http.Client, maxBytes int64, hosts ...string) *Client {
 	allowed := make(map[string]bool, len(hosts))
 	for _, h := range hosts {
 		allowed[h] = true
 	}
+	c := &Client{allowed: allowed, maxBytes: maxBytes}
 	held := *httpClient
 	held.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if !allowed[req.URL.Host] {
-			return fmt.Errorf("%w: %s", ErrHostNotAllowed, req.URL.Host)
+		if err := c.admit(req.URL); err != nil {
+			return err
 		}
 		if len(via) >= maxRedirects {
 			return fmt.Errorf("stopped after %d redirects", maxRedirects)
 		}
 		return nil
 	}
-	return &Client{http: &held, allowed: allowed, maxBytes: maxBytes}
+	c.http = &held
+	return c
+}
+
+// admit is the one check every request passes before it is sent, the first
+// and each redirect: https, to an allowed host.
+func (c *Client) admit(u *url.URL) error {
+	if u.Scheme != secureScheme {
+		return fmt.Errorf("%w: %s://%s", ErrNotHTTPS, u.Scheme, u.Host)
+	}
+	if !c.allowed[u.Host] {
+		return fmt.Errorf("%w: %s", ErrHostNotAllowed, u.Host)
+	}
+	return nil
 }
 
 // Accept values an adapter may ask for. JSON is what EONET and USGS serve;
@@ -79,8 +101,8 @@ func (c *Client) GetAccepting(ctx context.Context, rawURL, validator, accept str
 	if err != nil {
 		return Response{}, fmt.Errorf("parsing %q: %w", rawURL, err)
 	}
-	if !c.allowed[parsed.Host] {
-		return Response{}, fmt.Errorf("%w: %s", ErrHostNotAllowed, parsed.Host)
+	if err := c.admit(parsed); err != nil {
+		return Response{}, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {

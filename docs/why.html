@@ -98,13 +98,16 @@
                 <h3>What you can count on</h3>
                 <ul>
                     <li><strong>Offline? Still useful.</strong> It opens on the last
-                        events it received and tells you how old they are.</li>
+                        events it received and tells you how old they are. An answer it
+                        cannot read never wipes them.</li>
                     <li><strong>One source down?</strong> The others carry on while it
                         quietly tries again.</li>
                     <li><strong>Honest about age.</strong> A source that has gone quiet is
                         marked stale rather than passed off as current.</li>
                     <li><strong>Private.</strong> No account, no sign-in, no telemetry. It
-                        talks to the sources above and nobody else.</li>
+                        talks to the sources above over https and nobody else; if you
+                        have named a proxy in the <code>HTTPS_PROXY</code> environment
+                        variable, it goes through that.</li>
                 </ul>
             </div>
             <div class="card">

@@ -88,8 +88,8 @@ type wireItem struct {
 }
 
 // Parse maps a weekly report feed. A body that is not the expected document is
-// an error; a single unusable item is dropped and counted (FR-PRV-012,
-// FR-PRV-013).
+// an error, as is one whose every item is unusable; a single unusable item is
+// dropped and counted (FR-PRV-012, FR-PRV-013).
 func Parse(body []byte) ([]event.Event, int, error) {
 	var doc struct {
 		XMLName xml.Name   `xml:"rss"`
@@ -109,6 +109,9 @@ func Parse(body []byte) ([]event.Event, int, error) {
 			continue
 		}
 		out = append(out, e)
+	}
+	if err := event.CheckUsable(len(out), dropped); err != nil {
+		return nil, dropped, fmt.Errorf("parsing the report: %w", err)
 	}
 	return out, dropped, nil
 }

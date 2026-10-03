@@ -137,8 +137,16 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 - **The globe and the store** over hand-written fake providers: a failed
   provider leaving the others' events standing, a not-modified answer keeping
   the stored set, the cache restored before any fetch, the notices when there
-  is no cache or no settings file. The https rule for source links is tested
-  there as well.
+  is no cache or no settings file, a provider's cache notice clearing on its
+  next good save while another's stays, the status's count of items dropped
+  (kept through a 304 and a failure) and the minimum magnitude filtering the
+  live view and a replay while the held set and the cache keep every quake
+  (FR-SET-002). The https rule for source links is tested there as well.
+- **The offline promise end to end** in the USGS package: the real globe,
+  store, adapter and disk cache over a fake fetcher. An answer whose every
+  feature lacks its time keeps the two quakes held, on the globe and in the
+  file, with the reason in the status (FR-PRV-012); a minimum raised in
+  Settings while USGS fails hides the quake below it at once.
 - **Storm trails**: a storm's fixes clipped to the window and ending at the
   marker, none for one fix or for any other category (FR-TRL-001); the trail
   reaching the wire as pairs, empty rather than absent; trails on for a first
@@ -194,7 +202,9 @@ jsdom does not have, so it is exercised by eye, in the checks below.
 - **Each provider** parses a feed captured from the real source (in its
   `testdata`), through a fake fetcher: the request URL, the categories mapped
   (EONET's landslides, drought and dust haze to Other), malformed items dropped
-  and counted, withdrawn earthquakes left out, each GDACS polygon read in the
+  and counted, an answer whose items are all malformed refused as a parse
+  failure while an empty one is an empty set (FR-PRV-012), withdrawn
+  earthquakes left out, each GDACS polygon read in the
   order its own coordinates prove (else the order the feed's proven polygons
   show) and the volcano report's Latin-1 decoded, the apostrophes and
   subscript twos its encoding loses put back while a real question mark is kept
@@ -215,8 +225,20 @@ jsdom does not have, so it is exercised by eye, in the checks below.
   the highest opacity in red (FR-BA-002, FR-BA-006, FR-BA-009, FR-BA-013).
   `pngcheck`, which both map adapters share, decodes only a PNG of the size
   asked for (FR-CLD-012, FR-BA-013).
-- **`httpfetch`** against a local test server: the host allowlist, a redirect
-  held to the allowed hosts, the size cap, the status check, `If-Modified-Since` and a 304.
+- **`httpfetch`** against local TLS test servers: the host allowlist, the size
+  cap, the status check, `If-Modified-Since` and a 304. The redirect rules run
+  through a dial hook that sends every connection to loopback stand-ins (port
+  443 to a TLS one, any other to a plain one) and records each address dialled,
+  so the real redirect check meets the real host names: 301, 302, 303, 307 and
+  308 followed within the host and refused, with no dial, to another host or a
+  layer host; a chain through allowed hosts followed and one turning outward
+  refused; a redirect to plain http and a first request over it refused before
+  the cleartext dial; lookalike hosts (user information, a subdomain, a
+  Cyrillic letter, punycode, case, a trailing dot, a port) refused as first
+  request and as redirect target. This proves the client's decisions and the
+  addresses it tries, not DNS, certificates or real servers.
+- **One host per client:** a structural test holds every `httpfetch.New` call
+  outside the tests to a single host.
 - **The cache and the settings** in temporary folders: round trips (the cloud
   image with its valid time and the burnt-area days among them), a settings
   file from before the day and night layer starting it shown (FR-DAY-007),
@@ -261,7 +283,8 @@ the Help surfaces with the rail's order, the detail panel's Depth row shown
 or left out and the guide's note on the fixed depth (FR-SEL-010, FR-SEL-013,
 FR-SEL-014), an ongoing volcano's event time given as its report week with no
 exact time (FR-SEL-004), the status popover's notice for a report too old to
-show (FR-PRV-016), the key's seven categories with an unknown one falling to
+show (FR-PRV-016) and its count of the items a source's last answer could not
+use (FR-PRV-013), the key's seven categories with an unknown one falling to
 Other (DATA-002), the storms handed to the globe as paths with their colour ramp,
 none while switched off (proved by planting the switch away) and the Settings
 box (FR-TRL-002 to FR-TRL-004). The refresh indicator is covered too:

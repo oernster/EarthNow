@@ -108,6 +108,53 @@ func TestDATA009_TheCacheDiscardsWhatTheWidestWindowCannotShow(t *testing.T) {
 	}
 }
 
+// FR-STS-005: a refused save's notice goes once that provider saves again, as
+// the image layers' do. Another provider saving does not clear it; two
+// providers' notices are both kept (audit round 2, E-2).
+func TestFRSTS005_ACacheNoticeClearsOnTheNextGoodSave(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	usgsCache := &fakeCache{saveErr: errors.New("the file is locked by another process")}
+	g := NewGlobe(NewStore(clock), clock, nil)
+	g.UseCache(usgsCache)
+	usgs := &fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{quake("a", 3, "")}}}
+	eonet := &fakeProvider{name: event.EONET, fetched: ports.Fetched{Events: []event.Event{ev(event.EONET, "e", event.Wildfire, time.Hour)}}}
+	_, _ = g.Refresh(context.Background(), usgs)
+	_, _ = g.Refresh(context.Background(), eonet)
+	_, _ = g.Refresh(context.Background(), usgs)
+	usgsCache.saveErr = nil
+	_, _ = g.Refresh(context.Background(), eonet)
+	if got := g.View("24h", Filter{}).Notice; got != "Events could not be cached: the file is locked by another process" {
+		t.Errorf("after another provider saved, notice = %q; want USGS's kept", got)
+	}
+	_, _ = g.Refresh(context.Background(), usgs)
+	_, _ = g.Refresh(context.Background(), usgs)
+	if got := g.View("24h", Filter{}).Notice; got != "" {
+		t.Errorf("after two good saves the notice still reads %q", got)
+	}
+}
+
+// A cache that could not be read at start is mended by that provider's next
+// good save, so its notice goes then; another provider's stays.
+func TestFRSTS005_AReadNoticeClearsWhenThatProviderSaves(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	eonet := &fakeProvider{name: event.EONET, fetched: ports.Fetched{Events: []event.Event{ev(event.EONET, "e", event.Wildfire, time.Hour)}}}
+	usgs := &fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{quake("a", 3, "")}}}
+	g := NewGlobe(NewStore(clock), clock, []ports.Provider{eonet, usgs})
+	broken := &fakeCache{loadErr: errors.New("damaged")}
+	g.UseCache(broken)
+	g.RestoreCached()
+	want := "Cached events could not be read: damaged" + noticeSeparator + "Cached events could not be read: damaged"
+	if got := g.View("24h", Filter{}).Notice; got != want {
+		t.Fatalf("notice = %q, want both providers' %q", got, want)
+	}
+	_, _ = g.Refresh(context.Background(), eonet)
+	if got := g.View("24h", Filter{}).Notice; got != "Cached events could not be read: damaged" {
+		t.Errorf("after EONET saved, notice = %q; want USGS's alone", got)
+	}
+}
+
 // NFR-REL-001: an unreadable cache at startup is a stated notice in the window.
 func TestUnreadableCacheIsANotice(t *testing.T) {
 	t.Parallel()

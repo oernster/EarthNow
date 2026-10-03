@@ -1,7 +1,6 @@
 package services
 
 import (
-	"math"
 	"slices"
 	"strings"
 	"sync"
@@ -22,7 +21,7 @@ type Magnitude struct {
 // Magnitudes are FR-SET-002's choices, lowest first. "All" keeps every event,
 // those with no magnitude included.
 var Magnitudes = []Magnitude{
-	{Key: "all", Label: "All", Minimum: math.Inf(-1)},
+	{Key: "all", Label: "All", Minimum: event.NoMinimum},
 	{Key: "1.0", Label: "1.0 and above", Minimum: 1.0},
 	{Key: "2.5", Label: "2.5 and above", Minimum: 2.5},
 	{Key: "3.0", Label: "3.0 and above", Minimum: 3.0},
@@ -57,19 +56,28 @@ var ReplaySpeeds = []dto.ReplaySpeed{
 const DefaultReplaySpeed = "normal"
 
 // Preferences holds the reader's settings: loads them at start, answers them
-// to the page, saves every change and tells the USGS adapter its minimum.
+// to the page, saves every change and tells the USGS adapter and the view its
+// minimum.
 type Preferences struct {
 	mu           sync.Mutex
 	store        ports.SettingsStore
-	applyMinimum func(float64)
+	applyMinimum []func(float64)
 	current      ports.Settings
 	notice       string
 }
 
-// NewPreferences builds the use case over its store. applyMinimum is handed
-// the USGS minimum at load and on every change of it.
-func NewPreferences(store ports.SettingsStore, applyMinimum func(float64)) *Preferences {
+// NewPreferences builds the use case over its store. Each of applyMinimum is
+// handed the USGS minimum at load and on every change of it: the adapter for
+// its next fetch; the globe for what it shows meanwhile (FR-SET-002).
+func NewPreferences(store ports.SettingsStore, applyMinimum ...func(float64)) *Preferences {
 	return &Preferences{store: store, applyMinimum: applyMinimum, current: Defaults()}
+}
+
+// apply hands minimum to every applier.
+func (p *Preferences) apply(minimum float64) {
+	for _, apply := range p.applyMinimum {
+		apply(minimum)
+	}
 }
 
 // Defaults are the settings of a first run: rotating at the normal speed,
@@ -107,7 +115,7 @@ func (p *Preferences) Load() {
 	}
 	minimum := minimumOf(p.current.Magnitude)
 	p.mu.Unlock()
-	p.applyMinimum(minimum)
+	p.apply(minimum)
 }
 
 // Notice is the settings problem the reader should know about; empty when none.
@@ -163,7 +171,7 @@ func (p *Preferences) Update(chosen dto.Settings) (dto.Settings, []event.Provide
 	if !changed {
 		return toSettingsDTO(next), nil
 	}
-	p.applyMinimum(minimumOf(next.Magnitude))
+	p.apply(minimumOf(next.Magnitude))
 	return toSettingsDTO(next), []event.Provider{event.USGS}
 }
 

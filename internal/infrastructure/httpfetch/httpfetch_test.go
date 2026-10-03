@@ -14,7 +14,7 @@ const capBytes = 16
 
 func serve(t *testing.T, h http.HandlerFunc) (*Client, string) {
 	t.Helper()
-	srv := httptest.NewServer(h)
+	srv := httptest.NewTLSServer(h)
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	return New(srv.Client(), capBytes, u.Host), srv.URL
@@ -102,7 +102,7 @@ func TestReportsUnusableURLsAndDeadHosts(t *testing.T) {
 	if _, err := c.Get(context.Background(), "://bad", ""); err == nil {
 		t.Error("an unparseable URL was accepted")
 	}
-	if _, err := c.Get(context.Background(), "http://127.0.0.1:1/x", ""); err == nil {
+	if _, err := c.Get(context.Background(), "https://127.0.0.1:1/x", ""); err == nil {
 		t.Error("a request to a closed port succeeded")
 	}
 }

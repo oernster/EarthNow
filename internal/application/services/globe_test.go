@@ -104,6 +104,41 @@ func TestNFROBS001_RefreshAnswersItsOutcome(t *testing.T) {
 	}
 }
 
+// FR-PRV-013: the status says how many items the last answer read could not
+// use. It stands through a 304 and a failure, since the set held is still that
+// answer's; it goes when an answer with none arrives (audit round 2, E-1).
+func TestFRPRV013_TheStatusCountsTheItemsDropped(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{noon}
+	p := &fakeProvider{name: event.USGS, fetched: ports.Fetched{Events: []event.Event{quake("a", 3, "")}, Dropped: 2}}
+	g := NewGlobe(NewStore(clock), clock, []ports.Provider{p})
+	if got := provider(t, g, "USGS").Dropped; got != "" {
+		t.Errorf("before any fetch, dropped = %q", got)
+	}
+	const two = "2 items in the last answer could not be read and are not shown"
+	refreshEach(g)
+	if got := provider(t, g, "USGS").Dropped; got != two {
+		t.Errorf("dropped = %q, want %q", got, two)
+	}
+	p.fetched = ports.Fetched{NotModified: true}
+	refreshEach(g)
+	p.fetched, p.err = ports.Fetched{}, errors.New("down")
+	refreshEach(g)
+	if got := provider(t, g, "USGS").Dropped; got != two {
+		t.Errorf("after a 304 and a failure, dropped = %q, want %q", got, two)
+	}
+	p.fetched, p.err = ports.Fetched{Events: []event.Event{quake("a", 3, "")}, Dropped: 1}, nil
+	refreshEach(g)
+	if got := provider(t, g, "USGS").Dropped; got != "1 item in the last answer could not be read and is not shown" {
+		t.Errorf("one dropped reads %q", got)
+	}
+	p.fetched = ports.Fetched{Events: []event.Event{quake("a", 3, "")}}
+	refreshEach(g)
+	if got := provider(t, g, "USGS").Dropped; got != "" {
+		t.Errorf("an answer with none dropped left %q", got)
+	}
+}
+
 // DATA-011: a measurement is shown with its source unit as given ("3.21 md").
 func TestViewWordsEachEvent(t *testing.T) {
 	t.Parallel()

@@ -38,6 +38,7 @@ that each of its assertions was proved to bite by planting a violation.
 | Each infrastructure package holds its measured coverage floor; the page holds its istanbul floors. | [`test.ps1`](test.ps1), [`frontend/vite.config.ts`](frontend/vite.config.ts) |
 | `THIRD_PARTY_NOTICES` is exactly what `tools/notices.py` writes from the shipped dependency tree (NFR-LEG-001). | `python tools/notices.py --check`, run by [`test.ps1`](test.ps1) |
 | The geocoder imports no network package (`net`, `net/http`, `net/url`, `httpfetch`): places come from the embedded Natural Earth data (FR-GEO-004). | [`TestFRGEO004_TheGeocoderReachesNoNetwork`](tests/structural/rules_test.go) |
+| Every `httpfetch.New` call outside the tests names exactly one host, so each adapter's client holds its own host alone (NFR-PRIV-001). | [`TestNFRPRIV001_EveryClientHoldsOneHost`](tests/structural/client_test.go) |
 | Every category emoji is written only in `frontend/src/categories.ts`, the table the key, markers, clusters and tooltips read (FR-KEY-002). | [`TestFRKEY002_EmojiLiveOnlyInTheCategoryTable`](tests/structural/rules_test.go) |
 | No Go string literal and no page source outside a comment uses the word "live" (FR-STS-006). | [`TestFRSTS006_NothingIsLabelledLive`](tests/structural/rules_test.go) |
 | The page uses neither `innerHTML` nor `dangerouslySetInnerHTML`, so provider text is rendered as text (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
@@ -150,10 +151,15 @@ The use cases, behind the ports in
 
 - `Globe` refreshes one provider at a time and answers the view for a window
   and a filter: the events shown, the count per category, each provider's
-  status (a report too old to show among it) and any standing notice.
+  status (a report too old to show among it; the items its last answer could
+  not use) and any standing notice. A provider's cache notice clears on
+  its next good save, as the image layers' do.
 - `Store` holds each provider's latest set. A failed provider keeps its last
   set; the others are unaffected (FR-PRV-008). It leaves out an ongoing event
-  whose report is past its currency, judged by its own clock (FR-PRV-016).
+  whose report is past its currency, judged by its own clock (FR-PRV-016). It
+  also leaves out a quake below the current minimum magnitude (FR-SET-002). The minimum filters
+  what is shown, never what is held, so a minimum raised while USGS cannot be
+  reached takes effect at once and the offline copy keeps every quake.
 - `Scheduler` decides when each provider is next due, with the backoff that
   doubles up to 30 minutes after a failure (FR-PRV-006) and the 30-second
   cooldown between manual refreshes (FR-PRV-010), answering when the last one
@@ -162,7 +168,8 @@ The use cases, behind the ports in
   asks what is due and when to wake, so every timing rule runs on a fake clock
   in its tests.
 - `Preferences` loads, normalises and saves the settings, telling the USGS
-  adapter its minimum magnitude and saying in a notice when the settings file
+  adapter and the globe its minimum magnitude (one rule, `event.MeetsMinimum`,
+  serves both) and saying in a notice when the settings file
   was missing or unreadable (FR-SET-004). It also offers the replay speeds
   with each one's pass in seconds (`ReplaySpeeds`, FR-RPL-025), so the page
   holds no replay figure of its own.
@@ -201,13 +208,24 @@ The use cases, behind the ports in
 Each package implements a port or a piece of setup policy against the real
 machine.
 
-- `httpfetch` is the only network client. It makes a GET to an allowed host,
-  follows a redirect only to an allowed host, refuses a body over the cap,
-  sends `If-Modified-Since` where a validator is held and asks each source for
-  the media types it serves.
+- `httpfetch` is the only network client. It makes a GET over https to an
+  allowed host, follows a redirect only over https to an allowed host (a plain
+  http address is refused, first request or redirect, before anything is
+  dialled), refuses a body over the cap, sends `If-Modified-Since` where a
+  validator is held and asks each source for the media types it serves. The
+  composition root builds each adapter a client of its own host alone
+  (`clientFor` in `main.go`; a structural test holds every client to one host),
+  so one source's redirect can reach neither another source's host nor a layer
+  host while that layer is hidden. The client uses Go's standard transport,
+  which honours a proxy named in the `HTTPS_PROXY` environment variable (not
+  Windows' own proxy setting): when one is set, that proxy host is contacted too.
 - The three providers each own their source's schema; nothing outside the
   package knows it. Each names its one host and its refresh interval: USGS
-  every minute, EONET every ten minutes, the volcano report every hour.
+  every minute, EONET every ten minutes, the volcano report every hour. An
+  answer that lists items yet yields none it can use is a parse failure, not an
+  empty set: one rule in the domain (`event.CheckUsable`) that all three apply,
+  so a change to a feed's format keeps the stored set and its cache and the
+  status names the reason (FR-PRV-012).
 - `clouds` reads the layer's own capabilities document (6.4 KB, against 282 KB
   for the whole service) for the newest valid time, then fetches that time's
   2048 by 1024 PNG. It refuses anything that is not a PNG of that size, since
@@ -311,15 +329,16 @@ tests read, so it belongs to no layer.
    that cannot be opened falls back to standard error rather than ending the
    run. During the `wails build` bindings pass (`binding_pass.go`) it uses
    standard error, so a build never writes to the user's log.
-2. **The client and the providers.** One `httpfetch` client with a 30-second
-   timeout and the 16 MB response cap of FR-PRV-011, allowed the three
-   providers' hosts plus EUMETSAT's and GWIS's and no others; then the EONET,
-   USGS and GVP adapters over it.
+2. **The clients and the providers.** One `httpfetch` client per adapter, each
+   built by `clientFor` with a 30-second timeout and the 16 MB response cap of
+   FR-PRV-011 and allowed its own host alone: the EONET, USGS and GVP adapters
+   each over their own, the live and replay clouds sharing EUMETSAT's and the
+   burnt-area layer over GWIS's.
 3. **The globe and the cache.** `Globe` over a `Store` and the system clock,
    with the cache under `%LOCALAPPDATA%\EarthNow\cache`. With no data folder
    the run carries on in memory and says so (FR-STS-005).
 4. **The settings,** loaded before the first fetch so USGS is asked at the
-   saved minimum.
+   saved minimum and the globe shows only quakes at or above it from the start.
 5. **The cached sets,** put back before any fetch so the globe opens on the
    last known events marked with their age (FR-STS-004). Then the cloud layer:
    its held image restored and its shown setting applied, so a hidden layer
@@ -340,7 +359,9 @@ starts every provider that is due, each fetch in a guarded goroutine of its own,
 `events-changed` so the page can show them refreshing (FR-STS-007), then sleeps
 until the next provider falls due, a fetch finishes or a manual refresh
 arrives. Each fetch logs its start and its outcome, with the status, the event
-count and the dropped count (NFR-OBS-001), then emits `events-changed` again;
+count and the dropped count (NFR-OBS-001); the provider status popover says
+how many items the last answer read could not use (FR-PRV-013). It then emits
+`events-changed` again;
 the page answers each by asking for the view. A cloud check runs the same
 way and emits `clouds-changed`; the page then asks for the cloud state; it asks
 for the image only when the valid time has changed. A burnt-area round emits
@@ -447,7 +468,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |
 | Where the globe opens | The operating system's country or region setting, faced at Natural Earth's label point for that country (`tools/geodata.py --labels`, amendment 30) | The time zone: it knows only a band of longitude. The display language: a UK machine often runs an en-US one (owner). The capital or the outline's centre: both can sit at an edge (Washington; the USA pulled north by Alaska). |
 | Cloud times | The layer's own capabilities document, its time dimension's default | The whole service's document: 282 KB against 6.4 KB (measured). |
-| The network | One client with a host allowlist and a size cap; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). |
+| The network | One client package, https only, with a size cap; each adapter's client allows its own host alone; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). One client holding every host: a provider's redirect could reach a layer host while that layer was hidden (measured in audit). |
 | What each source is asked for | Each adapter states the media types it accepts | One `Accept` for all: the Smithsonian feed answers 403 to a request asking only for JSON (measured). |
 | Refresh intervals | USGS 60 s, matching its measured `max-age=60`; EONET 10 min; GVP hourly | One interval for all: the sources change at very different rates. |
 | EONET scope | Every event of the week, open and closed (amendment 11) | Open events only: 17 against 80 that week, dropping most wildfires and floods. |

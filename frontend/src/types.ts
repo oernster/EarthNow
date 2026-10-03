@@ -41,6 +41,9 @@ export interface ProviderDTO {
     // A standing fact about what the provider holds, not a failure: its latest
     // report is too old to show (FR-PRV-016). Empty when none.
     notice: string
+    // How many items the last answer read could not be used, worded
+    // (FR-PRV-013). Empty when none.
+    dropped: string
 }
 
 export interface ViewDTO {

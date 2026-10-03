@@ -49,6 +49,9 @@ type Provider struct {
 	// Notice is a standing fact about what the provider holds, not a failure:
 	// its latest report is too old to show (FR-PRV-016). Empty when none.
 	Notice string `json:"notice"`
+	// Dropped words how many items the last answer read held but could not use
+	// (FR-PRV-013), so the status says what is not shown. Empty when none.
+	Dropped string `json:"dropped"`
 }
 
 // View is everything the globe shows for one window and filter.
