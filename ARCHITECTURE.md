@@ -31,7 +31,7 @@ that each of its assertions was proved to bite by planting a violation.
 | No Go file, no page source file (`frontend/src`, tests included) and no setup page file (`.html`, `.css`, `.js` in `installer/frontend/dist`) exceeds 400 lines (CON-008). | [`TestCON008_NoFileExceedsTheLineLimit`](tests/structural/boundary_test.go) |
 | None of those files sits in the danger band of 381 to 400 lines; one that does is reduced to 350 or fewer. | [`TestCON008_NoFileInTheDangerBand`](tests/structural/boundary_test.go) |
 | Every exported Go type carries a doc comment. | [`TestEveryExportedTypeIsDocumented`](tests/structural/boundary_test.go) |
-| The product's name is written only in `internal/product/product.go`: no Go string literal outside it, no page source file, `frontend/index.html` and no setup page file spells it. | [`TestTheProductIsNamedOnce`](tests/structural/name_test.go) |
+| The product's name is written only in `internal/product/product.go`: no Go string literal outside it and no page source file (tests aside in both), nor `frontend/index.html` nor a setup page file, spells it. | [`TestTheProductIsNamedOnce`](tests/structural/name_test.go) |
 | The donate address appears exactly once in shipped source (`internal` and `frontend/src`, tests aside), in `internal/product/product.go` (FR-DON-004). | [`TestFRDON004_TheDonateAddressHasOneHome`](tests/structural/identity_test.go) |
 | Every struct in `internal/application/dto` is paired with an interface in `frontend/src/types.ts` declaring the same JSON field names, in both directions (NFR-MNT-003). | [`TestNFRMNT003_TheWireMatchesOnBothSides`](tests/structural/wire_test.go) |
 | `internal/domain` and `internal/application` together are at 100% statement coverage (NFR-MNT-001). | [`test.ps1`](test.ps1) |
@@ -212,14 +212,11 @@ machine.
   for the whole service) for the newest valid time, then fetches that time's
   2048 by 1024 PNG. It refuses anything that is not a PNG of that size, since
   the service reports errors as XML with status 200 (FR-CLD-012), then draws
-  every pixel by the domain's ramp and veil. Measured on the real image: 238 ms,
-  1.6 MB in and 652 KB out, once per new image. A replay asks for the same
-  layer at 1024 by 512 (FR-RPL-015).
+  every pixel by the domain's ramp and veil, once per new image. A replay asks
+  for the same layer at 1024 by 512 (FR-RPL-015).
 - `gwis` asks for one UTC day's 2048 by 1024 PNG per request, since a range
   answers an empty body; it also says whether each drew anything. Composing a
-  window keeps each pixel at its highest opacity in the source's red. Measured against
-  the live service: 0.2 to 0.4 s a day, 376 ms to compose seven days into
-  96 KB.
+  window keeps each pixel at its highest opacity in the source's red.
 - `pngcheck` is the one check both map adapters make: a PNG, of the size asked
   for, its size read before the pixels are decoded (FR-CLD-012, FR-BA-013).
 - `cache` keeps one JSON file per provider, stamped with a schema version and
@@ -442,7 +439,7 @@ Each row is stated in a code comment or in REQUIREMENTS.md.
 | The page's composition root | `App.tsx` and `main.tsx` excluded from the coverage floors, checked by eye | Counting them: they wire the parts together, as `main.go` does on the Go side. |
 | Future-dated events | Shown only up to `window.ClockSkew` (15 minutes) ahead of the clock, so a slow machine clock hides nothing new | Showing any future date: GDACS published a flood alert dated days ahead, which is not an event that has happened (TECH_DEBT.md). |
 | Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
-| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`imageLayers.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). Measured cost in Go: 238 ms once per new image. |
+| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`imageLayers.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). |
 | The burnt areas | Each UTC day fetched and held apart, composed in Go into one image for the window and laid on a sphere beneath the clouds (`imageLayers.ts`) | One image per day on the page: up to eight textures and spheres, decoded on the page. A date range in one request: GWIS answers an empty body (measured). |
 | Replay's frames | The page holds the position and plays it on animation frames; it asks Go for a frame at most every 100 ms and for an image only when the frame's key for it changes (`useReplay.ts`) | Go driving the clock and pushing frames: a timer on the Go side for what is a page's animation; a stream of events where the page can ask at its own pace. |
 | The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |

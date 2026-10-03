@@ -188,7 +188,7 @@ with `--check` and fails until the file matches.
   texture, downloaded and committed.
 - `frontend/src/assets/earth-night.jpg` is NASA's Black Marble 2016 night
   lights at 3 km, downloaded once, resampled from 13500 by 6750 to 5400 by
-  2700 (Lanczos, JPEG quality 90) to match `earth.jpg`'s size and
+  2700 (JPEG quality 90) to match `earth.jpg`'s size and
   projection, then committed.
 - `internal/infrastructure/geo/data` holds the Natural Earth places, borders
   and Antarctic ice shelves the application embeds. `tools/geodata.py`, first
