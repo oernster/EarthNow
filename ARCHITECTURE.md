@@ -1,495 +1,253 @@
 # Architecture
 
-EarthNow answers one sentence: open a globe and see what is happening on Earth
-right now. The Go side fetches three public sources of events, keeps their last
-good sets and decides what falls inside the chosen time window. While the cloud
-layer is shown it also fetches EUMETSAT's cloud image and draws it; while the
-burnt-area layer is shown, GWIS's burnt areas for every day the window
-touches. For the day and night layer it works out where the sun stands, from
-the time alone. The page draws the globe and reads the answer. This document
-says how the code is divided, which rules the tests hold it to and why each
-design choice was made.
-
-[REQUIREMENTS.md](REQUIREMENTS.md) is the specification; requirement numbers
-below (FR-PRV-005 and so on) refer to it.
+EarthNow opens a globe and shows what is happening on Earth now. The Go side
+fetches three public event sources, keeps each one's last good set and decides
+what falls inside the chosen time window. While the cloud or burnt-area layer is
+shown it fetches and draws that layer's image; for day and night it works out
+where the sun stands from the time alone. The page draws the globe and reads the
+answers. Requirement numbers (FR-PRV-005 and so on) refer to
+[REQUIREMENTS.md](REQUIREMENTS.md); the conceptual decisions are argued in
+[DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md).
 
 ## Invariants
 
 `UI -> Application -> Domain <- Infrastructure`
 
-Dependencies point inwards. Each rule below is enforced by a test or by a step
-of the gate, not by convention. `tests/structural/boundary_test.go` records
-that each of its assertions was proved to bite by planting a violation.
+Dependencies point inwards. Each rule below is held by a test or a gate step.
+`tests/structural/boundary_test.go` records that each of its assertions was
+proved to bite by planting a violation.
 
 | Invariant | Enforced by |
 |---|---|
 | The domain imports nothing of EarthNow's own outside `internal/domain`. | [`TestDomainHasNoOutwardImports`](tests/structural/boundary_test.go) |
-| The domain is pure: it imports none of `net`, `net/http`, `os`, `path/filepath`, `math/rand`, `math/rand/v2`, `database/sql`, `io/ioutil`, `os/exec`, `log`, `log/slog` or `sync`; it calls none of `time.Now`, `time.Since`, `time.Until`, `rand.Intn` or `rand.Float64`. The time arrives through the `Clock` port. | [`TestDomainIsPure`](tests/structural/boundary_test.go) |
+| The domain is pure: none of `net`, `net/http`, `os`, `path/filepath`, `math/rand`, `math/rand/v2`, `database/sql`, `io/ioutil`, `os/exec`, `log`, `log/slog` or `sync`; no call to `time.Now`, `time.Since`, `time.Until`, `rand.Intn` or `rand.Float64`. Time arrives through the `Clock` port. | [`TestDomainIsPure`](tests/structural/boundary_test.go) |
 | The application imports no infrastructure, no Wails package and not `net/http`. | [`TestApplicationDoesNotImportInfrastructure`](tests/structural/boundary_test.go) |
-| Only `main.go` and `app.go` import both the application services and infrastructure. | [`TestCompositionRootIsWhitelisted`](tests/structural/boundary_test.go) |
-| A provider adapter is imported only by its own package and the composition root, so adding a provider changes infrastructure and `main.go` alone (FR-PRV-014). | [`TestFRPRV014_OnlyTheCompositionRootNamesAProvider`](tests/structural/boundary_test.go) |
-| No Go file, no page source file (`frontend/src`, tests included) and no setup page file (`.html`, `.css`, `.js` in `installer/frontend/dist`) exceeds 400 lines (CON-008). | [`TestCON008_NoFileExceedsTheLineLimit`](tests/structural/boundary_test.go) |
-| None of those files sits in the danger band of 381 to 400 lines; one that does is reduced to 350 or fewer. | [`TestCON008_NoFileInTheDangerBand`](tests/structural/boundary_test.go) |
+| Only `main.go` and `app.go` import both the services and infrastructure. | [`TestCompositionRootIsWhitelisted`](tests/structural/boundary_test.go) |
+| A provider adapter is imported only by its own package and the composition root (FR-PRV-014). | [`TestFRPRV014_OnlyTheCompositionRootNamesAProvider`](tests/structural/boundary_test.go) |
+| No Go file, page source file (`frontend/src`, tests included) or setup page file (`.html`, `.css`, `.js` in `installer/frontend/dist`) exceeds 400 lines (CON-008). | [`TestCON008_NoFileExceedsTheLineLimit`](tests/structural/boundary_test.go) |
+| None of those files sits at 381 to 400 lines; one that does is cut to 350 or fewer. | [`TestCON008_NoFileInTheDangerBand`](tests/structural/boundary_test.go) |
 | Every exported Go type carries a doc comment. | [`TestEveryExportedTypeIsDocumented`](tests/structural/boundary_test.go) |
-| The product's name is written only in `internal/product/product.go`: no Go string literal outside it and no page source file (tests aside in both), nor `frontend/index.html` nor a setup page file, spells it. | [`TestTheProductIsNamedOnce`](tests/structural/name_test.go) |
-| The donate address appears exactly once in shipped source (`internal` and `frontend/src`, tests aside), in `internal/product/product.go` (FR-DON-004). | [`TestFRDON004_TheDonateAddressHasOneHome`](tests/structural/identity_test.go) |
-| Every struct in `internal/application/dto` is paired with an interface in `frontend/src/types.ts` declaring the same JSON field names, in both directions (NFR-MNT-003). | [`TestNFRMNT003_TheWireMatchesOnBothSides`](tests/structural/wire_test.go) |
-| `internal/domain` and `internal/application` together are at 100% statement coverage (NFR-MNT-001). | [`test.ps1`](test.ps1) |
-| Each infrastructure package holds its measured coverage floor; the page holds its istanbul floors. | [`test.ps1`](test.ps1), [`frontend/vite.config.ts`](frontend/vite.config.ts) |
-| `THIRD_PARTY_NOTICES` is exactly what `tools/notices.py` writes from the shipped dependency tree (NFR-LEG-001). | `python tools/notices.py --check`, run by [`test.ps1`](test.ps1) |
-| The geocoder imports no network package (`net`, `net/http`, `net/url`, `httpfetch`): places come from the embedded Natural Earth data (FR-GEO-004). | [`TestFRGEO004_TheGeocoderReachesNoNetwork`](tests/structural/rules_test.go) |
-| Every `httpfetch.New` call outside the tests names exactly one host, so each adapter's client holds its own host alone (NFR-PRIV-001). | [`TestNFRPRIV001_EveryClientHoldsOneHost`](tests/structural/client_test.go) |
-| Every category emoji is written only in `frontend/src/categories.ts`, the table the key, markers, clusters and tooltips read (FR-KEY-002). | [`TestFRKEY002_EmojiLiveOnlyInTheCategoryTable`](tests/structural/rules_test.go) |
-| No Go string literal and no page source outside a comment uses the word "live" (FR-STS-006). | [`TestFRSTS006_NothingIsLabelledLive`](tests/structural/rules_test.go) |
-| The page uses neither `innerHTML` nor `dangerouslySetInnerHTML`, so provider text is rendered as text (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
-| Every bound call on the page takes a refusal handler as its last argument, so a call without one does not compile (NFR-REL-004). | `tsc --noEmit` over [`frontend/src/api.ts`](frontend/src/api.ts), run by `test.ps1` |
-| Every Must in REQUIREMENTS.md is named by the test that verifies it; failing that, it is listed in TESTING.md's "Checked by a person" table. One verified by T is named by a test whatever the table says (Appendix C). | [`TestAppendixC_EveryMustIsNamedByATest`](tests/structural/trace_test.go) |
-| The gate runs every check in order, each throwing on failure; the build runs the gate before building anything and places the one icon on both executables (NFR-MNT-002, DEL-001, DEL-004). | [`delivery_test.go`](tests/structural/delivery_test.go) |
+| The product's name is written only in `internal/product/product.go`: no other Go string literal, page source file, `frontend/index.html` or setup page file spells it (tests aside). | [`TestTheProductIsNamedOnce`](tests/structural/name_test.go) |
+| The donate address appears once in shipped source, in `internal/product/product.go` (FR-DON-004). | [`TestFRDON004_TheDonateAddressHasOneHome`](tests/structural/identity_test.go) |
+| Every struct in `internal/application/dto` is paired with an interface in `frontend/src/types.ts` with the same JSON fields, both ways (NFR-MNT-003). | [`TestNFRMNT003_TheWireMatchesOnBothSides`](tests/structural/wire_test.go) |
+| `internal/domain` and `internal/application` are gated at 100% statement coverage (NFR-MNT-001). | [`TestNFRMNT001_DomainAndApplicationAreGatedAt100`](tests/structural/delivery_test.go) |
+| Each infrastructure package holds its measured floor; the page holds its istanbul floors. | [`test.ps1`](test.ps1), [`frontend/vite.config.ts`](frontend/vite.config.ts) |
+| The gate runs gofmt, vet, staticcheck, the Go tests, lint, `tsc --noEmit` (so a bound call without a refusal handler fails to compile, NFR-REL-004), the page tests and `tools/notices.py --check` (NFR-LEG-001) in order, each throwing on failure (NFR-MNT-002). | [`TestNFRMNT002_TheGateRunsEveryCheck`](tests/structural/delivery_test.go) |
+| The build reads `VERSION`, runs the gate before building anything (DEL-001) and places one committed icon on both executables (DEL-004). | [`TestDEL001_TheBuildRunsTheGateFirst`](tests/structural/delivery_test.go), [`TestDEL004_OneIconOnBothExecutables`](tests/structural/delivery_test.go) |
 | The setup program's facade imports none of the means to install alone (DEL-003). | [`TestDEL003_TheSetupFacadeOwnsNoInstallLogic`](tests/structural/delivery_test.go) |
-| The palette meets its contrast, the rings follow their three states, the page's CSP names no network origin and the globe area holds 70% of the minimum window (NFR-A11Y-002, NFR-KBD-008, NFR-SEC-002, NFR-UX-001). | [`page_test.go`](tests/structural/page_test.go) |
+| The geocoder imports no network package: places come from embedded Natural Earth data (FR-GEO-004). | [`TestFRGEO004_TheGeocoderReachesNoNetwork`](tests/structural/rules_test.go) |
+| Every `httpfetch.New` call outside the tests names exactly one host (NFR-PRIV-001). | [`TestNFRPRIV001_EveryClientHoldsOneHost`](tests/structural/client_test.go) |
+| Category emoji are written only in `frontend/src/categories.ts` (FR-KEY-002). | [`TestFRKEY002_EmojiLiveOnlyInTheCategoryTable`](tests/structural/rules_test.go) |
+| No Go string literal and no page source outside a comment says "live" (FR-STS-006). | [`TestFRSTS006_NothingIsLabelledLive`](tests/structural/rules_test.go) |
+| The page uses neither `innerHTML` nor `dangerouslySetInnerHTML` (NFR-SEC-001). | [`TestNFRSEC001_ProviderTextIsRenderedAsText`](tests/structural/rules_test.go) |
+| The palette meets its contrast, the rings follow their three states, the CSP names no network origin and the globe area holds 70% of the minimum window (NFR-A11Y-002, NFR-KBD-008, NFR-SEC-002, NFR-UX-001). | [`page_test.go`](tests/structural/page_test.go) |
 | No EONET category id the adapter maps appears in the page, the domain or the application (DATA-007). | [`TestDATA007_TheCategoryMappingIsDataInTheAdapter`](tests/structural/page_test.go) |
-| No page source and no application source words the tsunami flag (DATA-010). | [`TestDATA010_TheTsunamiFlagIsNeverWorded`](tests/structural/page_test.go) |
+| No page or application source words the tsunami flag (DATA-010). | [`TestDATA010_TheTsunamiFlagIsNeverWorded`](tests/structural/page_test.go) |
+| Every Must is named by its verifying test, else listed in TESTING.md's "Checked by a person" table; one verified by T needs a test regardless (Appendix C). | [`TestAppendixC_EveryMustIsNamedByATest`](tests/structural/trace_test.go) |
 
 ### Held by the code, not yet by a test
 
-These hold in the tree as it stands; no test fails if one is broken.
-
 - Only `internal/infrastructure/httpfetch` and `main.go` import `net/http`; no
-  Go file imports `net`.
+  shipped Go file imports `net` (one test, `httpfetch/dial_test.go`, does).
 - `frontend/src` makes no `fetch`, `XMLHttpRequest` or `WebSocket` call. The
-  test above holds the Content-Security-Policy that would refuse one; nothing
-  scans the source itself.
+  CSP test holds the policy that would refuse one; nothing scans the source.
 
 ## Layers
 
-```
-main.go, app.go          composition root and the Wails facade the page calls
-                         (layers.go and replay.go hold the image layers' and
-                         Replay's part of the facade)
-frontend/src             the page: React, TypeScript, globe.gl
-internal/application/
-    ports                what the application needs from outside
-    services             the use cases: globe, store, scheduler, preferences, clouds,
-                         burnt areas, replay, replay clouds, sun, start view
-    dto                  the shapes that cross to the page
-internal/domain/
-    burnt                the burnt-area union and wording
-    cloud                the cloud layer's opacity ramp, veil and wording
-    event                the provider-neutral event, magnitude bands, links
-    freshness            age wording and staleness
-    region               the country a region code or locale name carries
-    sun                  where the sun stands overhead and the light it gives
-    window               the time windows and what falls inside one
-internal/infrastructure/
-    httpfetch            the one way to the network
-    providers/eonet      NASA EONET v3
-    providers/usgs       USGS earthquake GeoJSON feeds
-    providers/gvp        the Weekly Volcanic Activity Report
-    clouds               EUMETSAT's world cloud map, drawn for the globe
-    gwis                 GWIS's daily burnt-area maps, composed for the globe
-    pngcheck             refusing a map answer that is not the PNG asked for
-    cache                each provider's last good set and the layers' images on disk
-    settings             settings.json
-    geo                  nearest place and country, plus each country's label point,
-                         from embedded data
-    oslocale             the operating system's country or region setting
-    runlog               the log, plus crash output pointed at it
-    window               handing the WebView2 child the keyboard
-    setup                the install policy behind the setup program
-internal/product         the product's identity, in one place
-installer                the setup program, a facade over setup
-tests/structural         the invariants above
-tools                    the icon, notices and Natural Earth data generators
-docs                     the GitHub Pages site
-```
+### Domain (`internal/domain`)
 
-### Domain
+Pure Go over values handed in.
 
-Pure Go over values handed in; no clock, no disk, no network.
+| Package | Holds |
+|---|---|
+| `burnt` | The union of a window's days at each pixel's highest opacity (FR-BA-006); the status wording (FR-BA-008, FR-BA-009). |
+| `cloud` | The brightness ramp between `ClearThreshold` 65 and `CloudThreshold` 90 (FR-CLD-006); the veil for no data (FR-CLD-007); wording and staleness after three `ImageInterval`s of 3 h (FR-CLD-009, FR-CLD-010). |
+| `event` | `Event`, the provider and category vocabularies (DATA-001, DATA-002), quake size bands (FR-MRK-003), `MeetsMinimum`, `CheckUsable` (FR-PRV-012), the source-link rule (FR-SEL-009), an ongoing event's `Report`, current for `ReportCurrency` of 14 days (FR-PRV-015, FR-PRV-016); depth wording, with bands at 70 and 300 km and 10 km marked as USGS's fixed depth (FR-SEL-010 to 012). |
+| `freshness` | Age wording (NFR-FRESH-002, FR-SEL-004); stale after `StaleAfterIntervals` of 3 (NFR-FRESH-001). |
+| `region` | A region code or locale name's territory as ISO alpha-2 (FR-GLB-014). |
+| `sun` | The subsolar point by NOAA's equations (FR-DAY-001); light from 0 to 1 across `TwilightDegrees` 6 either side of the horizon (FR-DAY-002); `CloudNightFloor` 0.25 (FR-DAY-009). |
+| `window` | The five windows, 24 h by default (FR-TW-001); `Range`, the one rule for what a window or a replay shows (DATA-003, DATA-004, FR-RPL-009); `Days` (FR-BA-001); `ClockSkew` of 15 minutes; storm trails (FR-TRL-001). |
 
-- `burnt`: the union of a window's days, each pixel at the highest opacity any
-  day gives it (FR-BA-006); also the status wording: the span of days drawn in
-  UTC with its age, else none mapped yet (FR-BA-008, FR-BA-009). Which days a
-  window touches is `window`'s `Days` (FR-BA-001).
-- `cloud`: the brightness-to-opacity ramp between the thresholds the cloud
-  spike measured, 65 and 90 of 255 (FR-CLD-006); the grey veil for a pixel
-  with no data (FR-CLD-007); the status wording and the image's staleness
-  after three image intervals (FR-CLD-009, FR-CLD-010).
-- `event`: `Event` and its observations, the provider and category
-  vocabularies (DATA-001, DATA-002), the earthquake size bands of FR-MRK-003
-  and the rule that a source link is a page rather than a data file (FR-SEL-009).
-  An ongoing event carries its `Report`: the week it covers and the day it was
-  issued, current for 14 days after that day (FR-PRV-015, FR-PRV-016).
-  It also words an earthquake's depth: one decimal with USGS's band (shallow
-  below 70 km, intermediate below 300, deep beyond), a negative depth as
-  that far above sea level and exactly 10 km marked as often USGS's fixed
-  depth (FR-SEL-010 to 012).
-- `freshness`: age wording (NFR-FRESH-002, FR-SEL-004), an ongoing event's
-  report week and the notice for a report too old to show (FR-PRV-016); also
-  the rule that a provider is stale three intervals after its last success
-  (NFR-FRESH-001).
-- `region`: a bare region code or a locale name's territory as an ISO alpha-2
-  code (GB from GB, en_GB.UTF-8, en-GB or macOS's en_US@rg=gbzzzz); none for
-  C, POSIX, a bare language or a UN area such as 001 (FR-GLB-014).
-- `sun`: the subsolar point for a UTC instant by NOAA's solar position
-  equations, within 0.1 degrees of NOAA's calculator at 2026's solstices and
-  equinoxes (FR-DAY-001); the sun's elevation at a point; the light from 0 at
-  6 degrees below the horizon to 1 at 6 above (FR-DAY-002); the share of a
-  cloud's opacity kept at night, from 25% (FR-DAY-009).
-- `window`: the five windows of FR-TW-001 with 24 h the default; which
-  observation of an event falls inside a window, an ongoing event being inside
-  every range that reaches its report week's first day (DATA-003, DATA-004); a
-  severe storm's trail, its positions inside the window oldest first ending
-  at the marker, none with fewer than two (FR-TRL-001).
+### Application (`internal/application`)
 
-### Application
+`ports` declares `Clock`, `SnapshotCache`, `SettingsStore`, `Geocoder`,
+`Provider`, `CloudSource`, `CloudCache`, `BurntSource`, `BurntCache`,
+`RegionSource` and `LabelPoints` in
+[`ports.go`](internal/application/ports/ports.go); `dto` holds the shapes that
+cross to the page. The services hold no timer: the facade asks what is due, so
+every timing rule runs on a fake clock in tests.
 
-The use cases, behind the ports in
-[`ports.go`](internal/application/ports/ports.go): `Clock`, `SnapshotCache`,
-`SettingsStore`, `Geocoder`, `Provider`, `CloudSource`, `CloudCache`,
-`BurntSource`, `BurntCache`, `RegionSource` and `LabelPoints`.
+| Service | Does |
+|---|---|
+| `Globe` | Refreshes one provider at a time; answers the view for a window and filter: events, counts, each provider's status and any notice. |
+| `Store` | Holds each provider's latest set; a failed provider keeps its last (FR-PRV-008). Hides a stale ongoing report (FR-PRV-016) and quakes below the minimum (FR-SET-002), filtering what is shown, never what is held. |
+| `Scheduler` | When each provider is due; backoff doubling to `BackoffCeiling` of 30 minutes (FR-PRV-006); `ManualCooldown` of 30 s (FR-PRV-010); which providers are refreshing (FR-STS-007). |
+| `Preferences` | Loads, normalises and saves settings; tells USGS and the globe the minimum magnitude; notices a missing or unreadable file (FR-SET-004); offers `ReplaySpeeds` (FR-RPL-025). |
+| `Clouds` | Checks hourly (`CloudInterval`) for a new valid time, never while hidden (FR-CLD-004, FR-CLD-005, FR-CLD-016); keeps the held image on failure with the scheduler's backoff (FR-CLD-011). |
+| `BurntAreas` | Fetches each day the window touches hourly (`BurntInterval`), only missing days when it widens; never while hidden (FR-BA-002 to 005, FR-BA-012). |
+| `Replay` | Answers one replay frame: events up to the instant, the sun, the cloud image and burnt days to draw. |
+| `ReplayClouds` | Fetches a replay's cloud images at half size, in memory only (FR-RPL-015 to 018). |
+| `Sun` | The subsolar point with the twilight limit and night floor, so the page holds no figure (FR-DAY-001, FR-DAY-004). |
+| `StartView` | The label point of the country the region setting names, else nothing (FR-GLB-015, FR-GLB-016). |
 
-- `Globe` refreshes one provider at a time and answers the view for a window
-  and a filter: the events shown, the count per category, each provider's
-  status (a report too old to show among it; the items its last answer could
-  not use) and any standing notice. A provider's cache notice clears on
-  its next good save, as the image layers' do.
-- `Store` holds each provider's latest set. A failed provider keeps its last
-  set; the others are unaffected (FR-PRV-008). It leaves out an ongoing event
-  whose report is past its currency, judged by its own clock (FR-PRV-016). It
-  also leaves out a quake below the current minimum magnitude (FR-SET-002). The minimum filters
-  what is shown, never what is held, so a minimum raised while USGS cannot be
-  reached takes effect at once and the offline copy keeps every quake.
-- `Scheduler` decides when each provider is next due, with the backoff that
-  doubles up to 30 minutes after a failure (FR-PRV-006) and the 30-second
-  cooldown between manual refreshes (FR-PRV-010), answering when the last one
-  was made. It also marks which providers are refreshing, fetching with events
-  already held (FR-STS-007). It holds no timer: the facade
-  asks what is due and when to wake, so every timing rule runs on a fake clock
-  in its tests.
-- `Preferences` loads, normalises and saves the settings, telling the USGS
-  adapter and the globe its minimum magnitude (one rule, `event.MeetsMinimum`,
-  serves both) and saying in a notice when the settings file
-  was missing or unreadable (FR-SET-004). It also offers the replay speeds
-  with each one's pass in seconds (`ReplaySpeeds`, FR-RPL-025), so the page
-  holds no replay figure of its own.
-- `Clouds` runs the cloud layer. Like the scheduler it holds no timer: the
-  facade asks whether a check is due, which is never while the layer is
-  hidden (FR-CLD-005). A check reads the newest listed valid time once an
-  hour and fetches an image only when that time is new (FR-CLD-004,
-  FR-CLD-016). A failure keeps the held image and retries on the scheduler's
-  own backoff, one shared function (FR-CLD-011). It answers the status line
-  and the EUMETSAT entry for the status popover, which travels apart from the
-  event providers since the key filters those.
-- `BurntAreas` runs the burnt-area layer on the same pattern: asked nothing
-  while hidden (FR-BA-005), it fetches every day the window touches once an
-  hour; when the window widens, only the days it lacks (FR-BA-002 to
-  004). A day that fails keeps its held image while the others draw
-  (FR-BA-012). It composes the drawn days into one image only when their key
-  changes, since composing decodes each day.
-- `Replay` answers one frame of a replay (3.2.14): the events over the range
-  from the span's start to the replay instant, counted up to it, the sun at
-  it, which cloud image and which burnt days to draw. The page holds the
-  position and the span's end; the domain's `window.Range` is the one rule
-  for what an ordinary window and a replay each show (FR-RPL-009).
-- `ReplayClouds` fetches a replay's cloud images on the driver's loop, one a
-  round at 1024 by 512 after listing the span's times up to the newest image,
-  in memory only and dropped when the replay ends (FR-RPL-015 to 018).
-- `Sun` answers where the sun stands overhead by the clock, with the twilight
-  limit and the night floor, so the page draws the light without holding a
-  figure of its own (FR-DAY-001, FR-DAY-004).
-- `StartView` answers where the globe first faces: the label point of the
-  country the region setting names, else nothing, with a line for the log
-  saying which and why (FR-GLB-015, FR-GLB-016). The page draws the globe only
-  once it has the answer, so the first frame already faces it.
+### Infrastructure (`internal/infrastructure`)
 
-### Infrastructure
+| Package | Does |
+|---|---|
+| `httpfetch` | The only network client: GET over https to allowed hosts, redirects only to https allowed hosts, a body cap, `If-Modified-Since` and per-source `Accept`. Go's transport honours `HTTPS_PROXY`. |
+| `providers/eonet`, `usgs`, `gvp` | Each owns its source's schema, host and `Interval`: USGS a minute, EONET ten minutes, GVP an hour. Each applies `event.CheckUsable` (FR-PRV-012). |
+| `clouds` | Reads the layer's capabilities document for the newest time, fetches a 2048 by 1024 PNG and draws it by the domain's ramp; replay asks for half that size. |
+| `gwis` | One UTC day's 2048 by 1024 PNG per request; composes a window's days. |
+| `pngcheck` | Refuses a map answer that is not a PNG of the size asked (FR-CLD-012, FR-BA-013). |
+| `cache` | One JSON file per provider plus `cloud.json` and `burnt.json`, schema-stamped, written then renamed (NFR-REL-005, CON-003); holds only what the widest window can show (DATA-009). |
+| `settings` | `settings.json` with a capped read and write-then-rename. |
+| `oslocale` | The OS region: home location on Windows, `AppleLocale` on macOS, `LC_ALL` else `LANG` on Linux (FR-GLB-014). |
+| `geo` | Nearest place, country and label points from embedded Natural Earth data (FR-GEO-001 to 005). |
+| `runlog` | `Log.txt`, rotated at 5 MB to `Log.previous.txt`; error output pointed at it. |
+| `window` | Focuses this process's WebView2 child. |
+| `setup` | The install policy behind the setup program. |
 
-Each package implements a port or a piece of setup policy against the real
-machine.
+### UI and the rest
 
-- `httpfetch` is the only network client. It makes a GET over https to an
-  allowed host, follows a redirect only over https to an allowed host (a plain
-  http address is refused, first request or redirect, before anything is
-  dialled), refuses a body over the cap, sends `If-Modified-Since` where a
-  validator is held and asks each source for the media types it serves. The
-  composition root builds each adapter a client of its own host alone
-  (`clientFor` in `main.go`; a structural test holds every client to one host),
-  so one source's redirect can reach neither another source's host nor a layer
-  host while that layer is hidden. The client uses Go's standard transport,
-  which honours a proxy named in the `HTTPS_PROXY` environment variable (not
-  Windows' own proxy setting): when one is set, that proxy host is contacted too.
-- The three providers each own their source's schema; nothing outside the
-  package knows it. Each names its one host and its refresh interval: USGS
-  every minute, EONET every ten minutes, the volcano report every hour. An
-  answer that lists items yet yields none it can use is a parse failure, not an
-  empty set: one rule in the domain (`event.CheckUsable`) that all three apply,
-  so a change to a feed's format keeps the stored set and its cache and the
-  status names the reason (FR-PRV-012).
-- `clouds` reads the layer's own capabilities document (6.4 KB, against 282 KB
-  for the whole service) for the newest valid time, then fetches that time's
-  2048 by 1024 PNG. It refuses anything that is not a PNG of that size, since
-  the service reports errors as XML with status 200 (FR-CLD-012), then draws
-  every pixel by the domain's ramp and veil, once per new image. A replay asks
-  for the same layer at 1024 by 512 (FR-RPL-015).
-- `gwis` asks for one UTC day's 2048 by 1024 PNG per request, since a range
-  answers an empty body; it also says whether each drew anything. Composing a
-  window keeps each pixel at its highest opacity in the source's red.
-- `pngcheck` is the one check both map adapters make: a PNG, of the size asked
-  for, its size read before the pixels are decoded (FR-CLD-012, FR-BA-013).
-- `cache` keeps one JSON file per provider, stamped with a schema version and
-  written beside the old one then renamed over it, so an interrupted write
-  leaves the previous set whole (NFR-REL-005, CON-003). What it is handed is
-  what some window can still show: an event sighted inside the last 7 days or
-  an ongoing one whose report is current (DATA-009). The cloud image and its
-  valid time are kept the same way in `cloud.json`, through the same reader and
-  writer (FR-CLD-014); so are the burnt-area days in `burnt.json` (FR-BA-014).
-- `settings` reads and writes `settings.json` with its own capped read and
-  write-then-rename; a file from before a setting existed gives that setting
-  its default.
-- `oslocale` reads the operating system's country or region setting: the
-  user's home location on Windows, the region of `AppleLocale` on macOS, the
-  territory of `LC_ALL`, else of `LANG`, on Linux (FR-GLB-014).
-- `geo` loads the embedded Natural Earth places, country outlines and Antarctic
-  ice shelves and words the nearest place, its distance and its direction
-  (FR-GEO-001 to 005). A point on an ice shelf lies in Antarctica, since
-  Natural Earth draws Antarctica only to its grounded coast.
-- `runlog` keeps `Log.txt`, rotating it at 5 MB while running with one
-  `Log.previous.txt` beside it. It also points the process's error output at
-  the file.
-- `window` finds this process's WebView2 child window and focuses it, which a
-  click would otherwise have to do.
-
-### UI
-
-The page in `frontend/src` draws the globe through globe.gl, the action rail on
-the left, the key on the right, the top bar with the time window and Replay's
-controls, the detail panel, the dialogs and the keyboard ring. It reaches the
-Go side through one module, [`api.ts`](frontend/src/api.ts); it states the
-wire's shapes in [`types.ts`](frontend/src/types.ts). The facade
-in `app.go` owns no rules: it forwards to the application and runs the
-background work.
+| Path | Role |
+|---|---|
+| `main.go`, `app.go` | Composition root (CON-002) and the Wails facade; `layers.go` and `replay.go` hold the image layers' and Replay's part of it. The facade owns no rules. |
+| `frontend/src` | The page: React, TypeScript, globe.gl. It reaches Go only through [`api.ts`](frontend/src/api.ts) and states the wire in [`types.ts`](frontend/src/types.ts). |
+| `internal/product` | Name, slug, licence, copyright, donate address and credits: a leaf read by the composition root, setup, `runlog` and the tests. |
+| `installer` | The setup program, a facade over `setup`. |
+| `tests/structural` | The invariants above. |
+| `tools` | Icon, notices and Natural Earth data generators. |
+| `docs` | The GitHub Pages site. |
 
 Idle rotation lives in [`useIdleRotation.ts`](frontend/src/useIdleRotation.ts):
-when the idle delay runs out or rotation is switched on away from the fit
-altitude, it returns the camera there over the focus duration before turning;
-input during the return stops it (FR-GLB-018). The camera figures it shares
-with the rest of the page (`FOCUS_MS`, `HALF_STEP`, `nearAltitude`) live in
-`cursor.ts`; `fitOf` lives in `markers.ts`.
+when the idle delay ends it returns the camera to the fit altitude, then turns;
+input during the return stops it (FR-GLB-018). It also answers when the running
+delay ends, which `GlobeView.tsx` hands to
+[`ResumeBar.tsx`](frontend/src/components/ResumeBar.tsx), the countdown bar
+that empties over what is left of the delay (FR-GLB-019).
 
 Replay's state lives in [`useReplay.ts`](frontend/src/useReplay.ts): the
-position, whether it plays and the span's end, fixed when the replay starts
-and cleared only by Now or another window (FR-RPL-003, FR-RPL-021,
-FR-RPL-024). It plays one pass in the chosen speed's seconds (sent by
-the Go side) and asks for a frame at most every `FRAME_ASK_MS`.
-[`ReplayControls.tsx`](frontend/src/components/ReplayControls.tsx) draws
-Play/Pause, the scrubber, the speed button and Now (while replaying) on the
-top bar after the time window (FR-RPL-020).
-
-### Outside the layers
-
-`internal/product` holds the name, the file-system slug, the licence line, the
-copyright notice, the donate address and the credits. It is a leaf that the
-composition root, the setup program, the `runlog` and `setup` packages and the
-tests read, so it belongs to no layer.
+position, playing and the span's end, fixed until Now or another window
+(FR-RPL-003, FR-RPL-021, FR-RPL-024). It asks for a frame at most every
+`FRAME_ASK_MS`.
+[`ReplayControls.tsx`](frontend/src/components/ReplayControls.tsx) draws its
+controls on the top bar (FR-RPL-020).
 
 ## Dependency direction
 
 ```
-            +---------------------------+
-   page     |  frontend/src (React)     |
-            +-------------+-------------+
-                          | bound calls, events
-            +-------------v-------------+
-   UI       |  app.go facade, main.go   |
-            +-------------+-------------+
-                          | calls
-            +-------------v-------------+
-            |        application        |  ports + services + dto
-            +------+-------------^------+
-        depends on |             | implements
-            +------v-----+       |
-            |   domain   |       |
-            +------------+       |
-            +--------------------+------------------+
-            |            infrastructure             |
-            | httpfetch, providers, clouds, cache,  |
-            | gwis, pngcheck, settings, oslocale,   |
-            | geo, runlog, window, setup            |
-            +---------------------------------------+
+   page    frontend/src (React)
+              | bound calls, events
+   UI      app.go facade, main.go
+              | calls
+           application (ports, services, dto)
+              | depends on          ^ implements
+           domain               infrastructure
 ```
 
 ## How the globe fills
 
-`main.go` is the composition root (CON-002). In order:
+`main.go` wires the program in this order:
 
-1. **The log first.** `keepLog` opens `%LOCALAPPDATA%\EarthNow\Log.txt`
-   through `runlog`, writes the line naming the version and points the run's
-   error output at the file, so a panic leaves a record (NFR-REL-002). A log
-   that cannot be opened falls back to standard error rather than ending the
-   run. During the `wails build` bindings pass (`binding_pass.go`) it uses
-   standard error, so a build never writes to the user's log.
-2. **The clients and the providers.** One `httpfetch` client per adapter, each
-   built by `clientFor` with a 30-second timeout and the 16 MB response cap of
-   FR-PRV-011 and allowed its own host alone: the EONET, USGS and GVP adapters
-   each over their own, the live and replay clouds sharing EUMETSAT's and the
-   burnt-area layer over GWIS's.
-3. **The globe and the cache.** `Globe` over a `Store` and the system clock,
-   with the cache under `%LOCALAPPDATA%\EarthNow\cache`. With no data folder
-   the run carries on in memory and says so (FR-STS-005).
-4. **The settings,** loaded before the first fetch so USGS is asked at the
-   saved minimum and the globe shows only quakes at or above it from the start.
-5. **The cached sets,** put back before any fetch so the globe opens on the
-   last known events marked with their age (FR-STS-004). Then the cloud layer:
-   its held image restored and its shown setting applied, so a hidden layer
-   asks nothing (FR-CLD-005, FR-CLD-014). The burnt-area layer likewise, with
-   the saved time window (FR-BA-005, FR-BA-014).
-6. **The help texts:** the About details from `internal/product`, plus
-   `LICENSE` and `THIRD_PARTY_NOTICES` embedded from the repository root.
-7. **Wails,** with the window at 1280 by 800 and a minimum of 960 by 700, a
-   black background and WebView2's data kept in
-   `%LOCALAPPDATA%\EarthNow\webview`. On Linux the web view's GPU policy is set
-   to Always, since Wails otherwise turns acceleration off and the globe would
-   have no WebGL (RSK-002).
+1. `keepLog` opens the log through `runlog` and points error output at it
+   (NFR-REL-002); it falls back to standard error, as it does in the
+   `wails build` bindings pass (`binding_pass.go`).
+2. `clientFor` builds one `httpfetch` client per host, with `requestTimeout`
+   (30 s) and `responseCap` (16 MB, FR-PRV-011).
+3. `Globe` over a `Store` and the clock, with the cache in the data folder;
+   without one the run carries on in memory (FR-STS-005).
+4. Settings load before any fetch, so USGS is asked at the saved minimum.
+5. Cached sets are restored so the globe opens on the last known events
+   (FR-STS-004); the image layers restore their images and shown settings.
+6. Wails starts at 1280 by 800 (minimum 960 by 700). On Linux the GPU policy is
+   set to Always so the globe has WebGL (RSK-002).
 
-When Wails starts, the facade starts two goroutines, each with a recover at
-its top that logs the stack and tells the page (NFR-REL-003): one loads the
-gazetteer; the other drives the scheduler and the image layers. The driver
-starts every provider that is due, each fetch in a guarded goroutine of its own, emits
-`events-changed` so the page can show them refreshing (FR-STS-007), then sleeps
-until the next provider falls due, a fetch finishes or a manual refresh
-arrives. Each fetch logs its start and its outcome, with the status, the event
-count and the dropped count (NFR-OBS-001); the provider status popover says
-how many items the last answer read could not use (FR-PRV-013). It then emits
-`events-changed` again;
-the page answers each by asking for the view. A cloud check runs the same
-way and emits `clouds-changed`; the page then asks for the cloud state; it asks
-for the image only when the valid time has changed. A burnt-area round emits
-`burnt-changed` and the page asks for the image only when the key has
-changed; both layers share one reader on the page (`useLayer.ts`). While a
-replay's clouds are arriving, each image fetched emits `replay-changed` and the
-page asks for its frame again (`useReplay.ts`). A change of
-window reaches the layer through the saved settings. The day and night layer
-needs no background work: while it is shown the page asks for the sun on
-showing and once a minute after (FR-DAY-004).
-
-When the page's DOM is ready, the facade focuses the WebView2 child directly,
-falling back to asking Wails to show the window. The page calls
-`TakeKeyboard` again if it finds it holds no keyboard (NFR-KBD-003).
+On startup the facade runs two guarded goroutines, each logging a panic and
+telling the page (NFR-REL-003): one loads the gazetteer; the other, `drive`,
+starts each due fetch in a guarded goroutine and sleeps until the next is due,
+a fetch ends or a manual refresh arrives. Each fetch logs its outcome
+(NFR-OBS-001) and emits `events-changed`; the page asks for the view. The
+layers emit `clouds-changed` and `burnt-changed`, read through one hook
+(`useLayer.ts`) that fetches an image only when its key changes; replay images
+emit `replay-changed`. The sun needs no background work: the page asks once a
+minute while the layer is shown (FR-DAY-004). On DOM ready the facade focuses
+the WebView2 child; the page calls `TakeKeyboard` if it holds no keyboard
+(NFR-KBD-003).
 
 ## Data locations
 
 | What | Where |
 |---|---|
 | Settings | `%LOCALAPPDATA%\EarthNow\settings.json` |
-| Cache | `%LOCALAPPDATA%\EarthNow\cache`, one `<provider>.json` per provider plus `cloud.json` and `burnt.json` |
+| Cache | `%LOCALAPPDATA%\EarthNow\cache`: `<provider>.json`, `cloud.json`, `burnt.json` |
 | Log | `%LOCALAPPDATA%\EarthNow\Log.txt`, rotating at 5 MB to `Log.previous.txt` |
-| The window's WebView2 data | `%LOCALAPPDATA%\EarthNow\webview` |
-| Installed files | `%LOCALAPPDATA%\Programs\EarthNow`, with `uninstall.exe` beside the application |
+| WebView2 data | `%LOCALAPPDATA%\EarthNow\webview` |
+| Installed files | `%LOCALAPPDATA%\Programs\EarthNow`, with `uninstall.exe` |
 | Apps list entry | `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\EarthNow` |
-| Shortcuts | the Start Menu Programs folder under `%APPDATA%` and the user's Desktop |
+| Shortcuts | Start Menu Programs under `%APPDATA%`; the Desktop |
 | Setup's step log | `%TEMP%\EarthNowSetup.log` |
 | Setup's WebView2 data | `%TEMP%\EarthNowSetup` |
 
-The data folder is `os.UserCacheDir()` joined with the product's slug, which on
-Windows is `%LOCALAPPDATA%\EarthNow` (NFR-PRIV-002). On macOS it is
-`~/Library/Caches/EarthNow`; inside the Flatpak it is
-`~/.var/app/uk.codecrafter.EarthNow/cache/EarthNow`, since Flatpak points
-`XDG_CACHE_HOME` into the sandbox.
+The data folder is `os.UserCacheDir()` joined with the product's slug
+(NFR-PRIV-002): `~/Library/Caches/EarthNow` on macOS and
+`~/.var/app/uk.codecrafter.EarthNow/cache/EarthNow` inside the Flatpak.
 
 ## The setup program
 
-`installer/` is a second Go `main` package: a Wails application embedding the
-built application as `payload.zip`, with a hand-written page in
-`installer/frontend/dist` and no front-end build step. It is a facade; the
+`installer/` is a second Wails `main` embedding the built application as
+`payload.zip`, with a hand-written page in `installer/frontend/dist`. The
 install policy lives in `internal/infrastructure/setup` (DEL-003).
 
-- **One reading of the machine decides the route.** `DetectState` compares the
-  version recorded in the Apps list entry with this one: install where nothing
-  is recorded, update over an older version, go back over a newer one, manage
-  (Repair or Reinstall) over the same one. Started with `-uninstall`, as the
-  Apps list starts it, setup opens on removal.
-- **Per user.** Files under `%LOCALAPPDATA%\Programs\EarthNow`; the Apps list
-  entry under `HKCU`, with Modify and Repair both reopening setup. Windows never
-  asks for administrator rights.
-- **A running EarthNow is refused,** before any file is touched, because
-  extracting over a locked executable fails part way. The page offers to close
-  it.
-- **The payload is fenced:** an archive entry whose path would climb out of the
-  install folder is refused.
-- **A step log** in `%TEMP%\EarthNowSetup.log`, one timestamped line per step,
-  kept outside the folders an uninstall removes.
-- **Install, update, go back and reinstall are one act,** `write`: extract,
-  register, then apply the shortcut boxes. Repair runs the same path leaving the
-  shortcuts as they stand.
-- **Uninstall** removes the shortcuts and the Apps list entry, removes the data
-  folder when asked, then hands the install folder to a hidden command that
-  waits about two seconds (`ping -n 3`) so setup's own copy there can exit,
-  then deletes the folder.
-- **The page names nothing.** The product's name arrives in the state the
-  facade sends, so the page carries no copy for a rename to miss.
+- `DetectState` reads the machine once: install when nothing is recorded,
+  otherwise update, go back or manage (Repair or Reinstall) by comparing
+  versions; `-uninstall` opens on removal.
+- Per user under `HKCU`, so no administrator rights; Modify and Repair reopen
+  setup.
+- A running EarthNow is refused before any file is touched.
+- An archive entry whose path climbs out of the install folder is refused.
+- Install, update, go back and reinstall are one path, `write`: extract,
+  register, apply shortcuts. Repair keeps the shortcuts as they stand.
+- Uninstall removes shortcuts, the Apps list entry and the data folder if asked,
+  then hands the install folder to a hidden `ping 127.0.0.1 -n 3` and `rmdir`
+  so setup's own copy can exit first.
+- The page names nothing; the product's name arrives in the state.
 
-The auto-scroll machine and the keyboard repair live once, in
-`installer/frontend/dist/auto-scroll.js` and `settle-keyboard.js`, because the
-setup page can embed only what sits under `installer/`. The application's page
-imports the same files; `frontend/vite.config.ts` lets the dev server read
-that folder.
+`auto-scroll.js` and `settle-keyboard.js` live once in
+`installer/frontend/dist`; the application's page imports them, with
+`frontend/vite.config.ts` letting the dev server read that folder.
 
 ## Versioning
 
-`VERSION` holds the only version string (CON-005). `build.ps1` passes it to
-both programs through `-ldflags "-X main.appVersion=..."`; `appVersion` is a
-`var` in each because `-X` does nothing to a `const`. A binary built without
-the flag reports a development placeholder. The site under `docs/` cannot read
-`VERSION`, so `stamp_version.py` writes it between the pages' version markers;
-`build.ps1` runs it before the gate.
+`VERSION` holds the only version string (CON-005). `build.ps1` passes it to both
+programs as `-X main.appVersion` (a `var`, since `-X` ignores a `const`). It
+first runs `stamp_version.py` to write the version into the site. See
+[DEVELOPMENT.md](DEVELOPMENT.md#versioning).
 
-## Decisions
+## Implementation decisions
 
-Each row is stated in a code comment or in REQUIREMENTS.md.
+The conceptual choices live in [DECISIONS-TRADEOFFS.md](DECISIONS-TRADEOFFS.md);
+these are the rows it would not hold.
 
-| Decision | Chosen | Rejected: what and why |
+| Decision | Chosen | Rejected and why |
 |---|---|---|
-| The globe library | globe.gl on three.js, with the Blue Marble texture bundled (REQUIREMENTS.md 2.5) | CesiumJS: several times the shipped size, default imagery from a network service with an evaluation token and a GIS engine where one calm globe is wanted. |
-| Marker size across zoom | Each marker keeps its launch size on screen: it is drawn at the altitude over the fit altitude times its fit-altitude size (`markers.ts`, `rescale`). | A fixed size in globe units: two overlapping markers would grow with the gap between them and never separate (FR-MRK-008). |
-| Clustering | Written in `clusters.ts`, pure, from positions, sizes and the scale | A library's: globe.gl and three-globe offer none (Phase 0, their typings checked). |
-| A cluster the closest zoom cannot part | Its members listed in a dialog, each opening its detail (`ClusterList.tsx`, amendment 35) | Fanning the markers out: the owner chose the list. Zooming alone: two quakes 2.0 km apart stayed one cluster at the minimum altitude, so neither could be opened by pointer. |
-| Markers | Emoji drawn to sprite textures, one table as their home (Appendix D.3) | 2,500 page elements moved every frame. The spike measured 2,501 sprites at a median frame of 10.00 ms. |
-| Markers at the globe's edge | Drawn over the globe rather than tested against its depth; before each frame, `GlobeView.tsx` hides every marker whose point lies beyond the horizon (`markers.ts`, `overHorizon`) | The depth test: a sprite always faces the camera, so near the edge it stands upright and its lower half sank into the sphere, drawn cut off. |
-| The page's coverage provider | istanbul (`frontend/vite.config.ts`) | v8: it reported `GlobeView.tsx` at 100% with no test importing it; istanbul read it at 0%. |
-| The page's composition root | `App.tsx` and `main.tsx` excluded from the coverage floors, checked by eye | Counting them: they wire the parts together, as `main.go` does on the Go side. |
-| Future-dated events | Shown only up to `window.ClockSkew` (15 minutes) ahead of the clock, so a slow machine clock hides nothing new | Showing any future date: GDACS published a flood alert dated days ahead, which is not an event that has happened (TECH_DEBT.md). |
-| Third-party notices | Written by `tools/notices.py` from `go list -deps` and `npm ls --omit=dev --all`, with every licence text in full; the gate checks the file is current | Written by hand: a dependency added or bumped without its notice would ship unnoticed (NFR-LEG-001). |
-| The cloud image | Drawn in Go by the domain's ramp and handed to the page as a PNG data URL, then laid on a second sphere just above the globe (`imageLayers.ts`) | Drawing on the page: it would have to fetch the image, which its CSP forbids (NFR-SEC-002). |
-| The burnt areas | Each UTC day fetched and held apart, composed in Go into one image for the window and laid on a sphere beneath the clouds (`imageLayers.ts`) | One image per day on the page: up to eight textures and spheres, decoded on the page. A date range in one request: GWIS answers an empty body (measured). |
-| Replay's frames | The page holds the position and plays it on animation frames; it asks Go for a frame at most every 100 ms and for an image only when the frame's key for it changes (`useReplay.ts`) | Go driving the clock and pushing frames: a timer on the Go side for what is a page's animation; a stream of events where the page can ask at its own pace. |
-| The sun's position | Worked out in the Go domain by NOAA's equations and asked for by the page once a minute (`internal/domain/sun`) | The npm `solar-calculator` globe.gl's own day-night example uses: a second home for astronomy, on the page. The example also fetches its textures from a CDN, which the CSP forbids (NFR-SEC-002). |
-| Drawing day and night | three-globe's own lit material kept, the night lights added as its emissive map; one light factor per point, from the world-space normal against a world-space sun, scales the day by it and the lights by what is left (`dayNight.ts`). The cloud sphere dims by the same uniforms. | The example's unlit shader in view space: three-globe's default globe is a Phong material lit by globe.gl's ambient and directional lights (read in source), so an unlit shader would change the day side and hiding the layer would not restore the globe as before (FR-DAY-008). View space also needs the camera's turn fed in every frame, where world space needs nothing while only the camera moves. |
-| The light rule on the page | The shader restates FR-DAY-002's ramp shape; the twilight limit and the night floor arrive with the sun from the domain, so the page holds none of the figures | Computing the light in Go: it is per point on the screen, work that cannot cross the wire. |
-| Where the globe opens | The operating system's country or region setting, faced at Natural Earth's label point for that country (`tools/geodata.py --labels`, amendment 30) | The time zone: it knows only a band of longitude. The display language: a UK machine often runs an en-US one (owner). The capital or the outline's centre: both can sit at an edge (Washington; the USA pulled north by Alaska). |
-| Cloud times | The layer's own capabilities document, its time dimension's default | The whole service's document: 282 KB against 6.4 KB (measured). |
-| The network | One client package, https only, with a size cap; each adapter's client allows its own host alone; the page makes no request | Fetching from the page: the CSP gives it no origin but its own (NFR-SEC-002). One client holding every host: a provider's redirect could reach a layer host while that layer was hidden (measured in audit). |
-| What each source is asked for | Each adapter states the media types it accepts | One `Accept` for all: the Smithsonian feed answers 403 to a request asking only for JSON (measured). |
-| Refresh intervals | USGS 60 s, matching its measured `max-age=60`; EONET 10 min; GVP hourly | One interval for all: the sources change at very different rates. |
-| EONET scope | Every event of the week, open and closed (amendment 11) | Open events only: 17 against 80 that week, dropping most wildfires and floods. |
-| Volcanoes | A third provider, the Weekly Volcanic Activity Report (amendment 12) | EONET alone: it tracked no volcano in the 30 days measured while that week's report listed 20. |
-| A volcano's time | Ongoing: in every window from its report week's first day, while the report was issued no more than 14 days ago (`event.Report`, amendment 45) | Its report's issue day: every window showed 0 volcanoes against the feed's 20 once that day passed out of the week (measured 2026-09-26). |
-| Characters the volcano report loses | The adapter puts back a letter's "?s" as an apostrophe and "SO?" as SO₂; nothing else (`gvp/mended.go`, amendment 46) | Showing them as sent: "Karangetang?s" reads as a fault in EarthNow. Replacing every question mark: a real one would be lost. |
-| Kinds no source publishes | Folded into Other, the source's own id kept on the event (amendment 45) | Their own key rows: EONET published no landslide, drought or dust haze in a year, so each row read 0 for ever. Rows shown only when filled: the key would change shape (amendment 15). |
-| GDACS flood polygons | A ring holding a value beyond 90 is read in the order that value proves; the rest follow the order the feed's proven rings show, latitude first when they show none (`order.go`, amendments 12 and 17) | GeoJSON order: all 14 of the week arrived latitude first; five were dropped and nine drawn in the wrong place. A fixed latitude-first rule: a correction upstream would draw every flood swapped. Deciding by which reading lands on a country: 27 of 57 rings read as land either way and a coastal Kenya flood read as Spain (measured over 30 days). |
-| The source link | The first source naming a page; a data file is shown as text (FR-SEL-009) | The first source: a storm's first source was a `.tcw` warning file, which downloaded. |
-| The donate address | Held by the Go side, which opens it through the same check as a source link: an https scheme, a host and a page rather than a data file (`SafeURL`, FR-DON-003) | Held by the page: a second home for a rename or a typo to miss. |
-| Controls | An action rail down the left, 68 px wide (amendment 6) | Full-width bars: at 960 by 600, the minimum window when this was decided, the 70% globe area of NFR-UX-001 left them 55 px of height, less than one PigeonPost header. |
-| The keyboard | The WebView2 child focused directly, with the page asking again through `TakeKeyboard` (amendment 9) | `runtime.Show` alone: it lost a race inside Wails; the log measured the first focus failing. |
-| WebView2 data | Inside the data folder | The default: it falls to `%APPDATA%\EarthNow.exe`, outside the one folder NFR-PRIV-002 allows (measured). |
-| The log | Rotated while running at 5 MB, one previous file kept | Rotating only at start: EarthNow runs for days. |
-| cgo | Pinned off in `build.ps1` for the gate and the build | Left to the machine: the first machine with a C compiler would quietly build a different binary. |
-| The gate | Run by `build.ps1` with no switch to skip it | A skip switch: it is used on the day it would have caught something. |
-| The icon | One committed `.ico`, made by `tools/genicons.py`, placed on both executables (DEL-004) | Letting Wails derive one: it does so only when the file is absent. |
-| Setup program | A Wails application ported from ED Voyage Companion, to the `installer` skill (CON-006, DEL-002) | Designing one afresh. |
+| Page coverage provider | istanbul | v8 reported `GlobeView.tsx` at 100% with no test importing it. |
+| Page composition root | `App.tsx` and `main.tsx` excluded from the floors | They only wire parts together, as `main.go` does. |
+| Clustering | Written in `clusters.ts`, pure | globe.gl and three-globe offer none. |
+| Markers at the edge | Drawn over the globe; `overHorizon` hides those beyond the horizon | The depth test cut sprites in half near the edge. |
+| Cloud image | Drawn in Go, sent as a PNG data URL, laid on a second sphere (`imageLayers.ts`) | Fetching on the page breaks its CSP (NFR-SEC-002). |
+| Replay frames | The page plays its position and asks Go every `FRAME_ASK_MS` | A Go timer pushing frames for what is a page animation. |
+| Sun position | Go domain, NOAA's equations | npm `solar-calculator` on the page: a second home for astronomy. |
+| Light figures | The shader keeps the ramp shape; the limit and floor arrive from Go | Per-pixel light in Go cannot cross the wire. |
+| Cloud times | The layer's own capabilities document (6.4 KB) | The whole service's (282 KB). |
+| `Accept` header | Set per adapter | The Smithsonian feed answers 403 to JSON only. |
+| Keyboard | Focus the WebView2 child, with `TakeKeyboard` as a retry | `runtime.Show` alone lost a race inside Wails. |
+| WebView2 data | Inside the data folder | The default falls to `%APPDATA%\EarthNow.exe`. |
+| cgo | Pinned off in `build.ps1` | A machine with a C compiler would quietly build a different binary. |
+| Icon | One committed `.ico` from `tools/genicons.py` | Wails derives one only when the file is absent. |
 
 ## See also
 
+- [README.md](README.md) for what EarthNow is and how to install it.
 - [TESTING.md](TESTING.md) for the gate, the floors and the checks a person
   makes.
 - [DEVELOPMENT.md](DEVELOPMENT.md) for the tools, the build and the release

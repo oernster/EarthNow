@@ -1,38 +1,30 @@
 # Development
 
-How to build EarthNow from source, what each script does and how a release is
-cut. Every command is PowerShell, one command per block, run from the
-repository root. [README.md](README.md) is for someone using the application;
-this is for someone building it.
+How to build EarthNow from source and cut a release. Every command is
+PowerShell, run from the repository root, except the macOS and Linux build
+scripts, which run in bash on those platforms.
 
 ## Tools
 
-| Tool | Needed for | Get it |
+| Tool | What for | Where to get it |
 |---|---|---|
 | Go, at the version `go.mod` declares | everything | [go.dev/dl](https://go.dev/dl/) |
-| Node.js with npm; `package.json` pins no minimum | the page: lint, type check, tests and build | [nodejs.org](https://nodejs.org/) |
-| Wails CLI, at the version of the Wails module `go.mod` requires | building the application and the setup program | `go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)` |
+| Node.js with npm (`package.json` pins no minimum) | the page: lint, type check, tests and build | [nodejs.org](https://nodejs.org/) |
+| Wails CLI, at the Wails version `go.mod` requires | building the application and the setup program | `go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)` |
 | WebView2 runtime | running either program | [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/) |
-| Python 3, as `python` on the path | the notices check the gate ends with, standard library only | [python.org](https://www.python.org/downloads/) |
-| Pillow | regenerating the icons, plus the Linux Flatpak's icon sizes | `python -m pip install pillow` |
+| Python 3, as `python` | `stamp_version.py` and the gate's notices check; standard library only | [python.org](https://www.python.org/downloads/) |
+| Pillow | regenerating the icons | `python -m pip install pillow` |
 
-staticcheck is not installed: `test.ps1` runs it at a pinned version through
-`go run`, so a new release of it cannot change the result for unchanged code.
-The first run on a machine fetches it, so that run needs the network.
-
-cgo is not used on Windows; the macOS and Linux builds need it, since Wails
-renders there through a C web view. `build.ps1` pins `CGO_ENABLED=0` for the
-gate and the build, so no C compiler is needed. `./test.ps1` run on its own does not set it, so on a
-machine with a C compiler the gate runs as you run it with the Go default.
-
-`wails.exe` lands in `%USERPROFILE%\go\bin`. If this is not found, that folder
-is not on the path:
+staticcheck needs no install: `test.ps1` runs it at a pinned version through
+`go run`, so the first run on a machine needs the network. No C compiler is
+needed on Windows; `build.ps1` sets `CGO_ENABLED=0`. `wails.exe` lands in
+`%USERPROFILE%\go\bin`; if this fails, that folder is not on the path:
 
 ```powershell
 wails doctor
 ```
 
-## First steps after cloning
+After cloning:
 
 ```powershell
 go mod download
@@ -42,278 +34,151 @@ go mod download
 npm --prefix frontend install
 ```
 
-`wails build` runs `npm install` itself through the `frontend:install` hook in
-`wails.json`. The gate runs before that; it stops at its front-end step
-without `frontend/node_modules`.
-
-## Building
+## What build.ps1 does
 
 ```powershell
 ./build.ps1
 ```
 
-In order, it:
-
-1. Reads `VERSION` and makes `-ldflags "-X main.appVersion=<version>"` from it.
-2. Runs `stamp_version.py`, which writes that version into every
-   `<!--VERSION-->` token of the site under `docs/`, so the site never offers an
-   older number than the setup program. It touches nothing already current.
-   It also versions the site's stylesheet and script links by content
-   (`styles.css?v=<hash>`), so a browser never pairs a new page with a cached
-   old stylesheet.
+1. Reads `VERSION` into `-ldflags "-X main.appVersion=<version>"`.
+2. Runs `stamp_version.py` (see Versioning).
 3. Sets `CGO_ENABLED=0` for everything that follows.
-4. Runs [`test.ps1`](TESTING.md). A failure stops the build; there is no switch
-   to skip it.
-5. Refuses to go on without `assets/application-icon.png` and
-   `assets/application-icon.ico`, then copies both into `build/` and
-   `installer/build/` as `appicon.png` and `windows/icon.ico`.
-6. Runs `wails build` for the application. That runs the page's
-   `npm run build`, which is ESLint, `tsc` and `vite build`, then writes
-   `build/bin/EarthNow.exe`.
+4. Runs `test.ps1`. A failure stops the build; there is no switch to skip it.
+5. Stops unless `assets/application-icon.png` and `.ico` exist, then copies
+   them into `build/` and `installer/build/`.
+6. Runs `wails build`, whose `npm run build` is ESLint, `tsc` and
+   `vite build`, writing `build/bin/EarthNow.exe`.
 7. With `-SkipInstaller`, stops here.
 8. Zips `build/bin` into `installer/payload.zip`.
-9. Copies `LICENSE` to `installer/frontend/dist/LICENSE.txt`, since the setup
-   page has no build step to read it from the root.
-10. Runs `wails build` in `installer/`, with the same `-ldflags`.
+9. Copies `LICENSE` to `installer/frontend/dist/LICENSE.txt`.
+10. Runs `wails build` in `installer/` with the same `-ldflags`.
 11. Copies `installer/build/bin/EarthNowSetup.exe` to
-    `dist-installer/EarthNowSetup.exe`, the one file that ships.
-12. Writes the 22-byte empty zip back over `installer/payload.zip`, so
-    `go build ./...` and the tests keep working without a full build.
+    `dist-installer/EarthNowSetup.exe`, the file that ships.
+12. Writes the 22-byte empty zip back over `installer/payload.zip`.
 
-Step 12 runs only when the steps before it succeed. If the setup program fails
-to build, `installer/payload.zip` still holds the full payload: run
-`./build.ps1` again rather than committing it.
-
-To build only the application, the faster loop when the setup program has not
-changed:
+If step 10 fails, `installer/payload.zip` still holds the full payload: run
+the build again rather than committing it. The faster loop when the setup
+program has not changed:
 
 ```powershell
 ./build.ps1 -SkipInstaller
 ```
 
-| Output | What it is |
-|---|---|
-| `build/bin/EarthNow.exe` | the application |
-| `dist-installer/EarthNowSetup.exe` | the setup program, application included |
-
-Everything generated is ignored by git: `build/`, `frontend/dist/`,
-`frontend/wailsjs/`, `dist-installer/`, `installer/build/bin/`, the icon and
-manifest copies under `installer/build/`, `installer/frontend/wailsjs/` and
-`installer/frontend/dist/LICENSE.txt`, plus Wails' `frontend/package.json.md5`.
-`installer/payload.zip` is tracked only as the empty archive.
+Every output is ignored by git; `installer/payload.zip` is tracked only as the
+empty archive.
 
 ## Running from source
 
-`wails.json` names `npm run dev` as the page's dev watcher, so the development
-loop serves the page from Vite and rebuilds the Go side on change:
+`wails dev` serves the page from Vite and rebuilds the Go side on change:
 
 ```powershell
 wails dev
 ```
 
-To run a built copy instead:
-
-```powershell
-./build.ps1 -SkipInstaller
-```
+To run a built copy:
 
 ```powershell
 ./build/bin/EarthNow.exe
 ```
 
-A binary built without `build.ps1` reports a development placeholder in place of a version.
+A binary built without `build.ps1` reports a development placeholder in place
+of a version. The log is `%LOCALAPPDATA%\EarthNow\Log.txt`: the version, each
+fetch with its status and counts, each failure with its next retry. It rotates
+at 5 MB, keeping one `Log.previous.txt`. Read it first when something looks
+wrong.
 
-Everything EarthNow does is written to `%LOCALAPPDATA%\EarthNow\Log.txt`: the
-version at start, the settings file read, each fetch with its status, event
-count and dropped count, each failure with its next retry and each keyboard
-handover. The log rotates at 5 MB, keeping one `Log.previous.txt`. Read it
-first when something looks wrong.
-
-## Generated files
+## Generated assets
 
 Both scripts are run by hand; their output is committed.
 
-### The icons
-
-`tools/genicons.py` reads the masters in `assets/` and writes:
-
-- every action master into `frontend/src/assets/icons`, at 208 pixels: the
-  rail's, `play.png` and `pause.png` for Replay, plus `filter.png` and
-  `time-window.png`, which Appendix D.2 lists though no control draws them;
-  also `rotate-stop.png`, `cloud-cover-hide.png` and `day-night-hide.png`, made by
-  laying `negative.png` over `rotate.png`, `cloud-cover.png` and
-  `day-night.png`, so the two states of the rotation, cloud and day and night
-  buttons cannot drift apart;
-- `assets/application-icon.ico` at 16, 24, 32, 48, 64, 128 and 256 pixels,
-  which `build.ps1` puts on both executables;
-- the setup page's header mark (256 pixels) and its sun and moon (128 pixels)
-  into `installer/frontend/dist`;
-- the donate mark into `frontend/src/assets/donate.png`, cropped to its
-  artwork and scaled by height to four times the rail's 48-pixel glyph (the
-  site's `docs/donate.png` is the mark every project site shares, never
-  generated);
-- the application icon, from one call, for the page's own mark and as the
-  site's `docs/icon.png`;
-- `docs/earth.jpg`, the page's NASA texture at 760 pixels high, for the
-  site's turning globe (CON-009: the Earth is never drawn).
+`tools/genicons.py` reads the masters in `assets/` and writes the page's icons
+into `frontend/src/assets/icons`, `assets/application-icon.ico`, the setup
+page's marks into `installer/frontend/dist`, the in-app donate mark, plus the
+site's `docs/icon.png` and `docs/earth.jpg`. The site's `docs/donate.png` is
+shared across projects and never generated. Run it when a master changes:
 
 ```powershell
 python tools/genicons.py
 ```
 
-Run it when a master changes, then commit the results. A clone builds without
-Python or Pillow for this. The one exception is the Linux icon theme:
-`build_flatpak.sh` runs `python3 tools/genicons.py --hicolor build/linux/icons`
-on every build, which writes the application icon at each hicolor size into
-that gitignored folder and nothing else.
+`build_flatpak.sh` also runs it with `--hicolor build/linux/icons` on every
+Linux build, writing only the icon theme into that ignored folder.
 
-### The third-party notices
-
-`tools/notices.py` writes `THIRD_PARTY_NOTICES` from what actually ships: the
-Go modules linked into the application and the setup program
-(`go list -deps`) and the page's production tree (`npm ls --omit=dev --all`),
-each with its licence, then every licence text in full.
+`tools/notices.py` writes `THIRD_PARTY_NOTICES` from the Go modules linked
+into both programs and the page's production npm tree. Run it after any
+dependency change; the gate runs it with `--check`:
 
 ```powershell
 python tools/notices.py
 ```
 
-Run it after any dependency change: a module added, removed or bumped in
-`go.mod`; the same for a production package in `frontend/package.json`. The gate runs it
-with `--check` and fails until the file matches.
+Not generated here: the NASA textures `frontend/src/assets/earth.jpg` and
+`earth-night.jpg` were downloaded, resampled and committed. The Natural Earth
+data in `internal/infrastructure/geo/data` comes from `tools/geodata.py`, given
+the folder of unpacked shapefiles and an output folder; copy the result into
+`data` by hand and pass only the layer being refreshed. Country label points
+alone:
 
-### Not generated here
-
-- `frontend/src/assets/earth.jpg` is the NASA Blue Marble Next Generation
-  texture, downloaded and committed.
-- `frontend/src/assets/earth-night.jpg` is NASA's Black Marble 2016 night
-  lights at 3 km, downloaded once, resampled from 13500 by 6750 to 5400 by
-  2700 (JPEG quality 90) to match `earth.jpg`'s size and
-  projection, then committed.
-- `internal/infrastructure/geo/data` holds the Natural Earth places, borders
-  and Antarctic ice shelves the application embeds. `tools/geodata.py`, first
-  written for the Phase 0 spike, converts Natural Earth shapefiles. It is given the
-  folder the layers are unpacked into plus an output folder, writes a file
-  only for each layer it finds there, then the result is copied into `data`
-  by hand. Pass only the layer being refreshed: the shapefiles are not kept,
-  so a fresh download of the others might not match what is embedded.
-- `internal/infrastructure/geo/data/labels.json` is each country's label
-  point, written from the admin 0 countries layer alone, leaving the borders
-  untouched:
-
-  ```powershell
-  python tools/geodata.py --labels <unpacked layers> internal/infrastructure/geo/data
-  ```
+```powershell
+python tools/geodata.py --labels <unpacked layers> internal/infrastructure/geo/data
+```
 
 ## Versioning
 
-`VERSION` holds the only version string (CON-005). Change it there and nowhere
-else. `build.ps1` passes it into both programs through
-`-ldflags "-X main.appVersion=<version>"`; `appVersion` is a `var` in
-`main.go` and in `installer/main.go`, because `-X` does nothing to a `const`.
-The About dialog shows it and setup records it in the Apps list entry, which is
-how the next setup program decides between update, go back and repair.
+`VERSION` is the single source of the version (CON-005); change it there and
+nowhere else. `build.ps1` passes it into both programs through `-ldflags`;
+`appVersion` is a `var` in `main.go` and `installer/main.go` because `-X` does
+nothing to a `const`. `stamp_version.py` writes it into every
+`<!--VERSION-->` token of the site under `docs/` and versions the site's
+stylesheet and script links by content hash. `build.ps1` runs it first; to run
+it alone:
+
+```powershell
+python stamp_version.py
+```
 
 ## Cutting a release
 
 1. Set `VERSION`.
-2. Run `./build.ps1`. It will not build from a tree that fails the gate.
+2. Run `./build.ps1`.
 3. On an Apple Silicon Mac run `bash builddmg.sh`; on Linux run
    `bash build_flatpak.sh`.
 4. Commit, tag the commit with the version and push.
 5. Create a GitHub release for the tag on `oernster/EarthNow` and attach
    `dist-installer/EarthNowSetup.exe`, `EarthNow.dmg` and `earthnow.flatpak`.
 
-The README's install instructions point at the Releases page, so step 5 is
-what users see.
-
-## macOS and Linux builds
-
-Three bash scripts, ported from PigeonPost with SymDiary's hardening, build
-EarthNow for the other two platforms and clean up after the Flatpak
-(DEL-005 to DEL-007). Each has run on its
-own platform: the Flatpak on the latest Ubuntu LTS, the notarised DMG on an
-Apple Silicon Mac, with the globe drawing on both. The release carries both
-files beside the Windows setup program.
-
-| Script | Runs on | What it makes |
+| Script | Runs on | Makes |
 |---|---|---|
 | `builddmg.sh` | an Apple Silicon Mac | `EarthNow.dmg`, signed and notarised; `ALLOW_UNNOTARIZED=1` for a local test build only |
-| `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow`, on the GNOME runtime with WebKitGTK |
-| `cleanup_flatpak.sh` | Linux | uninstalls it and removes only the flatpak artefacts; the user's settings and cache stay |
+| `build_flatpak.sh` | Linux (Ubuntu is the reference) | `earthnow.flatpak` and a user install of `uk.codecrafter.EarthNow` |
+| `cleanup_flatpak.sh` | Linux | uninstalls it and removes the build artefacts; the user's data stays |
 
-```bash
-bash build_flatpak.sh
-```
-
-- **The globe needs WebGL.** Wails v2 turns webkit2gtk's GPU acceleration off
-  unless told otherwise, so `main.go` passes `options.Linux` with the policy
-  set to Always (RSK-002). With it, the globe draws on the latest Ubuntu LTS;
-  a machine whose driver offers no WebGL2 gets FR-GLB-009's message instead.
-- **The Flatpak keeps the network** for the three sources, the cloud images
-  and the burnt-area maps. It asks for no filesystem access: its settings,
-  cache and log live in the sandbox's own cache folder.
-- **The DMG** copies `assets/application-icon.png` to `build/appicon.png`, as
-  `build.ps1` does; Wails makes the bundle's icon from it. Notarisation
-  needs a keychain profile named `EarthNow` (the script prints how to make one)
-  or `APPLE_ID` and `APPLE_APP_PASSWORD`.
-- `.gitattributes` holds the three scripts at LF endings, since a Windows
-  checkout would otherwise give them a shebang ending in a carriage return.
-
-## Where things live
-
-| Path | What it holds |
-|---|---|
-| `main.go` | the composition root |
-| `app.go` | the Wails facade the page calls |
-| `layers.go`, `replay.go` | the image layers' and Replay's part of that facade |
-| `binding_pass.go`, `binding_pass_off.go` | the switch that keeps the build's bindings pass out of the user's log |
-| `internal/domain` | `burnt`, `cloud`, `event`, `freshness`, `region`, `sun`, `window`: no I/O |
-| `internal/application` | `ports`, `services` and the `dto` wire shapes |
-| `internal/infrastructure` | `cache`, `clouds`, `geo`, `gwis`, `httpfetch`, `oslocale`, `pngcheck`, `providers/eonet`, `providers/gvp`, `providers/usgs`, `runlog`, `settings`, `setup`, `window` |
-| `internal/product` | the name, slug, licence line, copyright, donate address and credits |
-| `frontend/src` | the page |
-| `installer/` | the setup program, a Wails application of its own |
-| `tests/structural` | the tests that hold the architecture in place |
-| `tools/` | `genicons.py`, `notices.py` and `geodata.py` |
-| `stamp_version.py` | stamps `VERSION` into the site's version tokens and links its stylesheet by content; `build.ps1` runs it first |
-| `builddmg.sh`, `build_flatpak.sh`, `cleanup_flatpak.sh` | the macOS and Linux builds |
-| `assets/` | the master artwork |
-| `docs/` | the GitHub Pages site: four hand-written pages (home, features, why and install) sharing one stylesheet, no build step |
+Notarisation needs a keychain profile named `EarthNow` (the script prints how
+to make one) or `APPLE_ID` with `APPLE_APP_PASSWORD`. `.gitattributes` holds
+the scripts at LF endings.
 
 ## Standing rules
 
-- **No magic numbers.** A literal that needs a comment to say what it
-  represents is a named constant or comes from data.
-- **The product is named once,** in `internal/product/product.go`. A structural
-  test fails when a Go string literal outside a test, a page source file,
-  `frontend/index.html` or a setup page file spells it. The Wails configuration files and the build
-  scripts sit outside that test and still carry it.
-- **The donate address lives once,** beside the name; a structural test holds
-  it there.
-- **No file over 400 lines,** and none in the danger band of 381 to 400: one
-  that lands there is reduced to 350 or fewer (CON-008). The structural test
-  counts the Go files, the page's source and the setup page.
-- **The layer direction is enforced.** The domain imports nothing of
-  EarthNow's outside itself and reads no clock; the application imports no
-  infrastructure; only `main.go` and `app.go` join the two.
+- **No magic numbers.** A literal that needs a comment is a named constant or
+  comes from data.
+- **The product name and the donate address live once,** in
+  `internal/product/product.go`; structural tests hold them there.
+- **No file over 400 lines;** one in the band 381 to 400 is cut to 350 or
+  fewer (CON-008).
+- **The layers point inward.** The domain does no I/O and reads no clock; the
+  application imports no infrastructure; only `main.go` and `app.go` join them.
 - **A new provider** is a package under `internal/infrastructure/providers`
-  plus a line in `main.go`; a test fails if anything else imports it.
+  plus a line in `main.go`.
 - **A new wire shape** is a struct in `internal/application/dto`, an interface
   in `frontend/src/types.ts` and a pair in `wireShapes` in
   `tests/structural/wire_test.go`.
-- **Domain and application stay at 100% coverage;** no infrastructure floor is
-  lowered.
+- **Domain and application stay at 100% coverage;** no floor is lowered.
 - **Every exported type has a doc comment.**
 - **No version string outside `VERSION`.**
-- **After a dependency change,** run `tools/notices.py`.
-
-The reasons are in [ARCHITECTURE.md](ARCHITECTURE.md); the checks are in
-[TESTING.md](TESTING.md).
 
 ## See also
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants and the design
-  decisions.
-- [TESTING.md](TESTING.md) for the gate, the floors and the checks a person
-  makes.
+- [README.md](README.md) for what EarthNow is and how to install it.
+- [ARCHITECTURE.md](ARCHITECTURE.md) for the layers and the reasons behind
+  these rules.
+- [TESTING.md](TESTING.md) for the gate, the floors and the manual checks.

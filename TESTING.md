@@ -1,7 +1,7 @@
 # Testing
 
-How EarthNow is tested, what the gate checks and what a person has to check.
-Every command is PowerShell, run from the repository root.
+How EarthNow is tested and what the gate checks. Every command is PowerShell,
+run from the repository root.
 
 ## The gate
 
@@ -9,7 +9,8 @@ Every command is PowerShell, run from the repository root.
 ./test.ps1
 ```
 
-`build.ps1` runs it before building anything and cannot skip it. In order:
+`build.ps1` runs it before building anything and has no switch to skip it. In
+order:
 
 1. `go list ./...` names the packages, leaving out any Go package an npm
    dependency ships under `node_modules`.
@@ -30,12 +31,11 @@ Every command is PowerShell, run from the repository root.
 
 It ends with `All green.`
 
-### Reading the result
+## Reading the result
 
 Trust the exit code, never the text. A failing step throws, which stops the
-script with the reason. Run in the current session, a throw leaves
-`$LASTEXITCODE` holding whatever the last native command returned, which can be
-`0` (measured). Run the gate as its own process to read a verdict:
+script with the reason. Run in the current session, a throw can leave
+`$LASTEXITCODE` at `0` (measured), so run the gate as its own process:
 
 ```powershell
 pwsh -NoProfile -File ./test.ps1
@@ -45,61 +45,40 @@ pwsh -NoProfile -File ./test.ps1
 $LASTEXITCODE
 ```
 
-`0` means every step passed; `1` means one failed.
+`0` means every step passed; `1` means one failed. `./test.ps1 -Floor 95`
+changes the domain and application floor for a deliberate check, never for a
+release.
 
-`-Floor` changes the domain and application floor for a deliberate check,
-never for a release:
-
-```powershell
-./test.ps1 -Floor 95
-```
-
-### The coverage floors
+## The coverage floors
 
 The domain and the application are held at 100% because they are pure: no
-network, no disk, no window, so nothing in them is out of a test's reach. Every
-other floor is the figure that package measured, never a target: it fails the
-moment cover is lost and is raised when cover rises (NFR-MNT-001). The reasons
-below are the ones written beside each floor in `test.ps1` and
-`frontend/vite.config.ts`.
+network, no disk, no window. Every other floor is the figure that package
+measured, never a target; it fails the moment cover is lost and is raised when
+cover rises (NFR-MNT-001). The reasons are the ones written beside each floor in
+`test.ps1` and `frontend/vite.config.ts`.
 
 | Package | Floor | Why not 100 |
 |---|---|---|
 | `internal/domain`, `internal/application` | 100 | |
-| `infrastructure/geo` | 100 | |
-| `infrastructure/providers/eonet` | 100 | |
-| `infrastructure/providers/usgs` | 100 | |
-| `infrastructure/providers/gvp` | 100 | |
-| `infrastructure/settings` | 100 | |
-| `infrastructure/pngcheck` | 100 | |
-| `infrastructure/httpfetch` | 97.7 | A request-building failure that no valid method and context can produce. |
-| `infrastructure/oslocale` | 85.7 | The region call failing: absent before Windows 10 1709, else answering nothing. Neither happens on a current Windows. |
+| `infrastructure/geo`, `pngcheck`, `settings` | 100 | |
+| `infrastructure/providers/eonet`, `usgs`, `gvp` | 100 | |
+| `infrastructure/httpfetch` | 98.0 | A request-building failure that no valid method and context can produce. |
 | `infrastructure/clouds` | 97.8 | Encoding the drawn image into memory, which cannot fail. |
 | `infrastructure/gwis` | 96.9 | Encoding the composed image into memory, which cannot fail. |
-| `infrastructure/cache` | 92.6 | Five faults the operating system will not produce on demand (measured): an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
-| `infrastructure/runlog` | 77.4 | Sending the error output to the log is reached only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand: the log failing to open, to report its size or to close; the runtime refusing a crash file. |
-| `infrastructure/setup` | 59.9 | What acts on the machine itself: the uninstall entry's registry writes, creating a shortcut through the Windows Script Host, then finding, ending, launching or scheduling the removal of a process. A test must not change the machine it runs on. |
-
-`infrastructure/setup` reads 61.4% on a machine where EarthNow is installed:
-the installed-version read then runs three statements past its early return,
-121 of 197 against 118 (measured). The floor is the figure for a machine
-without it; raising it to 61.4 would fail the gate on any machine that has never
-installed the product.
+| `infrastructure/cache` | 92.6 | Five faults the operating system will not produce on demand: an open failing other than for absence, encoding a type that always encodes, then creating, writing or closing a temporary file in a folder just made. |
+| `infrastructure/oslocale` | 85.7 | The region call failing (absent before Windows 10 1709, else answering nothing); neither happens on a current Windows. |
+| `infrastructure/runlog` | 77.4 | Sending the error output to the log runs only in a crashing child process, where coverage is not collected; the crash tests prove the report lands. Beyond that, faults the operating system will not produce on demand. |
+| `infrastructure/setup` | 59.9 | What acts on the machine: the uninstall entry's registry writes, the shortcut made through the Windows Script Host, then finding, ending, launching or scheduling the removal of a process. A test must not change the machine it runs on. The figure is for a machine without EarthNow installed; with it installed the package reads 61.4%. |
 
 Not gated, deliberately: `internal/infrastructure/window` (Win32 focus
-handling) and `installer` (the setup program's Wails facade over acts that
-change the machine). Neither has anything a test can reach without the platform
-behind it, so a floor over either would be a floor at zero. The root package
-(`main.go`, `app.go`) has no tests: it is the composition root and the Wails
-facade. Running it would be running the application. `internal/product` holds
-constants and its tests pin their values, so it carries no floor either;
-`tests/structural` is tests and nothing else. `gofmt -l` reads `internal`,
-`tests` and `installer`, so the root package's formatting is not checked.
+handling) and `installer` (the setup program's Wails facade). Neither has
+anything a test can reach without the platform behind it. The root package is
+the composition root and the Wails facade; it has no tests. `internal/product`
+holds constants whose tests pin their values. `gofmt -l` reads `internal`,
+`tests` and `installer` only, so the root package's formatting is not checked.
 
-The page is measured with istanbul over `src/**`, leaving out the test files
-(the shared helper `testLayout.ts` is measured), `test-setup.ts` and the page's
-composition root, `main.tsx` and `App.tsx`,
-which wire the parts together and are checked by eye:
+The page is measured with istanbul over `src/**`, leaving out the test files,
+`test-setup.ts` and the composition root (`main.tsx` and `App.tsx`):
 
 | Page measure | Floor |
 |---|---|
@@ -108,244 +87,79 @@ which wire the parts together and are checked by eye:
 | Functions | 85.54 |
 | Lines | 89.46 |
 
-These are measured figures too. `GlobeView.tsx`'s own rules (marker
-placement, the cursor's tooltip, the focus animation) and the idle rotation it
-takes from `useIdleRotation.ts` are tested against a stand-in for globe.gl; the drawing itself needs WebGL and real layout, which
-jsdom does not have, so it is exercised by eye, in the checks below.
+These are measured figures too. The globe's drawing needs WebGL and real
+layout, which jsdom lacks; the page's own rules are tested against a stand-in
+for globe.gl.
 
 ## What the tests prove
 
-### The domain and the application
+### Domain and application
 
-- **Freshness wording** at every boundary of NFR-FRESH-002, day precision
-  worded in days (FR-SEL-004) and staleness at three intervals (NFR-FRESH-001).
-- **The time window**: membership; the newest observation inside a window as
-  the event time and position; the `ClockSkew` bound, both at it and one
-  second past it.
-- **Ongoing volcanoes**: shown in every window from 1 h to 7 days; in a replay
-  from their report week's first day, absent the minute before; the report
-  current at 14 days after its issue and past it a nanosecond later, its
-  volcanoes then gone from windows and replays alike with the status saying
-  why; the cache keeping them while current; the report week worded within a
-  month, across two and across New Year (FR-TW-002, FR-RPL-009, FR-PRV-016,
-  FR-SEL-004, DATA-009). The window rule and the store's currency check were
-  each proved by planting them away.
-- **The scheduler** on a fake clock: each provider on its own interval, the
-  backoff doubling to its ceiling, recovery after a success, the manual refresh
-  and its cooldown with the time of the last one (FR-PRV-010); which
-  providers count as refreshing (FR-STS-007).
-- **The globe and the store** over hand-written fake providers: a failed
-  provider leaving the others' events standing, a not-modified answer keeping
-  the stored set, the cache restored before any fetch, the notices when there
-  is no cache or no settings file, a provider's cache notice clearing on its
-  next good save while another's stays, the status's count of items dropped
-  (kept through a 304 and a failure) and the minimum magnitude filtering the
-  live view and a replay while the held set and the cache keep every quake
-  (FR-SET-002). The https rule for source links is tested there as well.
-- **The offline promise end to end** in the USGS package: the real globe,
-  store, adapter and disk cache over a fake fetcher. An answer whose every
-  feature lacks its time keeps the two quakes held, on the globe and in the
-  file, with the reason in the status (FR-PRV-012); a minimum raised in
-  Settings while USGS fails hides the quake below it at once.
-- **Storm trails**: a storm's fixes clipped to the window and ending at the
-  marker, none for one fix or for any other category (FR-TRL-001); the trail
-  reaching the wire as pairs, empty rather than absent; trails on for a first
-  run and for a settings file from before them, the choice kept (FR-TRL-004,
-  FR-TRL-005).
-- **Earthquake depth**: the wording at each band edge and either side of it,
-  a value rounding across an edge taking the band it shows, a negative depth
-  above sea level, -0.04 reading 0.0 rather than -0.0 (proved by planting the
-  sign back), exactly 10 km marked as often fixed while 10.04 is not, the
-  wording reaching the wire and no depth leaving the row empty (FR-SEL-010
-  to 013).
-- **The cloud layer**: the brightness ramp at both thresholds and between them
-  (FR-CLD-006), the veil for a pixel with no data (FR-CLD-007), the status
-  wording and its staleness mark (FR-CLD-009, FR-CLD-010). On a fake clock and
-  fake service: no request while hidden, one check per hour while shown, an
-  image fetched only for a newly listed time, the held image kept through a
-  failure with the backoff, the first failure said, the cached image drawn at
-  start with its age (FR-CLD-003 to FR-CLD-005, FR-CLD-011, FR-CLD-013,
-  FR-CLD-014, FR-CLD-016).
-- **The day and night layer**: the subsolar point against NOAA's solar
-  calculator at 2026's solstices and equinoxes, read off the calculator
-  itself, within 0.1 degrees; the elevation at latitude and longitude 0
-  against the calculator's; the longitude wrapping at the date line a
-  quarter degree a minute (FR-DAY-001). The light ramp at -6, 0 and 6
-  degrees (FR-DAY-002) and the clouds' night floor (FR-DAY-009). On a fake
-  clock the sun moves between two readings a minute apart (FR-DAY-004); a
-  first run shows the layer and hiding it is kept (FR-DAY-007).
-- **The start view**: region codes and locale names read as a country or as
-  none (FR-GLB-014); the region's label point answered, else no start view
-  with the reason for the log (FR-GLB-015, FR-GLB-016).
-- **The burnt areas**: every UTC day a window touches, whatever the clock's
-  zone (FR-BA-001); the union keeping each pixel's highest opacity (FR-BA-006);
-  the status wording in UTC with its age, else none mapped yet (FR-BA-008,
-  FR-BA-009). On a fake clock and fake source: one request per day, every day
-  again each interval, only the days a new window lacks, nothing while hidden,
-  a failed day leaving the others drawn, a refused answer counted as a failed
-  day, the maps said to be unavailable when nothing is held, held days drawn
-  offline with old ones discarded and the image composed once per key
-  (FR-BA-002 to FR-BA-006, FR-BA-012 to FR-BA-014, FR-BA-017).
-- **Replay**: the instant a position names along the span (FR-RPL-001); a
-  frame showing what had happened by its instant, a storm's trail growing
-  with it and the burnt days building up (FR-RPL-009, FR-RPL-010,
-  FR-RPL-013); the count and status lines naming the instant (FR-RPL-011,
-  FR-RPL-019); an event from after the span's end waiting for the return
-  (FR-RPL-022). The replay's clouds on a fake source: the span's three-hourly
-  times fetched one a round at the replay's size, the image drawn the latest
-  at or before the instant, play not waiting for them, a missing one named,
-  a failed listing retried and the images released on the return
-  (FR-RPL-014 to FR-RPL-018).
+| Package | What it proves | Requirements |
+|---|---|---|
+| `domain/freshness` | Freshness wording at every boundary, day precision in days, staleness at three intervals | NFR-FRESH-001, NFR-FRESH-002, FR-SEL-004 |
+| `domain/window`, `application/services` | Window membership; the newest observation as the event's time and place; the clock-skew bound. Ongoing volcanoes shown in every window and in a replay from their report week, gone once the report is past 14 days, with the status saying why; the week worded across months and New Year | FR-TW-002, FR-RPL-009, FR-PRV-016, FR-SEL-004, DATA-009 |
+| `application/services` | The scheduler on a fake clock: intervals, backoff to its ceiling, recovery, the manual refresh and its cooldown; which providers count as refreshing | FR-PRV-010, FR-STS-007 |
+| `application/services` | The globe and store over fake providers: one failure leaving the rest standing, a 304 keeping the set, the cache restored first, the notices, the dropped-item count, the minimum magnitude filtering the view while the cache keeps every quake; the https rule for source links | FR-SET-002 |
+| `providers/usgs` | The offline promise end to end over a fake fetcher: an unusable answer keeps the held quakes on the globe and on disk with the reason shown | FR-PRV-012 |
+| `domain/window`, `application/services`, `settings` | Storm trails clipped to the window and ending at the marker; trails on for a first run and an older settings file | FR-TRL-001, FR-TRL-004, FR-TRL-005 |
+| `domain/event`, `application/services` | Earthquake depth wording at each band edge, rounding, depth above sea level, no negative zero, the fixed 10 km mark | FR-SEL-010 to FR-SEL-013 |
+| `domain/cloud`, `application/services` | The cloud ramp, veil and status; on a fake clock: no request while hidden, an hourly check, fetching only new times, the held image kept through failure, the cached image drawn at start | FR-CLD-003 to FR-CLD-007, FR-CLD-009 to FR-CLD-011, FR-CLD-013, FR-CLD-014, FR-CLD-016 |
+| `domain/sun`, `application/services`, `settings` | The subsolar point within 0.1 degrees of NOAA's calculator; the light ramp; the clouds' night floor; the sun moving on a fake clock; the layer's first-run default kept | FR-DAY-001, FR-DAY-002, FR-DAY-004, FR-DAY-007, FR-DAY-009 |
+| `domain/region`, `application/services`, `geo` | Region codes read as a country or none; the label point answered, else no start view with the reason | FR-GLB-014, FR-GLB-015, FR-GLB-016 |
+| `domain/burnt`, `domain/window`, `application/services` | Every UTC day a window touches; the union keeping the highest opacity; the status in UTC; on a fake source: one request per day, only missing days, nothing while hidden, failed days counted, held days drawn offline | FR-BA-001 to FR-BA-006, FR-BA-008, FR-BA-009, FR-BA-012 to FR-BA-014, FR-BA-017 |
+| `domain/window`, `domain/freshness`, `domain/cloud`, `application/services` | Replay: the instant a position names; a frame showing what had happened by it; the count and status lines; a late event waiting; the replay's clouds fetched, chosen, named when missing, retried and released | FR-RPL-001, FR-RPL-009 to FR-RPL-011, FR-RPL-013 to FR-RPL-019, FR-RPL-022 |
 
-### The adapters
+### Adapters and structure
 
-- **Each provider** parses a feed captured from the real source (in its
-  `testdata`), through a fake fetcher: the request URL, the categories mapped
-  (EONET's landslides, drought and dust haze to Other), malformed items dropped
-  and counted, an answer whose items are all malformed refused as a parse
-  failure while an empty one is an empty set (FR-PRV-012), withdrawn
-  earthquakes left out, each GDACS polygon read in the
-  order its own coordinates prove (else the order the feed's proven polygons
-  show) and the volcano report's Latin-1 decoded, the apostrophes and
-  subscript twos its encoding loses put back while a real question mark is kept
-  (DATA-013, proved by planting the mending away). The report week is read from
-  each title, a first day without a year taking the last day's (the year
-  before across New Year); an item whose week cannot be read is dropped and
-  counted (FR-PRV-015). Which source link counts as a page is tested in the
-  domain.
-- **The cloud adapter** reads the layer's capabilities document captured from
-  EUMETSAT (in its `testdata`) and draws images made in the test: the newest
-  valid time, the GetMap query, the drawn pixels against the domain's ramp and
-  the refusal of an XML exception served with 200, a PNG of another size and a
-  PNG cut short (FR-CLD-012); a replay's image asked for at half the size
-  (FR-RPL-015).
-- **The GWIS adapter** against images made in the test: one day asked for at
-  the size and the day, a day counted as drawn only when a pixel is burnt, the
-  refusal of anything but the PNG asked for and the composed window keeping
-  the highest opacity in red (FR-BA-002, FR-BA-006, FR-BA-009, FR-BA-013).
-  `pngcheck`, which both map adapters share, decodes only a PNG of the size
-  asked for (FR-CLD-012, FR-BA-013).
-- **`httpfetch`** against local TLS test servers: the host allowlist, the size
-  cap, the status check, `If-Modified-Since` and a 304. The redirect rules run
-  through a dial hook that sends every connection to loopback stand-ins (port
-  443 to a TLS one, any other to a plain one) and records each address dialled,
-  so the real redirect check meets the real host names: 301, 302, 303, 307 and
-  308 followed within the host and refused, with no dial, to another host or a
-  layer host; a chain through allowed hosts followed and one turning outward
-  refused; a redirect to plain http and a first request over it refused before
-  the cleartext dial; lookalike hosts (user information, a subdomain, a
-  Cyrillic letter, punycode, case, a trailing dot, a port) refused as first
-  request and as redirect target. This proves the client's decisions and the
-  addresses it tries, not DNS, certificates or real servers.
-- **One host per client:** a structural test holds every `httpfetch.New` call
-  outside the tests to a single host.
-- **The cache and the settings** in temporary folders: round trips (the cloud
-  image with its valid time and the burnt-area days among them), a settings
-  file from before the day and night layer starting it shown (FR-DAY-007),
-  another
-  schema version read as absent, a damaged file, an oversized file and a save
-  that cannot be written.
-- **The region and the label table**: this machine's real region setting
-  read as a code (GB on the reference machine) or as none; the embedded table
-  holding one label point per country, the countries whose dependencies share
-  their code among them (FR-GLB-017). The generator's refusal of a code left
-  with two rows was proved by planting one.
-- **The log**: rotation at start and while running with one previous file
-  kept. A child process really panics after a rotation; its log is then read.
-- **Setup**: the extraction and its fence against an entry that climbs out, the
-  paths, sizes, copies, versions, the step log, the shortcut boxes over
-  redirected folders and the registry reads.
+| Package | What it proves | Requirements |
+|---|---|---|
+| `providers/eonet`, `usgs`, `gvp` | Feeds captured from the real sources (in `testdata`) through a fake fetcher: request URLs, category mapping, malformed items dropped and counted, an all-malformed answer refused, withdrawn quakes left out, GDACS polygon order, the volcano report's Latin-1 mended, report weeks read from titles | FR-PRV-012, FR-PRV-015, DATA-013 |
+| `clouds` | EUMETSAT's captured capabilities and images made in the test: the newest time, the GetMap query, the drawn pixels, refusal of an XML exception or a wrong PNG; a replay image at half size | FR-CLD-012, FR-RPL-015 |
+| `gwis`, `pngcheck` | One day asked for at its size; a day drawn only when a pixel is burnt; only the PNG asked for accepted; the composed window in red | FR-BA-002, FR-BA-006, FR-BA-009, FR-BA-013, FR-CLD-012 |
+| `httpfetch` | Against local TLS servers: the host allowlist, size cap, status check and a 304. Every redirect status followed within the host and refused elsewhere; plain http refused before the dial; lookalike hosts refused. It proves the client's decisions, not DNS or certificates | none |
+| `cache`, `settings` | Round trips in temporary folders; an older settings file starting the day and night layer shown; another schema, a damaged or oversized file and a failed save | FR-DAY-007 |
+| `oslocale`, `geo` | This machine's region read as a code or none; one label point per country in the embedded table | FR-GLB-017 |
+| `runlog` | Rotation at start and while running; a child process panics and its log is read | none |
+| `setup` | Extraction and its fence, paths, sizes, copies, versions, the step log, shortcut boxes over redirected folders, registry reads | none |
+| `tests/structural` | The layers, a pure domain, one composition root, the 400-line limit, the single homes, the page's rules read from source, the wire between the Go DTOs and `frontend/src/types.ts`, the gate and build order, one host per `httpfetch.New` call; every Must verified by T is named by a test | NFR-MNT-001 |
 
-### The structure
-
-`tests/structural` reads the repository rather than running it. It holds the
-architecture (layers, a pure domain, one composition root, providers named only
-there, the 400-line limit and its danger band, documented exported types), the
-single homes (the product's name, the donate address, the category emoji and
-the EONET category ids), the page's rules read from its source (the CSP, the
-palette's contrast, the ring states, the rail's glyph box, the globe area's
-share of the minimum window, the heading), the wire between the Go DTOs and
-`frontend/src/types.ts`, what the gate and the build scripts run and in what
-order, plus the traceability test: every Must in REQUIREMENTS.md is named by a
-test; failing that, it is listed in the table under "Checked by a person"
-below, where each ID is spelt in full. [ARCHITECTURE.md](ARCHITECTURE.md) lists
-each rule beside the test or test file that enforces it.
+[ARCHITECTURE.md](ARCHITECTURE.md) lists each structural rule beside the test
+that enforces it.
 
 ### The page
 
-Vitest under jsdom, with `src/test-setup.ts` supplying an inert
-`ResizeObserver`; nothing there invents a measurement. The suites cover the
-clustering and the altitude at which a cluster's members separate, the keyboard
-cursor's walk, the category table, the auto-scroll machine driven tick by tick,
-the keyboard repair shared with the setup page, the keyboard ring (with the
-page's shape stated through `testLayout.ts`, since jsdom lays nothing out) and
-the Help surfaces with the rail's order, the detail panel's Depth row shown
-or left out and the guide's note on the fixed depth (FR-SEL-010, FR-SEL-013,
-FR-SEL-014), an ongoing volcano's event time given as its report week with no
-exact time (FR-SEL-004), the status popover's notice for a report too old to
-show (FR-PRV-016) and its count of the items a source's last answer could not
-use (FR-PRV-013), the key's seven categories with an unknown one falling to
-Other (DATA-002), the storms handed to the globe as paths with their colour ramp,
-none while switched off (proved by planting the switch away) and the Settings
-box (FR-TRL-002 to FR-TRL-004). The refresh indicator is covered too:
-the status line's wording, the turning Refresh button held for one turn and
-the last refresh time. So is the cloud layer: the button's name and artwork in
-each state, the press, the cloud line shown, marked or absent; also the sphere
-sitting between the texture and the markers, drawn only while it has an image.
-The day and night layer too: the button's name and artwork in each state, the
-press, the sun placed in three-globe's own frame, the sun asked for on showing
-and within a minute and never while hidden, the night lights loaded once on
-the first show, a light of 1 everywhere while hidden (FR-DAY-003 to
-FR-DAY-006, FR-DAY-008). The injected light is assembled over three's own
-Phong and basic shader sources, so a chunk three renames fails a test rather
-than drawing nothing (FR-DAY-003, FR-DAY-009).
-The burnt-area layer as well: the Settings box, the line shown, marked or
-absent, the guide's four limits, the sphere lying beneath the clouds and
-following its image; also the shared reader that asks for a layer's image only
-when its key changes (FR-BA-006 to FR-BA-010, FR-BA-016).
-Replay too: the Play/Pause button's name and artwork, its ring stops after the
-time window (four while replaying, three otherwise) with Space and the scrubber's step, a pass played on stubbed
-animation frames to its end and held there, the right end staying in the
-replay, Now returning to the present and hidden outside a replay, the speed
-button naming the next speed, a pass at half and at double speed, play waiting
-until the speeds are known, pause and seek, another window returning to now,
-each image asked for once its key names one, the lines and the guide
-(FR-RPL-002 to FR-RPL-008, FR-RPL-013, FR-RPL-014, FR-RPL-019, FR-RPL-021,
-FR-RPL-023 to FR-RPL-025, NFR-KBD-009). On the Go side, the speeds offered with
-their passes, the speed kept, an unknown one made normal plus a settings
-file from before the speed starting at normal (FR-RPL-025).
-So is the cluster list: two quakes 2.0 km apart staying one cluster at the
-minimum altitude, the list opening within half a zoom step of it and
-choosing a member opening that event (FR-MRK-011, FR-MRK-012).
-So are the markers at the globe's edge: drawn over the globe rather than
-into it (proved by planting the depth test back), shown up to the horizon and
-hidden past it, each frame.
-So is idle rotation: input stopping it, the setting and its speed applied at
-once, rotation whatever the reduced-motion setting says and the return to the
-fit altitude from zoomed in or out before turning, stopped by input and taken
-again when rotation is switched on (FR-GLB-003, FR-GLB-004, FR-GLB-011,
-FR-GLB-012, FR-GLB-018).
-The noborderfocus rule has two guards,
-each proved by planting the defect back.
+Vitest under jsdom; `src/test-setup.ts` supplies an inert `ResizeObserver` and
+nothing invents a measurement.
+
+| Test file | What it proves | Requirements |
+|---|---|---|
+| `clusters`, `cursor`, `categories`, `autoScroll`, `settleKeyboard`, `ring` | Clustering and separation altitude, the keyboard cursor, the category table, the auto-scroll machine tick by tick, the keyboard repair, the ring (with layout stated through `testLayout.ts`) | none |
+| `detail`, `help`, `helpdialogs` | The Help surfaces and rail order; the Depth row and the guide's depth note; a volcano's report week; the status popover's notices and dropped-item count | FR-SEL-004, FR-SEL-010, FR-SEL-013, FR-SEL-014, FR-PRV-013, FR-PRV-016 |
+| `key` | Seven categories, an unknown one falling to Other | DATA-002 |
+| `trails` | Storms handed to the globe as paths with their colour ramp, none while off, the Settings box | FR-TRL-002 to FR-TRL-004 |
+| `refresh`, `clouds` | The status wording, the Refresh button's turn and last time; the cloud button, line and sphere | none |
+| `daynight` | The button, the sun in three-globe's frame, when the sun is asked for, the night lights loaded once, the light while hidden, the shader injected over three's own sources | FR-DAY-003 to FR-DAY-006, FR-DAY-008, FR-DAY-009 |
+| `burnt` | The Settings box, the line, the guide's limits, the sphere beneath the clouds, the shared image reader | FR-BA-005 to FR-BA-008, FR-BA-010, FR-BA-012, FR-BA-016 |
+| `replay` | Play and Pause, the ring stops, Space and the scrubber, a pass on stubbed frames held at its end, Now, the speed button and its passes, pause and seek, the lines and the guide | FR-RPL-002 to FR-RPL-008, FR-RPL-013, FR-RPL-014, FR-RPL-019, FR-RPL-021, FR-RPL-023 to FR-RPL-025, NFR-KBD-009 |
+| `clusterlist` | Two quakes 2.0 km apart stay one cluster; the list opens near the minimum altitude; choosing a member opens it | FR-MRK-011, FR-MRK-012 |
+| `markers` | Markers drawn over the globe, shown to the horizon and hidden past it | none |
+| `globeview` | Idle rotation: input stops it, the setting applies at once, it ignores reduced motion, it returns to the fit altitude first; the countdown bar over the idle delay, refilled by input | FR-GLB-003, FR-GLB-004, FR-GLB-011, FR-GLB-012, FR-GLB-018, FR-GLB-019 |
+| `noborderfocus`, `help` | The noborderfocus rule's two guards, each proved by planting the defect back | NFR-KBD-007 |
 
 ## What the tests never do
 
-- **Write to the registry.** The registry writes in
-  `internal/infrastructure/setup` are not exercised at all; only the reads are,
-  since a read cannot damage anything.
+- **Write to the registry.** Only the setup package's registry reads run.
 - **Touch real shortcuts.** The shortcut tests redirect `USERPROFILE` and
   `APPDATA` into temporary folders and fail if the redirection did not take.
-- **Launch, find or end EarthNow.** No test calls the process functions in
-  setup; the root package that runs the application has no tests.
-- **Reach a provider, EUMETSAT or GWIS.** The adapters read captured fixtures
-  or built images through fakes; `httpfetch` talks to a server on this
-  machine.
-- **Read or write the real settings, cache or log.** Every such test works in
+- **Launch, find or end EarthNow.** No test calls setup's process functions.
+- **Reach a provider, EUMETSAT or GWIS.** Adapters read captured fixtures or
+  built images; `httpfetch` talks to a server on this machine.
+- **Read or write the real settings, cache or log.** Each such test works in
   `t.TempDir()`.
-- **Open a browser.** The call that hands a link to the desktop is in the
-  untested facade.
+- **Open a browser.** That call lives in the untested facade.
 
-The gate itself can reach the network once: the first `go run` of the pinned
+The gate itself reaches the network once: the first `go run` of the pinned
 staticcheck on a machine fetches it.
 
 ## Running part of the suite
@@ -373,20 +187,19 @@ python tools/notices.py --check
 ## Before a first run on Windows
 
 - **Install the page's packages.** The gate stops at its front-end step without
-  `frontend/node_modules`; `tools/notices.py` also reads the page's production
-  tree through `npm ls`:
+  `frontend/node_modules`; `tools/notices.py` also reads the production tree
+  through `npm ls`:
 
   ```powershell
   npm --prefix frontend install
   ```
 
-- **Put Python on the path as `python`.** The last step runs
-  `tools/notices.py`, which needs only the standard library.
-- **Let the antivirus leave test binaries alone.** `go test` builds each test
-  binary in Go's scratch directory and runs it from there; the runlog tests
-  also start that binary again as a child. Where an antivirus holds or removes
-  those files, exclude the directory this prints. When it prints nothing, Go
-  uses the default temporary folder instead:
+- **Put Python on the path as `python`.** `tools/notices.py` needs only the
+  standard library.
+- **Let the antivirus leave test binaries alone.** `go test` builds and runs
+  each test binary in Go's scratch directory; the runlog tests also start it
+  again as a child. Exclude the directory this prints; when it prints nothing,
+  Go uses the default temporary folder:
 
   ```powershell
   go env GOTMPDIR
@@ -427,6 +240,7 @@ recorded there, in section 3.1.
 
 ## See also
 
+- [README.md](README.md) for what EarthNow is and how to install it.
 - [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants the structural tests
   enforce and the design decisions.
 - [DEVELOPMENT.md](DEVELOPMENT.md) for the tools, the build and the release

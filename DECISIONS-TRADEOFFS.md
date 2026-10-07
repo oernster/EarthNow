@@ -1,830 +1,432 @@
 # Decisions and trade-offs
 
 The deliberate choices EarthNow rests on: what was chosen, what was given up
-for it and why. Each entry is the decision as the product makes it today.
-The detail behind each one, with the tests that hold it, lives in
-[ARCHITECTURE.md](ARCHITECTURE.md) and the specification
-([REQUIREMENTS.md](REQUIREMENTS.md)), whose Won't list records what is
+for it, what it gains and what it costs, as the product stands today. The
+detail lives in [ARCHITECTURE.md](ARCHITECTURE.md) and
+[REQUIREMENTS.md](REQUIREMENTS.md), whose Won't list records what is
 deliberately not planned; [TECH_DEBT.md](TECH_DEBT.md) holds what only looks
 like debt.
 
 ## The product as a whole
 
-### One sentence settles every unclear choice
+### One sentence decides; what EarthNow is not
 
 EarthNow lets you open a globe and see what is happening on Earth right now.
-Where a choice is unclear, that sentence decides it.
-
-- **Rather than:** a feature list grown one request at a time.
-- **Gains:** a calm globe stays the centre; a proposal that does not serve the
-  sentence has an answer before it is argued.
-- **Costs:** useful neighbouring features are turned away.
-
-### What EarthNow deliberately is not
-
-It shows what public sources have already published. It sends no warnings,
-makes no forecast, keeps no archive beyond a week and offers no weather beyond
-its three layers. It is not a GIS tool: no measurement, no projections, no
-layer management.
-
-- **Rather than:** an alerting service, a weather service or a GIS engine.
-- **Gains:** a small surface that can be held to a high bar.
-- **Costs:** those jobs need other tools.
+Where a choice is unclear, that sentence decides it: no warnings, no forecast,
+no weather beyond its layers, no GIS tools. A feature list grown one request
+at a time was rejected. The surface stays small enough to hold to a high bar;
+neighbouring jobs need other tools.
 
 ### A week at most
 
-The widest time window is seven days; Replay plays back the chosen window and
-nothing older. The cache keeps only what some window can still show.
-
-- **Rather than:** a history to browse; a replay beyond the window or saved as
-  a video.
-- **Gains:** each source's own weekly feed covers everything shown; the cache
-  stays small.
-- **Costs:** an event a week old is gone.
+The widest time window is seven days. Replay plays back the chosen window and
+nothing older; the cache keeps only what some window can still show. A history
+to browse was rejected. The sources' own weekly feeds cover everything shown
+and the cache stays small; an event older than a week is gone.
 
 ### Specification before code
 
 Every feature area is written down as requirements before it is built. Each
-change of course is a numbered amendment saying why. A structural test fails
-when a Must is named by no test and is not listed for a person to check.
-
-- **Rather than:** building first and describing afterwards.
-- **Gains:** a ruled-out idea stays ruled out instead of being argued again;
-  every Must has a named way of being verified.
-- **Costs:** keeping the specification true to the code is work of its own,
-  done at every documentation pass.
+change of course is a recorded amendment saying why; a test fails when a Must
+has no way of being verified. Building first and describing afterwards was
+rejected. A ruled-out idea stays ruled out; keeping the specification true is
+work of its own at every documentation pass.
 
 ## Privacy and the network
 
 ### Every request is made by the Go side
 
-The page makes no request of its own. Its Content-Security-Policy allows it
-no origin but its own, which a structural test holds. Images the page draws
-arrive from Go as data.
+The page makes no request and its content policy allows it no origin but its
+own. Images such as the clouds and the burnt areas are fetched, checked and
+drawn in Go, then handed over as finished pictures. Letting the page fetch, as
+the globe library's examples do, was rejected. One place says what EarthNow
+contacts; every image crosses to the page as encoded text.
 
-- **Rather than:** letting the page fetch, as the globe library's own examples
-  do.
-- **Gains:** one place to read to know what EarthNow contacts.
-- **Costs:** every image crosses from Go to the page as encoded text.
+### One client per host, https only, with a size cap
 
-### One client package, one host per adapter, https only and a size cap
-
-All network traffic goes through one client package. Each adapter is given a
-client of its own host alone, built by one constructor in the composition
-root. A client sends a request only over https to its host and follows a
-redirect only over https to it; a plain http address is refused, first request
-or redirect, before anything is dialled. It gives up on a request that hangs
-and refuses a body far larger than any feed measured. Each source is told the
-media types it serves; no parser trusts the type a source labels its answer
-with. The client uses Go's standard transport, which honours a proxy named in
-the `HTTPS_PROXY` environment variable (read in Go's source; Windows' own proxy
-setting is not read): when one is set, that proxy host is contacted as well as
-the source.
-
-- **Rather than:** the standard client, which follows a redirect anywhere and
-  to plain http; one client holding every host, under which an EONET redirect
-  to EUMETSAT was followed with the cloud layer hidden (measured in audit); one
-  request header for every source; refusing every proxy, which would break the
-  app where a proxy is the only way out.
-- **Gains:** the README's list of hosts is a property of the code; an allowed
-  host answering with a redirect cannot carry the request elsewhere (a case
-  that was reproduced before it was closed), nor drop it to cleartext where an
-  answer could be rewritten on the path, nor reach a hidden layer's host. Every
-  source answers: the Smithsonian's feed refuses a request asking only for JSON
-  (measured) while EONET labels its JSON as RSS.
-- **Costs:** a new source is a new client as well as an adapter; a source that
-  moved to another host would fail until its host is changed in the code.
+Each source gets a network client for its own host alone. It sends only over
+https, follows a redirect only to that host and refuses an oversized or hung
+answer. The standard client, which follows a redirect anywhere, was rejected;
+so was one client for every host. The README's list of hosts is a property of
+the code; a source that moves host fails until the code changes.
 
 ### Two layers ask only while shown
 
-The cloud layer reaches EUMETSAT only while it is shown or while a replay
-needs its clouds; the burnt-area layer reaches GWIS only while it is shown.
-Hidden, each asks nothing at all. The clouds start hidden. While shown, the
-cloud layer reads its own layer's small listing about once an hour and fetches
-an image only when a newer one is listed.
-
-- **Rather than:** fetching every layer in the background whether shown or
-  not; reading the whole service's listing, 282 KB against 6.4 KB (measured).
-- **Gains:** hiding a layer means nothing is sent to its source; most cloud
-  checks cost a few kilobytes.
-- **Costs:** the burnt areas and day and night start shown, so a first run
-  does contact GWIS. A new cloud image can wait up to an hour to appear.
+The cloud layer reaches its service only while shown, a replay included; the
+burnt-area layer likewise. The cloud layer reads its own small listing about
+once an hour and fetches an image only when a newer one is listed. Fetching
+every layer in the background was rejected. Hiding a layer sends nothing to
+its source. The burnt areas start shown, so a first run contacts that service;
+a new cloud image can wait up to an hour.
 
 ### No account, no telemetry, no update check
 
-There is nothing to sign in to and nothing reports on use. There is no update
-check, no tray icon and no start with Windows.
+There is nothing to sign in to, nothing reports on use and there is no update
+check, tray icon or start with Windows. Nothing about the viewer leaves the
+machine beyond what the sources need. A new release is found only on the site;
+there are no usage figures to steer development.
 
-- **Rather than:** the conveniences other desktop applications offer.
-- **Gains:** nothing about the viewer leaves the machine beyond the requests
-  the sources need.
-- **Costs:** a new release is found only by visiting the site; there are no
-  usage figures to steer development.
+### Places and home are read on the machine
 
-### Places are named on the machine
-
-The nearest place, its country, the distance and the direction come from
-Natural Earth data built into the application. A structural test fails if the
-geocoder imports any network package.
-
-- **Rather than:** a geocoding service.
-- **Gains:** hovering over a marker sends nothing; it works offline.
-- **Costs:** the place data is fixed at build time. Refreshing it is a hand
-  step with a generator; the source shapefiles are not kept.
-
-### The globe opens over the viewer's own country
-
-At launch the globe faces the country the operating system's country or
-region setting names, at Natural Earth's label point for it, then turns from
-there. The setting is read on the machine and sent nowhere.
-
-- **Rather than:** the time zone, which knows only a band of longitude; the
-  display language, which on a UK machine is often American English; a
-  capital or an outline's centre, which can sit at an edge; a home location
-  set in the application.
-- **Gains:** the right view with no question asked.
-- **Costs:** where the setting names no country the globe opens as it always
-  did; the log says why.
+The nearest place and its country come from Natural Earth data built in, ice
+shelves included so a shelf names Antarctica. At launch the globe faces the
+country the system's region setting names. A geocoding service was rejected, as
+were the time zone and the display language as guides to home. Nothing is sent;
+the place data is fixed at build time.
 
 ### Donations go through the browser
 
-The donate address is held once, on the Go side. It is opened in the default
-browser through the same check as a source link: https, a host and a page
-rather than a data file. EarthNow fetches nothing from it; nothing depends on
-a donation.
-
-- **Rather than:** the page holding the address.
-- **Gains:** one home for it, which a structural test holds; no connection
-  from inside the application.
-- **Costs:** EarthNow never learns what happened next.
+The donate address is held once on the Go side and opened in the default
+browser through the same check as a source link. The page holding the address
+was rejected. Nothing inside EarthNow connects to it; EarthNow never learns
+what happened next.
 
 ### One data folder
 
-Settings, the cache and the log live in one folder under the user's local
-application data. The web view's own data is placed there too.
-
-- **Rather than:** the web view's default, which fell outside that folder
-  (measured).
-- **Gains:** removing that one folder removes everything EarthNow wrote,
-  which is what setup's "forget" box does.
-- **Costs:** none recorded.
+Settings, the cache, the log and the web view's own data live in one folder
+under the user's local application data. The web view's default, outside that
+folder, was rejected. Removing the folder removes everything EarthNow wrote,
+which is what setup's "forget" option does.
 
 ## The sources
 
 ### Three public sources, none needing a key
 
-Earthquakes come from the USGS, other natural events from NASA EONET and
-volcanoes from the Smithsonian and USGS Weekly Volcanic Activity Report. The
-volcano report was added when EONET was found to track none.
-
-- **Rather than:** EONET alone, which tracked no volcano in the 30 days
-  measured while that week's report listed 20.
-- **Gains:** volcanoes are on the globe; nothing to sign up for or leak.
-- **Costs:** a third schema to own, an XML feed in an old encoding.
-
-### Every EONET event of the week, open and closed
-
-EONET is asked for closed events as well as open ones; a closed event is
-marked as ended in its detail.
-
-- **Rather than:** open events only: 17 against 80 that week, dropping most
-  wildfires and floods.
-- **Gains:** the week as it happened.
-- **Costs:** some markers are for events that have already ended.
+Earthquakes come from the USGS, other events from NASA EONET and volcanoes from
+the Smithsonian and USGS weekly report, added because EONET tracked none. EONET
+is asked for closed events as well as open ones; a closed one is marked ended.
+EONET alone and open events alone were rejected as leaving out most of the
+week. There is nothing to sign up for; the cost is a third schema in an old
+encoding.
 
 ### The earthquake floor starts at 2.5
 
-The smallest earthquake shown starts at magnitude 2.5; Settings offers every
-one, 1.0, 3.0 and 4.5 as well.
+The smallest earthquake shown starts at magnitude 2.5; Settings offers others.
+Raising it hides quakes at once without dropping the held set. A higher default
+was rejected as hiding too much; dropping the set was rejected as emptying the
+globe offline. Small local quakes wait until asked for.
 
-- **Rather than:** 3.0, the first default: 243 quakes in the week measured
-  against 362 at 2.5. Every magnitude, which costs the most frame time.
-- **Gains:** more of the world's activity at a count the globe draws smoothly.
-- **Costs:** small local quakes are hidden until asked for.
+### Each source on its own clock, failing alone
 
-The minimum applies twice by one rule: to what each USGS answer keeps; to what
-the globe shows from the set it holds. A minimum raised while USGS cannot
-be reached hides the quakes below it at once; the held set and its file keep
-them, so lowering it again offline brings them back.
-
-- **Rather than:** dropping the held set when the minimum rises. Offline, that
-  would empty the earthquakes until USGS answered (quakes above the new minimum
-  included) and cut the offline copy for a change of view.
-- **Gains:** the globe always agrees with Settings; the offline copy is never
-  cut by a setting.
-- **Costs:** the file can hold quakes the globe is not showing.
-
-### Each source on its own clock
-
-USGS is asked every minute, matching its feed's measured cache lifetime;
-EONET every ten minutes; the volcano report every hour. A failed source is
-retried with a delay doubling up to 30 minutes while the others carry on.
-
-- **Rather than:** one interval for all; retrying at a fixed pace.
-- **Gains:** each source is asked about as often as it changes; a source that
-  is down is not hammered.
-- **Costs:** a source that comes back may wait up to half an hour to be asked
-  again.
+Each source is asked about as often as it changes. A failed source keeps its
+last set on the globe and is retried with a doubling delay while the others
+carry on. One interval for all and clearing a failed source were rejected. A
+source that is down hides nothing the others report; old events can show,
+marked stale.
 
 ### Refresh is limited and says when it last ran
 
-Refresh asks every source at once, no more than once in 30 seconds. After a
-press the status line gives the time of the last refresh made. While a
-source is fetching, the line says so and the button turns.
+Refresh asks every source at once, no more than once in 30 seconds. The status
+line then gives the time of the last refresh. Saying whether a refresh is
+available was rejected: worded in whole minutes it read "now" and never cleared.
+The line is always true; pressing at every chance still asks the sources often,
+which the owner accepted.
 
-- **Rather than:** saying whether a refresh is available. Worded in whole
-  minutes, every wait inside the cooldown read as "now" and never cleared.
-- **Gains:** the line is always true; a refresh that worked no longer looks
-  like one that did nothing.
-- **Costs:** pressed at every chance, Refresh asks EONET up to 120 times an
-  hour; the owner accepted that.
+### The last good set kept; a broken answer kept out
 
-### The last good set kept as a file per source
-
-Each source's last successful set is kept as one JSON file, written beside
-the old one and then renamed over it, stamped with a schema version. At start
-the globe opens on these sets, each marked with its age.
-
-- **Rather than:** a database. The sets are small and read whole.
-- **Gains:** an interrupted write leaves the previous set intact; the globe
-  survives being offline; a file from another schema version is simply read
-  as absent.
-- **Costs:** a whole file is rewritten after every fetch.
-
-An answer that lists items yet yields none that can be used is a failed fetch,
-not an empty set: the set and its file are kept and the status gives the
-reason. One rule in the domain serves all three sources. An answer listing no
-items is a true empty set; USGS quakes that are all below the minimum are too,
-since that filter is the reader's.
-
-- **Rather than:** taking such an answer as a source with nothing to report.
-  A change to a feed's format then emptied that source from the globe,
-  overwrote its file and showed it fresh and fault free (measured in audit).
-- **Gains:** a format change is seen as a fault and costs no stored events.
-  When some items are unusable, the status popover says how many.
-- **Costs:** none measured; a source genuinely listing only broken items would
-  show its last good set, marked with its age, until it mends them.
-
-### A failed source costs only itself
-
-A source that fails keeps its last set on the globe while the others are
-refreshed as normal. One not heard from for three of its intervals is marked
-stale.
-
-- **Rather than:** clearing a failed source's events; one failure stopping
-  the round.
-- **Gains:** a source that is down hides nothing the others report.
-- **Costs:** old events can be on screen; the status says how old.
+Each source's last good set is kept as a file, replaced whole after each fetch;
+the globe opens on it at start. An answer listing items yet yielding none
+usable is a failed fetch that keeps the set. A database was rejected as more
+than small sets need; so was taking a broken answer as an empty source, which
+once emptied a source and overwrote its file. The globe survives being offline
+or a feed changing shape.
 
 ### Nothing from the future
 
 An event dated more than 15 minutes ahead of the machine's clock waits until
-its time arrives.
-
-- **Rather than:** showing any date the source gives. A flood alert arrived
-  dated 11 days ahead and showed as recent.
-- **Gains:** only what has happened is shown; a slightly slow clock still
-  hides nothing new.
-- **Costs:** a source whose own clock runs well ahead loses those events for
-  a while.
+its time arrives. Showing any date the source gives was rejected after a flood
+alert arrived days ahead and showed as recent. A source whose clock runs well
+ahead loses those events for a while.
 
 ### Volcanoes are ongoing
 
 A volcano in the current weekly report counts in every window from the first
-day of the week the report covers, until the report is more than 14 days old.
-The status says when it is too old to show.
-
-- **Rather than:** dating each volcano by the report's issue day. Once that
-  day left the window every window showed 0 volcanoes against the feed's 20.
-- **Gains:** an erupting volcano is shown as erupting.
-- **Costs:** a volcano stays on the globe for the report's whole life, however
-  its week ended.
+day of its week until the report is more than 14 days old. Dating each volcano
+by the issue day was rejected: once that day left the window, none showed. An
+erupting volcano shows as erupting; it stays for the report's whole life.
 
 ### Kinds no source publishes fold into Other
 
-The key has seven categories. Landslides, drought and dust haze are filed
-under Other, keeping the source's own kind on the event.
+The key has seven categories; landslides, drought and dust haze are filed under
+Other with the source's own kind kept on the event. Rows of their own, reading
+zero for ever, were rejected. Every key row can hold something.
 
-- **Rather than:** a key row of their own, each reading 0 for ever since
-  EONET published none in a year; rows shown only when filled, which would
-  change the key's shape.
-- **Gains:** a key whose every row can hold something.
-- **Costs:** a landslide, should one come, is filed under Other.
+### Each source speaks for itself
 
-### No merging across sources
-
-An event reported by two sources would show as two markers.
-
-- **Rather than:** a rule for spotting duplicates. EONET holds 15 earthquakes
-  in its whole history and none from the last year, so the case did not arise
-  when measured.
-- **Gains:** no matching rule to get wrong.
-- **Costs:** if it ever arises, the same event shows twice.
-
-### No common severity scale
-
-A measurement is shown in its source's own unit. Nothing ranks a quake
-against a storm. USGS's tsunami flag is kept but never worded, since it marks
-large oceanic events rather than a tsunami; a structural test holds that.
-
-- **Rather than:** one severity scale across categories.
-- **Gains:** no comparison is invented; nothing claims what the source does
-  not.
-- **Costs:** the viewer compares events by reading them.
+An event reported by two sources shows as two markers; each measurement is in
+its source's own unit and USGS's tsunami flag is never worded. A
+duplicate-matching rule and a common severity scale were rejected. Nothing is
+claimed that the sources do not; the viewer compares events by reading them.
 
 ## Reading the sources faithfully
 
-### Flood polygons read in the order the data proves
+### Polygons placed by what the data proves
 
-GDACS flood polygons arrive latitude first, against the GeoJSON standard. A
-ring holding a value beyond 90 is read in the order that value proves; the
-rest follow the order the feed's proving rings show, latitude first when none
-proves anything.
-
-- **Rather than:** GeoJSON order, which dropped five floods that week and drew
-  nine in the wrong place (Honduras in Antarctica); a fixed latitude-first
-  rule, which would draw every flood swapped once the source is corrected;
-  guessing by which reading lands on a country, which put a coastal Kenya
-  flood in Spain.
-- **Gains:** floods are placed correctly now and follow a correction upstream
-  as soon as it appears. Over 30 days, 15 of 57 rings proved their order.
-- **Costs:** a feed whose rings prove nothing is read latitude first.
-
-### A polygon across the date line stays in the Pacific
-
-An event's position from a polygon is the mean of its vertices with
-longitudes measured the short way from the first one. Every vertex is checked
-before it counts.
-
-- **Rather than:** a plain mean, which put a ring across the date line on the
-  far side of the Earth.
-- **Gains:** a ring that does not cross the line keeps its plain mean exactly.
-- **Costs:** none recorded.
-
-### An ice shelf is Antarctica
-
-Natural Earth's Antarctic ice shelves are embedded beside the countries, so a
-point on the Ross or Ronne shelf names Antarctica.
-
-- **Rather than:** the countries alone, which draw Antarctica only to its
-  grounded coast, so a shelf read as open sea.
-- **Gains:** a place line that matches where the event is.
-- **Costs:** one more layer embedded.
+Flood polygons arrive latitude first against the standard, so the feed is read
+in the order its own impossible values prove, latitude first when none do. A
+polygon across the date line takes its longitudes the short way and stays in
+the Pacific. The standard order and a fixed swap were rejected for misplacing
+floods. Floods sit where they are and follow a correction upstream.
 
 ### A source link is a page
 
-The detail panel links the first source that names a page. A data file is
-shown as text rather than as a link.
-
-- **Rather than:** the first source given. For a storm that was a warning
-  file, which downloaded instead of opening.
-- **Gains:** a link opens something to read.
-- **Costs:** a source that is only a data file cannot be opened from
-  EarthNow.
+The detail panel links the first source that names a page; a data file is shown
+as text. Linking the first source given was rejected after a storm's link
+downloaded a warning file. A data-only source cannot be opened from EarthNow.
 
 ### Two lost characters put back, nothing else
 
-The volcano report's encoding holds neither the curly apostrophe nor the
-subscript two, so it sends a question mark for each. A letter's "?s" is read
-as an apostrophe and "SO?" as sulphur dioxide; every other question mark is
-kept as sent.
-
-- **Rather than:** showing the text as sent, which reads as a fault in
-  EarthNow; replacing every question mark, which would lose real ones.
-- **Gains:** the report reads as it was written.
-- **Costs:** another character lost the same way would still show as a
-  question mark.
+The volcano report's encoding cannot hold the curly apostrophe or the subscript
+two. A letter's "?s" is read as an apostrophe and "SO?" as sulphur dioxide;
+every other question mark is kept. Showing the text as sent and replacing every
+question mark were rejected. Another character lost the same way still shows
+as a question mark.
 
 ### Earthquake depth with its meaning
 
-An earthquake's detail gives its depth to one decimal with USGS's band:
-shallow, intermediate or deep. A depth of exactly 10 km is marked as often a
-fixed value, since USGS assigns it when it cannot compute one.
-
-- **Rather than:** a bare number.
-- **Gains:** the most common depth is not mistaken for a measurement.
-- **Costs:** a quake genuinely at 10 km carries the note too.
+A depth is shown with its USGS band: shallow, intermediate or deep. A depth of
+exactly 10 km is marked as often a fixed value, which USGS assigns when it
+cannot compute one. A bare number was rejected. A quake genuinely at that depth
+carries the note too.
 
 ## Honesty about age
 
 ### Nothing is labelled live
 
-Every event, layer and source gives its age. No wording anywhere uses the
-word "live"; a structural test holds that.
-
-- **Rather than:** the "live" badge such displays usually carry.
-- **Gains:** nothing claims a freshness the sources do not give.
-- **Costs:** more words on screen.
+Every event, layer and source gives its age; no wording uses the word "live".
+The badge such displays usually carry was rejected. Nothing claims a freshness
+the sources do not give; the cost is more words on screen.
 
 ## The layers
 
-### Images are made in Go
-
-The cloud image and the burnt areas are fetched, checked and drawn in Go,
-then handed to the page as finished pictures laid on spheres over the globe.
-An answer counts only if it is a picture of exactly the size asked for;
-anything else is a failed fetch.
-
-- **Rather than:** drawing them on the page, which would have to fetch them;
-  trusting the status code, when the cloud service reports errors as XML with
-  a success status.
-- **Gains:** the page keeps its rule of no network origin; the drawing rules
-  sit in the domain, where they are tested; an error page is never drawn as
-  cloud.
-- **Costs:** each image crosses to the page as encoded text.
-
 ### Burnt areas a day at a time
 
-GWIS is asked for one UTC day per request, for every day the window touches.
-Each day is held apart; Go composes the days into one image laid beneath the
-clouds. A day that fails keeps its held image while the others draw.
-
-- **Rather than:** a date range in one request, which GWIS answers with an
-  empty body (measured); one image per day on the page, up to eight textures
-  decoded there.
-- **Gains:** a widened window fetches only the days it lacks; one failed day
-  costs one day.
-- **Costs:** up to eight requests a round.
+The burnt-area service is asked for one day per request; Go composes the days
+into one image beneath the clouds. A date range in one request, which the
+service answers empty, was rejected; so was one image per day on the page. A
+widened window fetches only the days it lacks and one failed day costs one day;
+a round can take several requests.
 
 ### Day and night from the time, on the globe's own material
 
-The sun's position comes from NOAA's solar position equations, worked out in
-the Go domain from the time alone; the page asks for it about once a minute
-while the layer shows. Tests hold it within 0.1 degrees of NOAA's own
-calculator. The globe keeps the library's own lit material: NASA's night
-lights are added to it and one light factor per point dims the day and
-reveals the lights. Hidden, the globe draws exactly as before. Clouds over the
-night side dim to a floor.
-
-- **Rather than:** the npm package and the unlit shader of the globe library's
-  own day and night example. The package would put astronomy on the page;
-  the example also fetches its textures from a network address the page may
-  not reach; the shader would change the day side and leave hiding the layer
-  unable to restore the globe.
-- **Gains:** no request; one home for the figures; switching the layer off
-  truly switches it off.
-- **Costs:** the equations are EarthNow's own to maintain; the light is
-  injected into the rendering library's shader source, so a test fails if a
-  part it relies on is renamed.
+The sun's position is worked out in Go from the time alone, checked against
+NOAA's calculator. The globe keeps its lit material with night lights added.
+The library's own example was rejected: it fetches from the network and cannot
+restore the globe when hidden. The layer truly switches off; the light is
+injected into the library's shader, so a test guards the parts it relies on.
 
 ### The Earth is never drawn
 
-Every picture of the Earth is NASA imagery, in the application and on the
-website.
-
-- **Rather than:** generated artwork. The site once showed a painted globe
-  with invented markers.
-- **Gains:** no fabricated record of the planet anywhere.
-- **Costs:** the imagery ships with the application; its credits must be
-  kept.
+Every picture of the Earth, in the application and on the website, is NASA
+imagery. Generated artwork was rejected after the site once showed a painted
+globe. No fabricated record of the planet exists; the imagery's credits must be
+kept.
 
 ## The globe and its markers
 
 ### globe.gl rather than CesiumJS
 
 The globe is globe.gl on three.js with the Blue Marble texture bundled.
+CesiumJS was rejected: several times the size, token-bound imagery and a GIS
+engine where one calm globe is wanted. The globe is small and offline; it has
+no clustering, so EarthNow writes its own.
 
-- **Rather than:** CesiumJS: several times the shipped size, default imagery
-  from a network service needing an evaluation token and a GIS engine where
-  one calm globe is wanted.
-- **Gains:** a small, offline globe that does what the product needs.
-- **Costs:** no clustering built in; EarthNow writes its own.
+### Emoji sprites from one table
 
-### Emoji drawn as sprites, one table their home
+Each category is drawn as its emoji on a sprite, read from one table, so
+categories differ by more than colour. Markers draw over the globe with those
+beyond the horizon hidden. Page elements per marker and the depth test, which
+sank edge markers into the sphere, were rejected. Drawing stays smooth at
+thousands of markers; a horizon check runs every frame.
 
-Each category is drawn as its emoji on a sprite; categories differ by emoji,
-never by colour alone. The emoji are written in one table that the key,
-markers, clusters and tooltips all read. Since a sprite always faces the
-camera, markers are drawn over the globe rather than tested against its
-depth, with those beyond the horizon hidden before each frame.
+### Markers keep their size; overlaps become clusters
 
-- **Rather than:** thousands of page elements moved every frame; the depth
-  test, under which a marker near the edge stood upright and sank half into
-  the sphere.
-- **Gains:** smooth: the spike measured 2,501 sprites at a median frame of
-  10.00 ms. A marker reaching the edge is drawn whole until it passes behind.
-- **Costs:** each picture is drawn and cached by the page itself; a check over
-  every marker on every frame.
-
-### Markers keep their size on screen
-
-Every marker keeps the size it has at launch whatever the zoom.
-
-- **Rather than:** a fixed size on the globe, which grows on screen as the
-  camera nears. Overlapping markers would then never separate.
-- **Gains:** zooming in pulls neighbours apart.
-- **Costs:** zooming in never makes a marker bigger.
-
-### Overlaps become clusters; a cluster that cannot part becomes a list
-
-Markers that overlap on screen draw as one cluster with its count, wearing
-its leading category's emoji. Activating it zooms in until its members stand
-apart. One still together at the closest zoom lists its members instead.
-
-- **Rather than:** a library's clustering, of which globe.gl offers none;
-  fanning the markers out, where the owner chose the list; zooming alone,
-  which left two quakes 2.0 km apart unreachable by pointer.
-- **Gains:** every event can be opened.
-- **Costs:** clustering is EarthNow's own code to maintain.
+Every marker keeps its launch size on screen whatever the zoom, so zooming in
+pulls neighbours apart. Overlapping markers draw as one cluster with its count.
+Activating it zooms until its members part; one still together at the closest
+zoom lists them instead. A fixed size on the globe and zooming alone were
+rejected, since some overlaps never separate. Every event can be opened; the
+clustering is EarthNow's own to maintain.
 
 ### Rotation follows its own switch
 
-The globe turns after ten seconds without input, first easing back to the
-whole-globe view if zoomed. The operating system's reduced-motion setting
-does not stop it; the application's own setting does.
-
-- **Rather than:** following the system setting, which on Windows follows
-  the animation effects switch people turn off for speed; turning at whatever
-  zoom was left.
-- **Gains:** the feature is not silently lost; the turning globe is always the
-  whole globe.
-- **Costs:** a viewer who wants stillness turns rotation off in EarthNow; a
-  close look is undone after ten idle seconds.
+The globe turns after ten seconds without input, first easing back to the whole
+globe. Only the application's setting stops it; the system's reduced-motion
+setting was rejected, since Windows ties it to a switch people turn off for
+speed. While paused, a silent bar along the foot of the globe area empties over
+those ten seconds; nothing on screen was rejected, since it read as a stuck
+globe. A close look is undone after ten idle seconds; the bar is one more
+element on the globe.
 
 ### A missing WebGL2 is said, not shown blank
 
-Without WebGL2 the globe area says so in plain words and the rest of the
-window keeps working.
-
-- **Rather than:** a blank window.
-- **Gains:** the viewer knows what is missing.
-- **Costs:** no fallback globe.
+Without WebGL2 the globe area says so in plain words and the rest of the window
+keeps working. A blank window was rejected. There is no fallback globe.
 
 ### Only storms leave a track
 
-A severe storm draws a faint track through the positions its source gave
-inside the window, oldest faintest, ending at its marker. Settings can hide
-the tracks.
-
-- **Rather than:** tracks for iceberg drift and earthquake swarms, for which
-  no rule is agreed.
-- **Gains:** a storm's path reads at a glance without crowding the globe.
-- **Costs:** none recorded.
+A severe storm draws a faint track through its positions inside the window,
+ending at its marker; Settings can hide the tracks. Tracks for iceberg drift
+and earthquake swarms were rejected, since no rule for them is agreed. A
+storm's path reads at a glance without crowding the globe.
 
 ## Replay
 
-### Replay plays the chosen window, as the sources hold it now
+### Replay plays the window as the sources hold it now
 
-Play replays the chosen window in 30 seconds at normal speed: events appear,
-tracks grow, the sun sweeps round, the burnt days build up and the clouds
-move. Half and double speed are offered.
-
-- **Rather than:** a history of its own, kept by EarthNow.
-- **Gains:** nothing extra is stored; Replay needs no archive.
-- **Costs:** it shows what the sources hold now about those days, which may
-  since have been revised.
-
-### Replay's clouds are smaller and kept in memory
-
-A replay fetches its three-hourly cloud images at half the live image's width
-and height, holds them in memory and lets them go when the replay ends. Play
-does not wait for them.
-
-- **Rather than:** full-size images; keeping them on disk.
-- **Gains:** each image is a quarter of the pixels; nothing is left behind on
-  disk.
-- **Costs:** coarser clouds while replaying; the next replay fetches them
-  again.
+Play replays the chosen window over 30 seconds at normal speed, with half and
+double offered; its clouds are fetched at half size, held in memory and let go
+when it ends. A history kept by EarthNow and full-size or stored replay clouds
+were rejected. Nothing extra is stored; it shows what the sources hold now
+about those days, with coarser clouds fetched again each time.
 
 ### Time travel is explicit
 
-A replay holds at the end of its span. Only Now or another time window
-returns to the present. Now is shown only while replaying and sits last in
-the row.
-
-- **Rather than:** drifting back to the present on its own; a Now button
-  shown disabled, which wore a permanent red ring.
-- **Gains:** the viewer always knows which time is on screen; Now coming and
-  going moves no other control.
-- **Costs:** one more press to get back.
+A replay holds at the end of its span; only Now or another window returns to
+the present. Now is shown only while replaying, last in its row. Drifting back
+on its own and a disabled Now button were rejected. The viewer always knows
+which time is on screen; getting back takes one more press.
 
 ## The interface
 
 ### An action rail down the left
 
-The actions sit in a narrow rail down the left side; the key sits on the
-right. The globe area keeps at least 70% of the window, which a test
-checks.
-
-- **Rather than:** full-width bars. At the minimum window when this was
-  decided they would have had 55 pixels of height.
-- **Gains:** the globe keeps the room it needs.
-- **Costs:** the actions are icons, explained by tooltips and the guide.
+The actions sit in a narrow rail on the left with the key on the right, so the
+globe keeps at least 70% of the window. Full-width bars, too short at the
+minimum window, were rejected. The actions are icons, explained by tooltips
+and the guide.
 
 ### One dark palette
 
-The main window has one dark palette, its contrast checked by test. The
-setup program keeps its light and dark toggle.
-
-- **Rather than:** a light theme for the main window.
-- **Gains:** one palette to hold to its contrast; the Earth on black.
-- **Costs:** no light option.
+The main window has one dark palette, its contrast checked by test; setup keeps
+its light and dark toggle. A light theme was rejected. One palette is held to
+contrast with the Earth on black; there is no light option.
 
 ### Everything from the keyboard, the globe included
 
-Every control is on the keyboard ring. The globe is a stop of its own: Up and
-Down walk the events, Enter opens one. At launch the application focuses its
-web view directly and the page asks again if it finds no keyboard.
-
-- **Rather than:** mouse-first controls; trusting the window framework alone
-  to hand over the keyboard, which lost a race at the first focus (seen in
-  the log).
-- **Gains:** the whole application works without a pointer from the moment it
-  opens.
-- **Costs:** every new control needs its place in the ring.
+Every control is on the keyboard ring. The globe is a stop of its own where
+the arrow keys walk the events and Enter opens one. At launch the application
+hands its web view the keyboard itself. Trusting the window framework alone,
+which lost the first focus, was rejected. Every new control needs its place in
+the ring.
 
 ### Reading dialogs read themselves
 
-Long help pages scroll gently on their own and stop the moment the reader
-takes over. The machine is shared with the setup program. Like rotation, it
-is not gated on reduced motion.
-
-- **Rather than:** static pages.
-- **Gains:** long text can be read hands free.
-- **Costs:** none recorded.
+Long help pages scroll gently on their own and stop the moment the reader takes
+over, by the mechanism setup uses. Static pages were rejected. Like rotation,
+it does not follow the system reduced-motion setting.
 
 ### Source text is shown as text
 
-The page never sets markup from a string, so whatever a feed sends is shown
-as plain text. A structural test holds it.
-
-- **Rather than:** rendering formatting a feed might carry.
-- **Gains:** a feed cannot put markup into the window.
-- **Costs:** any formatting in a feed is lost.
+The page never sets markup from a string, so whatever a feed sends shows as
+plain text. Rendering a feed's formatting was rejected. A feed cannot put
+markup into the window; any formatting it carries is lost.
 
 ## Building and installing
 
 ### Installed for one user, without administrator rights
 
-On Windows the setup program installs into the user's own folders and
-registry. On Linux the Flatpak is a user install that asks for no file system
-access.
-
-- **Rather than:** a machine-wide install.
-- **Gains:** no administrator prompt.
-- **Costs:** each account on a machine installs separately.
+On Windows setup installs into the user's own folders and registry; on Linux
+the Flatpak is a user install with no file system access. A machine-wide
+install was rejected. There is no administrator prompt; each account installs
+separately.
 
 ### A setup program of its own
 
-Install, update, going back, repair and removal are one bespoke program. It
-reads the machine once to choose its route, refuses to touch a file while
-EarthNow is running and refuses any archive entry that would land outside the
-install folder. Its install rules live in a Go package; the program itself is
-a facade, which a structural test holds.
-
-- **Rather than:** a generic installer; designing one afresh rather than
-  porting the house setup program.
-- **Gains:** one identity throughout; a locked executable never leaves an
-  install half done.
-- **Costs:** the setup program is EarthNow's own to maintain.
+Install, update, going back, repair and removal are one bespoke program that
+reads the machine once to choose its route. When EarthNow is running it offers
+to close it first and never writes while it still runs; no archive entry may
+land outside the install folder. A generic installer was rejected. One identity
+runs throughout; the program is EarthNow's own to maintain.
 
 ### The gate cannot be skipped
 
-The build runs the whole test gate first, with no switch to skip it. cgo is
-pinned off for the gate and the Windows build.
-
-- **Rather than:** a skip switch, which is used on the day it would have
-  caught something; leaving cgo to the machine, where one with a C compiler
-  would quietly build a different binary.
-- **Gains:** every build comes from a tree that passed.
-- **Costs:** every build waits for the whole suite.
+The build runs the whole test gate first with no switch to skip it. It is
+pinned to pure Go. A skip switch and leaving the compiler choice to the machine
+were rejected. Every build comes from a tree that passed; every build waits for
+the whole suite.
 
 ### Each platform builds on itself
 
-The Windows setup program, the macOS DMG and the Linux Flatpak are each built
-on their own platform. The DMG is signed and notarised. On Linux the web
-view's GPU use is switched on explicitly.
-
-- **Rather than:** cross-compiling; leaving the Linux GPU setting at the
-  framework's default, which turns acceleration off and leaves the globe no
-  WebGL.
-- **Gains:** each package is built by the tools that know that platform; the
-  globe draws on Linux.
-- **Costs:** a machine of each kind to build on; an Apple developer account
-  for the signing.
+The Windows setup program, the macOS DMG and the Linux Flatpak are each built on
+their own platform; the DMG is signed and notarised. On Linux GPU use is
+switched on explicitly, since the framework's default leaves the globe no
+WebGL. Cross-compiling was rejected. The cost is a machine of each kind and an
+Apple developer account.
 
 ### Notices generated from what ships
 
-The third-party notices are written by a tool from the Go modules and page
-packages actually shipped, each licence in full. The gate fails until the
-file matches.
-
-- **Rather than:** notices kept by hand.
-- **Gains:** a dependency added or bumped cannot ship without its notice.
-- **Costs:** the tool must be run after every dependency change.
+The third-party notices are generated from what actually ships, each licence in
+full; the gate fails until the file matches. Notices kept by hand were rejected.
+A dependency cannot ship without its notice; the tool must be run after every
+dependency change.
 
 ### GPL plus a commercial licence
 
-EarthNow's own code is GPL-3.0. A commercial licence for that code is offered
-separately; third-party libraries and data keep their own terms.
-
-- **Rather than:** one licence only.
-- **Gains:** the source stays open; closed-source use has a route.
-- **Costs:** two sets of terms to explain.
+EarthNow's own code is GPL-3.0 with a commercial licence offered separately;
+third-party parts keep their own terms. One licence only was rejected. The
+source stays open while closed-source use has a route; two sets of terms need
+explaining.
 
 ### A log that keeps every run
 
-The log keeps earlier runs and rotates at 5 MB while running, keeping one
-previous file. The application's first act points its error output at the
-log, so a crash leaves a record. The build's own run of the program writes
-nothing there.
-
-- **Rather than:** rotating only at start; EarthNow runs for days.
-- **Gains:** faults can be read after the fact; a build never adds stray
-  lines to a user's log.
-- **Costs:** none recorded.
+The log keeps earlier runs and rotates by size while running. The application's
+first act points its error output at the log, so a crash leaves a record.
+Rotating only at start was rejected, since EarthNow runs for days.
 
 ## Engineering
 
 ### Layers with one place where they meet
 
-The code is split into domain, application, infrastructure and interface,
-each allowed to depend only inward. Only two root files join the application
-to the infrastructure. A new source is a package plus a line in the
-composition root; a test fails if anything else names it.
-
-- **Rather than:** convention alone.
-- **Gains:** the rules about events, time and the sun are tested with no disk,
-  network, clock or screen.
-- **Costs:** more packages and more explicit wiring.
+The code is split into domain, application, infrastructure and interface, each
+depending only inward and joined in one composition root. Convention alone was
+rejected. The rules about events, time and the sun are tested with no disk,
+network, clock or screen; the cost is more packages and explicit wiring.
 
 ### Complete coverage where it means something
 
-The domain and the application together must reach 100% coverage. Every
-other gated package holds the figure it measured, raised as cover rises. The
-page is measured with istanbul.
-
-- **Rather than:** one figure over the whole program; v8 coverage, which
-  reported the globe component at 100% with no test importing it.
-- **Gains:** anything short of complete in the pure layers is a decision
-  nobody made.
-- **Costs:** code that acts on the machine (the registry, shortcuts, window
-  focus) relies on targeted tests and a person's checks.
+The domain and the application must reach complete coverage; every other gated
+package holds its measured figure. One figure over the whole program was
+rejected. Code that acts on the machine relies on targeted tests and a person's
+checks.
 
 ### Small modules
 
-No source file may exceed 400 lines; one between 381 and 400 is cut to 350
-or fewer. The page's source and the setup page are counted too.
-
-- **Rather than:** letting files grow. A stylesheet reached 402 lines unseen
-  while the rule skipped the page.
-- **Gains:** modules split at real seams.
-- **Costs:** many small files.
+No source file may pass a fixed line limit; one just below it must be cut back.
+Letting files grow was rejected after a stylesheet passed the limit unseen.
+Modules split at real seams; there are many small files.
 
 ### Every value has one home
 
-The product's name, the donate address, the version and each category's
-emoji are each written in one place; tests hold the name, the address and
-the emoji there. Everything else reads them.
-
-- **Rather than:** copies written where they are needed.
-- **Gains:** a change is made once and cannot drift.
-- **Costs:** static files such as the website have to be stamped or generated
-  from the source. The build stamps the version into the site and links its
-  stylesheet by a hash of its content, so a browser never pairs a new page
-  with a cached old stylesheet.
+The product's name, the donate address, the version and each category's emoji
+are each written once, held there by tests. Copies written where needed were
+rejected. A change is made once; static files such as the website must be
+stamped from the source at build.
 
 ### The wire is checked from both sides
 
-Every shape that crosses from Go to the page is compared field by field with
-its TypeScript twin. Every call the page makes to Go must name what happens on
-refusal; a call that does not will not compile.
-
-- **Rather than:** trusting the two sides to agree.
-- **Gains:** a renamed field fails the suite rather than the screen; no failed
-  call goes unhandled.
-- **Costs:** a new shape is declared three times: in Go, in TypeScript and in
-  the test's list.
+Every shape crossing from Go to the page is compared field by field with its
+TypeScript twin. Every call the page makes must say what happens on refusal or
+it will not compile. Trusting the two sides to agree was rejected. A renamed
+field fails the suite rather than the screen; a new shape is declared three
+times.
 
 ### Use cases hold no timers
 
-The scheduler, the layers and Replay's cloud fetcher hold no timer. The
-facade asks what is due and when to wake. A replay's position is kept by the
-page, which plays it on animation frames and asks Go for each frame at its
-own pace.
-
-- **Rather than:** timers inside the use cases; Go driving the replay's clock
-  and pushing frames.
-- **Gains:** every timing rule runs on a fake clock in its tests; no timer on
-  the Go side for what is an animation.
-- **Costs:** the facade carries the loop that does the waiting.
+The use cases hold no timer; the facade asks what is due and when to wake. A
+replay's position is kept by the page, which plays it on animation frames.
+Timers inside the use cases and Go driving the replay's clock were rejected.
+Every timing rule runs on a fake clock; the facade carries the waiting loop.
 
 ### Background work cannot take the application down
 
 Every goroutine the application starts recovers from a panic, logs the stack
-and tells the page.
-
-- **Rather than:** fire-and-forget goroutines.
-- **Gains:** one failing fetch cannot end the run.
-- **Costs:** more ceremony around background work.
+and tells the page. Fire-and-forget goroutines were rejected. One failing fetch
+cannot end the run.
 
 ### Tests with real parts and no network
 
 The suite never reaches a source: adapters read feeds captured from the real
-services or images made in the test. Fakes are written by hand. Each guard is
-proved by planting a violation and watching it fail.
-
-- **Rather than:** live calls in tests; mocks and assumed guards.
-- **Gains:** the suite gives the same answer offline; a guard is known to
-  bite.
-- **Costs:** captured feeds age; the fakes are EarthNow's own to maintain.
+services and fakes are written by hand. Each guard is proved by planting a
+violation. Live calls and mocks were rejected. The suite answers the same
+offline; captured feeds age.
