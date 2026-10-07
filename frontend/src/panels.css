@@ -16,6 +16,24 @@
     pointer-events: none;
 }
 
+/* The idle countdown (FR-GLB-019) along the foot of the globe area; its duration
+   is set inline from the time left. Not gated on reduced motion, as the rotation
+   it counts down to is not (FR-GLB-012). */
+.resume-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--ring);
+    transform-origin: left;
+    pointer-events: none;
+    animation-name: resume-empty;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+@keyframes resume-empty { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
 .status .count { color: var(--text); }
 .status .warn { color: var(--warn); }
 

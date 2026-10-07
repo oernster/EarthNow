@@ -11,6 +11,7 @@ import {atClosest, clusterEvents, layoutKey, type MarkerItem, separatingAltitude
 import {FOCUS_MS, MAX_ALTITUDE, MIN_ALTITUDE, stepCursor, zoomed} from '../cursor'
 import {clusterSprite, fitAltitude, fitOf, MARKER_ALTITUDE, overHorizon, rescale, sprite, viewHalfAngle} from '../markers'
 import {noClickFocus} from '../ring'
+import {ResumeBar} from './ResumeBar'
 import {trailed} from '../trails'
 import {useGlobeLayers} from '../useGlobeLayers'
 import {useIdleRotation} from '../useIdleRotation'
@@ -89,7 +90,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     const trails = useMemo(() => trailed(events, trailsShown), [events, trailsShown])
     const layers = useGlobeLayers(cloudImage, burntImage, dayNightShown, sun, trails)
     const opening = useRef(start)
-    const idle = useIdleRotation(globe, autoRotate, secondsPerRevolution)
+    const {idle, resumeAt} = useIdleRotation(globe, autoRotate, secondsPerRevolution)
 
     // showTip words a marker's tooltip at a point and adds its place line once the
     // lookup answers, unless the tooltip has moved on to another marker by then.
@@ -316,6 +317,7 @@ export const GlobeView = forwardRef<GlobeHandle, Props>(function GlobeView(
     return <>
         <div ref={host} className="globe" data-stop tabIndex={-1} onKeyDown={onKeyDown} onFocus={onFocus} onBlur={onBlur}
             onMouseDown={noClickFocus} aria-label={`Globe. ${GLOBE_KEYS}`}/>
+        {autoRotate && resumeAt !== null && <ResumeBar key={resumeAt} resumeAt={resumeAt}/>}
         {tip && <div className="tip" style={{left: tip.x + TIP_OFFSET_PX, top: tip.y + TIP_OFFSET_PX}}>
             <div className="tip-title">{tip.title}</div>
             {tip.place && <div className="tip-place">{tip.place}</div>}

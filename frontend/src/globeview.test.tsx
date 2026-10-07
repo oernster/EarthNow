@@ -1,6 +1,7 @@
 // GlobeView's rules over a stand-in for globe.gl: jsdom has no WebGL, so the
 // library is replaced by a recorder holding the same controls and camera. What
 // is tested is the component's own logic, never globe.gl's drawing.
+import type {ComponentProps} from 'react'
 import {act, fireEvent, render, screen} from '@testing-library/react'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import * as THREE from 'three'
@@ -55,9 +56,15 @@ const IDLE_MS = 10_000
 // NFR-UX-003's focus duration, over which the return to the fit altitude runs.
 const FOCUS = 1000
 
+// globeView is the component with every prop at its quiet default, bar those given.
+function globeView(given: Partial<ComponentProps<typeof GlobeView>> = {}) {
+    return <GlobeView events={[]} selectedId={null} autoRotate={false} secondsPerRevolution={60} cloudImage=""
+        burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}}
+        onSelect={noop} onCluster={noop} onProblem={noop} {...given}/>
+}
+
 function draw(autoRotate: boolean, events: EventDTO[] = []) {
-    const view = render(<GlobeView events={events} selectedId={null} autoRotate={autoRotate}
-        secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+    const view = render(globeView({autoRotate, events}))
     return {view, globe: made[made.length - 1], host: document.querySelector<HTMLElement>('.globe')!}
 }
 
@@ -131,9 +138,8 @@ describe('the globe', () => {
     it('FR-GLB-018 switching rotation back on while zoomed returns to the fit altitude first', () => {
         const {view, globe} = draw(true)
         const fit = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
-        const set = (autoRotate: boolean, secondsPerRevolution = 60) => view.rerender(<GlobeView events={[]}
-            selectedId={null} autoRotate={autoRotate} secondsPerRevolution={secondsPerRevolution} cloudImage="" burntImage=""
-            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        const set = (autoRotate: boolean, secondsPerRevolution = 60) =>
+            view.rerender(globeView({autoRotate, secondsPerRevolution}))
         globe.altitude = 0.3
         set(false)
         set(true)
@@ -151,9 +157,7 @@ describe('the globe', () => {
     it('FR-GLB-018 switching rotation on inside the idle delay waits for the delay to end', () => {
         const {view, globe, host} = draw(true)
         globe.altitude = fitAltitude(new THREE.PerspectiveCamera(50, 1.5))
-        const set = (autoRotate: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={autoRotate}
-            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false}
-            start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        const set = (autoRotate: boolean) => view.rerender(globeView({autoRotate}))
         fireEvent.pointerDown(host)
         set(false)
         set(true)
@@ -162,12 +166,41 @@ describe('the globe', () => {
         expect(globe.controls.autoRotate).toBe(true)
     })
 
+    const bar = () => document.querySelector<HTMLElement>('.resume-bar')
+
+    it('FR-GLB-019 input shows a bar that empties over the idle delay and goes when rotation resumes', () => {
+        const {host} = draw(true)
+        expect(bar()).toBeNull()
+        fireEvent.pointerDown(host)
+        expect(bar()!.style.animationDuration).toBe(`${IDLE_MS}ms`)
+        act(() => { vi.advanceTimersByTime(IDLE_MS) })
+        expect(bar()).toBeNull()
+    })
+
+    it('FR-GLB-019 further input starts the bar again from full', () => {
+        const {host} = draw(true)
+        fireEvent.pointerDown(host)
+        const first = bar()
+        act(() => { vi.advanceTimersByTime(IDLE_MS / 2) })
+        fireEvent.wheel(host)
+        expect(bar()).not.toBe(first)
+        expect(bar()!.style.animationDuration).toBe(`${IDLE_MS}ms`)
+    })
+
+    it('FR-GLB-019 shows no bar while auto-rotate is off; switched on mid-delay, empties over what is left', () => {
+        const {view, host} = draw(false)
+        fireEvent.pointerDown(host)
+        expect(bar()).toBeNull()
+        act(() => { vi.advanceTimersByTime(IDLE_MS / 4) })
+        view.rerender(globeView({autoRotate: true}))
+        expect(bar()!.style.animationDuration).toBe(`${IDLE_MS * 3 / 4}ms`)
+    })
+
     it('FR-GLB-004 and FR-GLB-011 apply the setting and its speed at launch and at once on a change', () => {
         const {view, globe} = draw(true)
         expect(globe.controls.autoRotateSpeed).toBe(1)
-        const set = (autoRotate: boolean, secondsPerRevolution: number) => view.rerender(<GlobeView events={[]}
-            selectedId={null} autoRotate={autoRotate} secondsPerRevolution={secondsPerRevolution} cloudImage="" burntImage=""
-            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        const set = (autoRotate: boolean, secondsPerRevolution: number) =>
+            view.rerender(globeView({autoRotate, secondsPerRevolution}))
         set(false, 60)
         expect(globe.controls.autoRotate).toBe(false)
         set(true, 120)
@@ -214,8 +247,7 @@ describe('the globe', () => {
 
     it('NFR-UX-003 animates the camera to a selected event over 1,000 ms', () => {
         const {view, globe} = draw(false, [quake])
-        view.rerender(<GlobeView events={[quake]} selectedId={quake.id} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        view.rerender(globeView({events: [quake], selectedId: quake.id}))
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: quake.lat, lng: quake.lng}, 1000]])
     })
 
@@ -228,8 +260,7 @@ describe('the globe', () => {
     })
 
     it('FR-GLB-015 opens facing the start view, with rotation to follow from there', () => {
-        render(<GlobeView events={[]} selectedId={null} autoRotate secondsPerRevolution={60} cloudImage="" burntImage=""
-            dayNightShown={false} sun={null} trailsShown={false} start={{found: true, lat: 54.4027, lng: -2.1163}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        render(globeView({autoRotate: true, start: {found: true, lat: 54.4027, lng: -2.1163}}))
         const globe = made[made.length - 1]
         expect(globe.calls).toContainEqual(['pointOfView', [{lat: 54.4027, lng: -2.1163}]])
         expect(globe.controls.autoRotate).toBe(true)
@@ -252,8 +283,7 @@ describe('the globe', () => {
         const load = vi.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation(() => new THREE.Texture())
         const {view} = draw(false)
         expect(load).not.toHaveBeenCalled()
-        const shown = (dayNightShown: boolean) => view.rerender(<GlobeView events={[]} selectedId={null} autoRotate={false}
-            secondsPerRevolution={60} cloudImage="" burntImage="" dayNightShown={dayNightShown} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}} onSelect={noop} onCluster={noop} onProblem={noop}/>)
+        const shown = (dayNightShown: boolean) => view.rerender(globeView({dayNightShown}))
         shown(true)
         shown(false)
         shown(true)
@@ -272,13 +302,12 @@ describe('FR-MRK-011 activating a cluster', () => {
         const {MIN_ALTITUDE} = await import('./cursor')
         const onCluster = vi.fn()
         const onSelect = vi.fn()
-        render(<GlobeView events={[quake]} selectedId={null} autoRotate={false} secondsPerRevolution={60} cloudImage="" burntImage=""
-            dayNightShown={false} sun={null} trailsShown={false} start={{found: false, lat: 0, lng: 0}}
-            onSelect={onSelect} onCluster={onCluster} onProblem={noop}/>)
+        render(globeView({events: [quake], onSelect, onCluster}))
         const globe = made[made.length - 1]
         const click = globe.calls.find(([name]) => name === 'onObjectClick')![1][0] as (d: object) => void
         const cluster = {kind: 'cluster', lat: quake.lat, lng: quake.lng, key: 'k', members: [quake, {...quake, id: 'USGS/ak2'}], size: 1}
-        click(cluster)
+        // The zoom pauses idle rotation, which starts the countdown bar.
+        act(() => click(cluster))
         expect(onCluster).not.toHaveBeenCalled()
         expect(globe.calls.some(([name, args]) => name === 'pointOfView' && args.length === 2)).toBe(true)
         globe.altitude = MIN_ALTITUDE

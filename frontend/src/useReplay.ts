@@ -9,7 +9,7 @@ import type {ReplayFrameDTO} from './types'
 
 // How often a playing replay asks for a frame.
 export const FRAME_ASK_MS = 100
-const MS_PER_SECOND = 1000
+export const MS_PER_SECOND = 1000
 // The scrubber's right end: the span's end while replaying (FR-RPL-002).
 const END = 1
 

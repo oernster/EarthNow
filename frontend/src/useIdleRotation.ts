@@ -1,8 +1,8 @@
-// Idle rotation (FR-GLB-002 to 004, FR-GLB-012, FR-GLB-018): input on the globe
-// stops it; after the idle delay the camera returns to the fit altitude, keeping
-// its facing, then turns again. The setting is the only switch. GlobeView owns
-// the globe; this owns when it turns.
-import {useEffect, useRef} from 'react'
+// Idle rotation (FR-GLB-002 to 004, FR-GLB-012, FR-GLB-018, FR-GLB-019): input on
+// the globe stops it; after the idle delay the camera returns to the fit altitude,
+// keeping its facing, then turns again. The setting is the only switch. GlobeView
+// owns the globe; this owns when it turns and says when it will turn again.
+import {useEffect, useRef, useState} from 'react'
 import type {GlobeInstance} from 'globe.gl'
 import {FOCUS_MS, nearAltitude} from './cursor'
 import {fitOf} from './markers'
@@ -11,7 +11,7 @@ import {fitOf} from './markers'
 // ORBIT_SECONDS_AT_UNIT_SPEED / speed; the period comes from the settings.
 const ORBIT_SECONDS_AT_UNIT_SPEED = 60
 // FR-GLB-002: rotation resumes after this long without input on the globe.
-const IDLE_DELAY_MS = 10_000
+export const IDLE_DELAY_MS = 10_000
 // FR-GLB-003: the input that stops idle rotation.
 const STOPPING_INPUT = ['pointerdown', 'wheel', 'keydown'] as const
 
@@ -23,8 +23,17 @@ export interface IdleRotation {
     attach: (g: GlobeInstance, el: HTMLElement) => () => void
 }
 
+export interface IdleState {
+    // idle is the same object on every render, so effects may depend on it.
+    idle: IdleRotation
+    // resumeAt is when the idle delay runs out, as a Date.now time; null while
+    // no delay is running (FR-GLB-019).
+    resumeAt: number | null
+}
+
 export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRotate: boolean,
-    secondsPerRevolution: number): IdleRotation {
+    secondsPerRevolution: number): IdleState {
+    const [resumeAt, setResumeAt] = useState<number | null>(null)
     // The settings as last rendered, read when the idle delay runs out and when a
     // globe is attached (which may come after this hook's effect has run).
     const wanted = useRef(autoRotate)
@@ -46,6 +55,7 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
         // away from the fit altitude the camera returns to it first, then turns
         // (FR-GLB-018).
         const resume = () => {
+            setResumeAt(null)
             const g = globe.current
             if (!g || !wanted.current || nearAltitude(g.pointOfView().altitude, fitOf(g))) {
                 rotate()
@@ -67,6 +77,7 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
             }
             if (timer.current !== null) window.clearTimeout(timer.current)
             timer.current = window.setTimeout(resume, IDLE_DELAY_MS)
+            setResumeAt(Date.now() + IDLE_DELAY_MS)
         }
         const attach = (g: GlobeInstance, el: HTMLElement) => {
             g.controls().autoRotateSpeed = speed.current
@@ -98,5 +109,5 @@ export function useIdleRotation(globe: {current: GlobeInstance | null}, autoRota
         else controls.autoRotate = true
     }, [globe, autoRotate, secondsPerRevolution])
 
-    return idle.current
+    return {idle: idle.current, resumeAt}
 }
