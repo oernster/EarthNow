@@ -1,0 +1,5 @@
+# robots.txt for EarthNow (https://earthnow.world/)
+User-agent: *
+Allow: /
+
+Sitemap: https://earthnow.world/sitemap.xml
