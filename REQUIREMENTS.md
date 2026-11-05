@@ -481,7 +481,7 @@ Frame rates are judged by eye, since the application keeps no frame-time log.
 |---|---|---|---|---|
 | DATA-001 | Must | `Event` shall hold provider and id, category, title, source-text description, status, updated at, source URL, extras (source category, depth, tsunami flag, magnitude type) and observations oldest first (time, precision, position, measurement); an ongoing event also its report. Retrieved-at belongs to the provider snapshot; absent fields stay absent. | Shape test. | T |
 | DATA-002 | Must | Categories shall be EARTHQUAKE, VOLCANO, WILDFIRE, SEVERE_STORM, FLOOD, ICE, OTHER. | Asserted. | T |
-| DATA-003 | Must | The marker position shall be the latest point in the window; a polygon's, its outer ring's mean. A GDACS polygon is read in the order a value beyond 90 proves, else the order the feed's proven polygons mostly show, latitude first by default. | Fixtures placed. | T |
+| DATA-003 | Must | The marker position shall be the latest point in the window; a polygon's, its outer ring's mean. A GDACS polygon is read in the order a value beyond 90 proves, else the order the feed's proven polygons mostly show, GeoJSON order on a tie or when none proves it. | Fixtures placed. | T |
 | DATA-004 | Must | Event time shall be USGS `properties.time`; EONET's latest geometry in the window; GVP's report week up to now, ordered by issue day. | Per provider. | T |
 | DATA-005 | Must | An EONET event whose every date is exactly 00:00:00Z shall have day precision; otherwise instant. | One 00:00Z fix among others stays instant. | T |
 | DATA-006 | Must | EONET earthquakes, volcanoes, wildfires, severeStorms, floods and seaLakeIce shall map to their own; every other id to OTHER, kept as source category. | Asserted. | T |

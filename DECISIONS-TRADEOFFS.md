@@ -162,8 +162,9 @@ claimed that the sources do not; the viewer compares events by reading them.
 
 ### Polygons placed by what the data proves
 
-Flood polygons arrive latitude first against the standard, so the feed is read
-in the order its own impossible values prove, latitude first when none do. A
+Flood polygons once arrived latitude first against the standard and have since
+been corrected upstream, so the feed is read in the order its own impossible
+values prove, the standard order when none do. A
 polygon across the date line takes its longitudes the short way and stays in
 the Pacific. The standard order and a fixed swap were rejected for misplacing
 floods. Floods sit where they are and follow a correction upstream.

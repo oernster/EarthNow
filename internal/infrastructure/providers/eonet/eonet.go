@@ -200,8 +200,8 @@ func mapEvent(w wireEvent, gdacs polygonOrder) (event.Event, bool) {
 // GDACS flood polygons of the week were [lat, lng] (Thailand's first vertex
 // [17.79, 97.74]) while GDACS points were [lng, lat]. Read as GeoJSON, five
 // were dropped as out of range and nine were drawn in the wrong place (Honduras
-// in Antarctica). feedOrder follows the order the feed's own rings prove, so
-// the rule does not outlive a correction upstream.
+// in Antarctica). GDACS corrected this upstream after 2026-10-04, so feedOrder
+// reads latitude first only while the feed's own rings prove it.
 const latFirstPolygonSource = "GDACS"
 
 // sourcedBy reports whether any of an event's sources has the id.

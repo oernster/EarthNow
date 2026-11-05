@@ -67,12 +67,35 @@ func TestDATA003_GDACSKeepsLatitudeFirstWhileItsRingsProveIt(t *testing.T) {
 	}
 }
 
+// A feed whose GDACS rings prove nothing is read as GeoJSON. Measured
+// 2026-11-05: the 7-day feed held two GDACS floods with no ring proving its
+// order; the tie swapped Bulgaria into Saudi Arabia.
+func TestDATA003_GDACSFeedProvingNothingIsGeoJSON(t *testing.T) {
+	t.Parallel()
+	at := parseFloods(t, gdacsFlood("H", hondurasLngFirst))
+	if !inHonduras(at["H"]) {
+		t.Errorf("undecided feed drawn at %v", at)
+	}
+}
+
+// In a latitude-first feed a vertex too short to swap is kept as it is and the
+// ring is refused rather than read.
+func TestDATA003_GDACSShortVertexInALatitudeFirstFeedIsDropped(t *testing.T) {
+	t.Parallel()
+	body := `{"events":[` + gdacsFlood("T", thailandLatFirst) + "," +
+		gdacsFlood("S", `[[14.6],[14.8,-88.1],[14.8,-87.9]]`) + `]}`
+	events, dropped, err := Parse([]byte(body))
+	if err != nil || len(events) != 1 || dropped != 1 {
+		t.Errorf("events %d, dropped %d, err %v", len(events), dropped, err)
+	}
+}
+
 // A ring that proves its order is read by it whatever the feed's vote says;
-// a tie leaves the undecided rings with the measured latitude-first order.
+// a tie leaves the undecided rings in GeoJSON order.
 func TestDATA003_GDACSProvenRingOverridesTheFeed(t *testing.T) {
 	t.Parallel()
 	at := parseFloods(t,
-		gdacsFlood("A", thailandLatFirst), gdacsFlood("B", thailandLngFirst), gdacsFlood("H", hondurasLatFirst))
+		gdacsFlood("A", thailandLatFirst), gdacsFlood("B", thailandLngFirst), gdacsFlood("H", hondurasLngFirst))
 	if !inThailand(at["A"]) || !inThailand(at["B"]) || !inHonduras(at["H"]) {
 		t.Errorf("mixed feed drawn at %v", at)
 	}

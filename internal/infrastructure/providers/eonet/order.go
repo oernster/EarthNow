@@ -35,11 +35,13 @@ func ringOrder(ring [][]float64) (latFirst, ok bool) {
 }
 
 // feedOrder is the reading for this feed's latFirstPolygonSource polygons. Every
-// ring that proves its order votes. The measured latitude-first order stands
-// unless the proven rings are more often longitude first, so a correction
-// upstream is followed as soon as the data shows it rather than drawing every
-// flood swapped. Measured over the 30 days to 2026-09-24: 15 of 57 GDACS rings
-// proved their order, every one latitude first, with at least one in each week.
+// ring that proves its order votes. Latitude first is read only while the
+// proven rings are more often latitude first; a tie, including a feed where no
+// ring proves anything, is GeoJSON. Measured over the 40 days to 2026-11-05:
+// the last latitude-first rings were dated 2026-10-04 and all 12 proving rings
+// since were longitude first, so GDACS corrected upstream. The tie went the
+// other way until then and swapped every flood once the 7-day feed held no
+// proving ring.
 func feedOrder(events []wireEvent) polygonOrder {
 	latVotes, lngVotes := 0, 0
 	for _, w := range events {
@@ -58,5 +60,5 @@ func feedOrder(events []wireEvent) polygonOrder {
 			}
 		}
 	}
-	return polygonOrder{latFirst: lngVotes <= latVotes, proven: true}
+	return polygonOrder{latFirst: latVotes > lngVotes, proven: true}
 }

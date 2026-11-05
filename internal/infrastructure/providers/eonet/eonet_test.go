@@ -270,13 +270,15 @@ func TestFetch(t *testing.T) {
 	}
 }
 
-// GDACS polygons arrive [lat, lng] (measured 2026-09-23); read as GeoJSON they
-// put Honduras in Antarctica. Another source's polygon keeps GeoJSON order.
-func TestGDACSPolygonsAreReadLatitudeFirst(t *testing.T) {
+// GDACS sent polygons [lat, lng] until 2026-10-04 and GeoJSON since (measured
+// 2026-11-05), so a GDACS ring that proves nothing is read as GeoJSON; swapped
+// it would put Honduras in Antarctica. Another source's polygon keeps GeoJSON
+// order. Proven latitude-first rings are order_test.go's.
+func TestGDACSUnprovenPolygonsAreReadAsGeoJSON(t *testing.T) {
 	t.Parallel()
 	body := `{"events":[
 	{"id":"EONET_1","title":"Flood in Honduras","sources":[{"id":"GDACS","url":"https://www.gdacs.org/r"}],
-	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[14.6,-88.1],[14.8,-88.1],[14.8,-87.9],[14.6,-87.9],[14.6,-88.1]]]}]},
+	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[-88.1,14.6],[-88.1,14.8],[-87.9,14.8],[-87.9,14.6],[-88.1,14.6]]]}]},
 	{"id":"EONET_2","title":"Ice","sources":[{"id":"USICECENTER","url":"https://usicecenter.gov/p"}],
 	 "geometry":[{"date":"2026-09-20T00:00:00Z","type":"Polygon","coordinates":[[[-60,-70],[-59,-70],[-59,-69],[-60,-69],[-60,-70]]]}]},
 	{"id":"EONET_3","title":"Short vertex","sources":[{"id":"GDACS","url":"https://www.gdacs.org/r"}],
