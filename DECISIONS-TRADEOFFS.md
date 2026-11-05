@@ -64,7 +64,7 @@ a new cloud image can wait up to an hour.
 There is nothing to sign in to, nothing reports on use and there is no update
 check, tray icon or start with Windows. Nothing about the viewer leaves the
 machine beyond what the sources need. A new release is found only on the site;
-there are no usage figures to steer development.
+the site counts its own page loads; nothing counts use of the application.
 
 ### Places and home are read on the machine
 
@@ -164,9 +164,8 @@ claimed that the sources do not; the viewer compares events by reading them.
 
 Flood polygons once arrived latitude first against the standard and have since
 been corrected upstream, so the feed is read in the order its own impossible
-values prove, the standard order when none do. A
-polygon across the date line takes its longitudes the short way and stays in
-the Pacific. The standard order and a fixed swap were rejected for misplacing
+values prove, the standard order when none do. A polygon across the date line
+takes its longitudes the short way and stays in the Pacific. The standard order and a fixed swap were rejected for misplacing
 floods. Floods sit where they are and follow a correction upstream.
 
 ### A source link is a page
