@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>What's new in EarthNow: release history</title>
+    <meta name="description" content="EarthNow's release history: floods drawn where they happened, a paused globe that shows when it will turn, feeds that cannot wipe their events, day and night, replay, burnt areas and the clouds.">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="What's new in EarthNow: release history">
+    <meta property="og:description" content="EarthNow's release history: floods drawn where they happened, a paused globe that shows when it will turn, feeds that cannot wipe their events, day and night, replay, burnt areas and the clouds.">
+    <meta property="og:image" content="https://earthnow.world/icon.png">
+    <meta property="og:url" content="https://earthnow.world/whats-new.html">
+    <link rel="canonical" href="https://earthnow.world/whats-new.html">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta property="og:site_name" content="EarthNow">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="208">
+    <meta property="og:image:height" content="208">
+    <meta property="og:image:alt" content="EarthNow app icon">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="What's new in EarthNow: release history">
+    <meta name="twitter:description" content="EarthNow's release history: floods drawn where they happened, a paused globe that shows when it will turn, feeds that cannot wipe their events, day and night, replay, burnt areas and the clouds.">
+    <meta name="twitter:image" content="https://earthnow.world/icon.png">
+    <meta name="twitter:image:alt" content="EarthNow app icon">
+    <link rel="stylesheet" href="styles.css?v=f46ac96db2">
+<script>window.goatcounter = {path: function (p) { return location.host + p }}</script>
+<script data-goatcounter="https://oernster.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<header class="wrap site-head">
+    <a class="brand" href="./"><img src="icon.png" alt="" width="34" height="34"> EarthNow</a>
+    <nav aria-label="Pages">
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="whats-new.html">What's New</a>
+        <a href="download.html">Install</a>
+    </nav>
+</header>
+
+<main id="top">
+
+    <section class="wrap" id="whats-new">
+        <p class="kicker">Changelog</p>
+        <h2>What's new</h2>
+        <div class="prose">
+            <p>Recent releases have focused on keeping the globe true to its sources. The newest
+                draws floods where they happened again; the one before it shows when a paused globe
+                will turn again. Earlier, a feed EarthNow could not read stopped wiping its events,
+                every request moved to https and volcanoes came back as still erupting. Day and
+                night, storm tracks, burnt ground and replay arrived together in 2.0.0, one release
+                after the clouds.</p>
+        </div>
+
+        <div class="changelog">
+
+            <div class="card cl-entry">
+                <span class="dl-version">v<!--VERSION-->2.8.0<!--/VERSION--></span>
+                <h3>Floods are drawn where they happened again</h3>
+                <ul>
+                    <li>Flood outlines from GDACS, the global disaster alert service, once arrived with latitude and longitude swapped, so EarthNow turned them back. GDACS has since fixed this at its end. EarthNow still turned any outline it could not prove either way, so in a week where none settled the question every flood was drawn in the wrong place, often on another continent</li>
+                    <li>An outline that settles nothing is now read the standard way, so floods sit where they happened. Should the old order ever come back, EarthNow still follows what the week's outlines prove</li>
+                    <li>A flood's marker sits at the middle of the area its source outlines; on a stretch of coast that middle can fall on the shoreline</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.7.0</span>
+                <h3>A paused globe shows when it will turn again</h3>
+                <ul>
+                    <li>Touching the globe stops its rotation until ten seconds pass without input. A thin green bar along the foot of the globe now empties over those seconds, so a globe stopped by a stray click no longer looks stuck</li>
+                    <li>The bar shows only while rotation is on; touching the globe again refills it</li>
+                    <li>The project's documents were rewritten to about half their length, with every claim checked against the code</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.6.0</span>
+                <h3>A feed EarthNow cannot read no longer wipes its events</h3>
+                <ul>
+                    <li>When a source changed its feed so that none of its events could be read, they vanished from the globe and the offline copy was overwritten with nothing. That now counts as a failed fetch: the last good events stay and the provider status says what went wrong</li>
+                    <li>The provider status says how many items in a source's answer could not be used</li>
+                    <li>A warning that events could not be saved clears once that source saves again; one source's warning no longer replaces another's</li>
+                    <li>Raising the minimum magnitude hides smaller quakes at once, even offline. Lowering it brings them back without a fetch</li>
+                    <li>Every request and redirect now has to use https; each source has a connection of its own that reaches only its own host. A proxy named in HTTPS_PROXY is still used</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.5.0</span>
+                <h3>The website has a page for each part</h3>
+                <ul>
+                    <li>The site was one long page; it is now four (Home, Features, Why and Install) with every section's wording kept</li>
+                    <li>Each page links its stylesheet with a fingerprint of its content, so a fresh page never pairs with a stale stylesheet</li>
+                    <li>The feature and source cards are back in their grid. The donate button wears the mark every one of my project sites uses</li>
+                    <li>The application itself is unchanged</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.4.1</span>
+                <h3>Volcano reports without stray question marks</h3>
+                <ul>
+                    <li>The weekly volcano report arrives in an older character set, leaving a question mark where a curly apostrophe or the small 2 of SO₂ belonged. EarthNow now puts those two back and leaves every other question mark as written</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.4.0</span>
+                <h3>Markers draw whole at the globe's edge</h3>
+                <ul>
+                    <li>Near the edge of the globe, markers and cluster badges were drawn cut in half. They are now drawn over the globe, so each shows whole up to the horizon; one passing behind is hidden at once</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.3.0</span>
+                <h3>Volcanoes show again, as still erupting</h3>
+                <ul>
+                    <li>Volcanoes could vanish from every time window while the weekly report listed twenty erupting, because each was dated by the day its report came out</li>
+                    <li>A volcano in the latest weekly report now counts as erupting now and shows in whichever window you choose; its detail names the week the report covers</li>
+                    <li>If the newest report is more than 14 days old, its volcanoes are no longer shown and the provider status says why. One late report never empties the globe</li>
+                    <li>Landslides, drought and dust haze, which their one source had not reported for a year, leave the key. Should one appear it is filed under Other</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.2.0</span>
+                <h3>Replay with a way back to now and a choice of speed</h3>
+                <ul>
+                    <li>A replay stays a replay: it holds paused on its last moment and a Now button at the end of the top bar brings the globe back to the present</li>
+                    <li>A speed button plays the window at half, normal or double speed, a whole pass taking a minute, thirty seconds or fifteen. The speed you pick is remembered</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.1.0</span>
+                <h3>Rotation starts from the whole globe</h3>
+                <ul>
+                    <li>When rotation resumes, the globe first eases back to its usual size while facing the same place, so the whole Earth turns. Touch it on the way and it stops where it is</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v2.0.0</span>
+                <h3>Day and night, storm tracks, burnt areas and replay</h3>
+                <ul>
+                    <li>The globe is lit by the real sun, worked out on your own machine, with NASA's Black Marble city lights on the night side and a twilight band that moves with the sun</li>
+                    <li>At launch the globe faces your own country, read from your computer's region setting and sent nowhere</li>
+                    <li>An earthquake's detail gives its depth in USGS's own bands; a depth of exactly 10 km is marked as often fixed rather than measured</li>
+                    <li>A storm draws a faint track of where it has been. Burnt ground shows in red worldwide, from the Global Wildfire Information System</li>
+                    <li>Play replays the chosen window in 30 seconds, with events appearing at their own times; a slider moves through it by hand</li>
+                    <li>Two events too close to separate now list their members when the cluster is activated at the closest zoom</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v1.0.0</span>
+                <h3>The clouds</h3>
+                <ul>
+                    <li>A new rail button lays EUMETSAT's world cloud map over the globe, made every three hours, with the image's age beneath the globe and a grey veil where no satellite sees</li>
+                    <li>Nothing is fetched until the layer is shown. The last image is kept, so the clouds still show offline with their age</li>
+                    <li>EarthNow's site now lives at earthnow.world</li>
+                </ul>
+            </div>
+
+            <div class="card cl-entry">
+                <span class="dl-version">v0.1.0</span>
+                <h3>The first EarthNow</h3>
+                <ul>
+                    <li>A globe of NASA's Blue Marble carrying the past week's earthquakes, natural events and volcanoes where they happened, turning slowly until you touch it</li>
+                    <li>Hover a marker for the nearest place, its distance and its direction. The detail panel gives every time as an age, in UTC and in local time</li>
+                    <li>A time window from 1 h to 7 days, with the key doubling as the filter</li>
+                    <li>Every event names its source and how old the report is. A source that fails is retried while the others carry on; the last good set is kept for use offline</li>
+                    <li>No account, no telemetry and no update check. Every control and every event can be reached from the keyboard</li>
+                    <li>A setup program for Windows that installs for your account only, plus a donate button at the foot of the rail</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="cta changelog-foot">
+            <a class="btn" href="https://github.com/oernster/EarthNow/releases">View all releases on GitHub</a>
+        </div>
+    </section>
+
+</main>
+
+<footer class="wrap site-foot">
+    <span>&copy; Oliver Ernster. GPL-3.0.
+        <a href="https://ernster.dev/commercial-licensing.html">Commercial licences</a> available.</span>
+    <span><a href="./">Home</a> &middot;
+        <a href="features.html">Features</a> &middot;
+        <a href="why.html">Why</a> &middot;
+        <a href="whats-new.html">What's New</a> &middot;
+        <a href="download.html">Install</a> &middot;
+        <a href="https://github.com/oernster/EarthNow">Source</a> &middot;
+        <a href="https://ernster.dev">More of my work</a></span>
+</footer>
+
+</body>
+</html>

@@ -345,6 +345,14 @@ h3 { margin: 0 0 8px; font-size: 1.12rem; }
 
 .card li strong { color: var(--text); }
 
+/* The release history (whats-new.html): one card per release, newest first,
+   stacked in a single column. The version pill reuses .dl-version. */
+.changelog { display: grid; gap: 14px; margin-top: 28px; }
+
+.cl-entry h3 { margin-top: 14px; }
+
+.changelog-foot { justify-content: center; margin-top: 28px; }
+
 /* Install */
 
 .after-steps { margin-top: 20px; }
